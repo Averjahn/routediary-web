@@ -1,0 +1,59 @@
+const CACHE_NAME = 'routediary-v2';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './manifest.json',
+  './css/style.css',
+  './js/app.js',
+  './js/state.js',
+  './js/db.js',
+  './js/theme.js',
+  './js/i18n.js',
+  './js/format.js',
+  './js/geo.js',
+  './js/tracking.js',
+  './js/ui.js',
+  './js/vehicleCatalog.js',
+  './js/vehicleData.js',
+  './js/screens/map.js',
+  './js/screens/trips.js',
+  './js/screens/car.js',
+  './js/screens/planner.js',
+  './js/screens/stats.js',
+  './icons/icon.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).catch(() => {})
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  // Тайлы карт и внешние CDN — сеть, затем кэш как fallback (не блокируем офлайн-старт).
+  if (url.origin !== self.location.origin) {
+    event.respondWith(
+      fetch(event.request).then((resp) => {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        return resp;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+  // Статика приложения — cache-first.
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
+});
