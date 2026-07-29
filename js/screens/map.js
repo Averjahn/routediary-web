@@ -8,8 +8,10 @@ import { THEMES } from '../theme.js';
 import { calcFuel, calcCalories } from '../geo.js';
 import { getPrimaryVehicle } from '../state.js';
 import { isStandalone } from '../installBanner.js';
+import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 
 let leafletMap = null;
+let currentTileLayer = null;
 let liveLine = null;
 let livePoints = [];
 let tripLayers = [];
@@ -57,14 +59,64 @@ export function render(container) {
   });
 }
 
+function createTileLayer(providerId) {
+  const p = MAP_LAYERS[providerId] || MAP_LAYERS.osm;
+  return L.tileLayer(p.url, { maxZoom: p.maxZoom, attribution: p.attribution, subdomains: p.subdomains || 'abc' });
+}
+
+function switchTileLayer(providerId) {
+  if (!leafletMap) return;
+  setMapProvider(providerId);
+  if (currentTileLayer) leafletMap.removeLayer(currentTileLayer);
+  currentTileLayer = createTileLayer(providerId);
+  currentTileLayer.addTo(leafletMap);
+}
+
+function openLayerPicker() {
+  const current = getMapProvider();
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="map.layers_title"></h2><button class="modal-close">✕</button></div>
+    <div id="layer-list">
+      ${Object.entries(MAP_LAYERS).map(([id, p]) => `
+        <button type="button" class="list-item layer-option" data-id="${id}">
+          <span class="grow">${t(p.nameKey)}</span>
+          ${id === current ? '<span>✓</span>' : ''}
+        </button>
+      `).join('')}
+    </div>
+  `, {
+    onMount: (modalOverlay) => {
+      modalOverlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      modalOverlay.querySelector('#layer-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('.layer-option');
+        if (!btn) return;
+        switchTileLayer(btn.dataset.id);
+        closeModal();
+      });
+    },
+  });
+  applyI18nTree(overlay);
+}
+
 function initLeaflet(container) {
   const mapEl = container.querySelector('#leaflet-map');
   leafletMap = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView([55.751244, 37.618423], 12);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(leafletMap);
+  currentTileLayer = createTileLayer(getMapProvider());
+  currentTileLayer.addTo(leafletMap);
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
+
+  const LayerControl = L.Control.extend({
+    options: { position: 'topright' },
+    onAdd() {
+      const btn = L.DomUtil.create('button', 'map-layer-btn');
+      btn.type = 'button';
+      btn.innerHTML = '🗺️';
+      L.DomEvent.disableClickPropagation(btn);
+      L.DomEvent.on(btn, 'click', openLayerPicker);
+      return btn;
+    },
+  });
+  new LayerControl().addTo(leafletMap);
 
   let resizeTimer = null;
   window.addEventListener('resize', () => {
