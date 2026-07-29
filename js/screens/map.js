@@ -64,6 +64,12 @@ function initLeaflet(container) {
   }).addTo(leafletMap);
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
 
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => leafletMap && leafletMap.invalidateSize(), 150);
+  });
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 14),
