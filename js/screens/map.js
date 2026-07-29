@@ -2,7 +2,7 @@ import { DB } from '../db.js';
 import { AppState } from '../state.js';
 import { addDays, dayLabel, Fmt, uuid, dayKeyOf } from '../format.js';
 import { t } from '../i18n.js';
-import { el, applyI18nTree, openModal, closeModal, MODE_ICON, CATEGORY_ICON } from '../ui.js';
+import { el, applyI18nTree, openModal, closeModal, MODE_ICON, CATEGORY_ICON, icon } from '../ui.js';
 import { startRecording, stopRecording, isRecording, onLivePoint, addManualTrip, recomputeSegmentation } from '../tracking.js';
 import { THEMES } from '../theme.js';
 import { calcFuel, calcCalories } from '../geo.js';
@@ -79,7 +79,7 @@ function renderLayerList() {
     return `
       <button type="button" class="list-item layer-option" data-id="${id}">
         <span class="grow">${t(p.nameKey)}</span>
-        ${!unlocked ? '<span class="muted">🔒</span>' : id === current ? '<span>✓</span>' : ''}
+        ${!unlocked ? `<span class="muted">${icon('lock',{size:15})}</span>` : id === current ? '<span>✓</span>' : ''}
       </button>`;
   }).join('');
 }
@@ -141,7 +141,7 @@ function initLeaflet(container) {
     onAdd() {
       const btn = L.DomUtil.create('button', 'map-layer-btn');
       btn.type = 'button';
-      btn.innerHTML = '🗺️';
+      btn.innerHTML = icon('layers', { size: 18 });
       L.DomEvent.disableClickPropagation(btn);
       L.DomEvent.on(btn, 'click', openLayerPicker);
       return btn;
@@ -180,8 +180,8 @@ function refreshRecordButton() {
   if (!btn) return;
   btn.classList.toggle('recording', AppState.recording);
   btn.innerHTML = AppState.recording
-    ? `⏹ <span>${t('map.stop_recording')}</span>`
-    : `▶ <span>${t('map.start_recording')}</span>`;
+    ? `${icon('stop', { size: 16 })} <span>${t('map.stop_recording')}</span>`
+    : `${icon('play', { size: 16 })} <span>${t('map.start_recording')}</span>`;
   btn.onclick = onRecordClick;
 }
 
@@ -261,8 +261,8 @@ async function renderSummary(trips) {
   const summaryEl = document.getElementById('map-summary');
   if (!summaryEl) return;
   summaryEl.innerHTML = `
-    <div class="day-summary-chip">🚶 <b>${Fmt.distanceKm(walkKm * 1000, AppState.units)}</b> ${Fmt.kcal(kcal)}</div>
-    <div class="day-summary-chip">🚗 <b>${Fmt.distanceKm(carKm * 1000, AppState.units)}</b> ${Fmt.liters(liters)} · ${Fmt.money(cost, AppState.currency)}</div>
+    <div class="day-summary-chip">${MODE_ICON.walk} <b>${Fmt.distanceKm(walkKm * 1000, AppState.units)}</b> ${Fmt.kcal(kcal)}</div>
+    <div class="day-summary-chip">${MODE_ICON.car} <b>${Fmt.distanceKm(carKm * 1000, AppState.units)}</b> ${Fmt.liters(liters)} · ${Fmt.money(cost, AppState.currency)}</div>
   `;
 }
 
@@ -285,10 +285,10 @@ function openManualTripForm() {
     <label class="field"><span class="field-label" data-i18n="manual.distance"></span><input id="mt-distance" type="number" min="0" step="0.1" value="5"></label>
     <div class="field"><span class="field-label" data-i18n="manual.mode"></span>
       <div class="chip-row" id="mt-mode">
-        <button class="chip active" data-mode="walk">🚶 ${t('mode.walk')}</button>
-        <button class="chip" data-mode="run">🏃 ${t('mode.run')}</button>
-        <button class="chip" data-mode="bike">🚴 ${t('mode.bike')}</button>
-        <button class="chip" data-mode="car">🚗 ${t('mode.car')}</button>
+        <button class="chip active" data-mode="walk">${MODE_ICON.walk} ${t('mode.walk')}</button>
+        <button class="chip" data-mode="run">${MODE_ICON.run} ${t('mode.run')}</button>
+        <button class="chip" data-mode="bike">${MODE_ICON.bike} ${t('mode.bike')}</button>
+        <button class="chip" data-mode="car">${MODE_ICON.car} ${t('mode.car')}</button>
       </div>
     </div>
     <div class="field"><span class="field-label" data-i18n="manual.category"></span>

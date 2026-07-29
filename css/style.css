@@ -58,9 +58,9 @@ body {
   gap: 2px; background: none; border: none; color: var(--text-secondary);
   font-family: inherit; font-size: 11px; padding: 6px 2px; cursor: pointer;
 }
-.tab-btn .tab-icon { font-size: 20px; line-height: 1; filter: grayscale(1) opacity(0.6); }
+.tab-btn .tab-icon { display: inline-flex; opacity: 0.6; }
 .tab-btn.active { color: var(--accent); }
-.tab-btn.active .tab-icon { filter: none; }
+.tab-btn.active .tab-icon { opacity: 1; }
 
 .pad { padding: 14px 16px; }
 .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); margin: 18px 16px 8px; }
@@ -180,7 +180,6 @@ button.list-item { background: none; border: none; width: 100%; text-align: left
 /* Quick action tiles */
 .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .quick-tile { background: var(--surface); border-radius: 14px; padding: 12px 8px; text-align: center; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.quick-tile .qi { font-size: 22px; }
 .quick-tile .qt { font-size: 12px; font-weight: 600; }
 .quick-tile .qa { font-size: 11px; color: var(--text-secondary); }
 .quick-tile.add { border: 1.5px dashed var(--separator); color: var(--text-secondary); }
@@ -196,6 +195,8 @@ canvas.chart { width: 100%; display: block; }
 .settings-row:last-child { border-bottom: none; }
 .theme-swatch { width: 44px; height: 44px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 .theme-swatch.active { border-color: var(--accent); }
+
+.icon { display: inline-block; vertical-align: -4px; flex-shrink: 0; }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
@@ -265,7 +266,6 @@ canvas.chart { width: 100%; display: block; }
     font-size: 14px;
     font-weight: 600;
   }
-  .tab-btn .tab-icon { font-size: 18px; }
   .tab-btn.active { background: var(--surface-alt); }
 
   #screens { flex: 1; padding-bottom: 0; overflow: hidden; min-width: 0; }

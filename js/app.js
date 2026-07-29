@@ -1,5 +1,6 @@
 import { loadSettings, AppState } from './state.js';
 import { applyI18nTree } from './ui.js';
+import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
 import * as MapScreen from './screens/map.js';
@@ -25,6 +26,10 @@ async function init() {
   for (const key of Object.keys(SCREENS)) {
     SCREENS[key].el = document.getElementById('screen-' + key);
   }
+
+  document.querySelectorAll('.tab-icon[data-icon]').forEach(span => {
+    span.innerHTML = icon(span.dataset.icon, { size: 22 });
+  });
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));

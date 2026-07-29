@@ -2,7 +2,7 @@ import { DB } from '../db.js';
 import { AppState, getPrimaryVehicle, currentOdometerKm } from '../state.js';
 import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
-import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON } from '../ui.js';
+import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
 import { VEHICLE_MAKES, searchMakes, searchModels, getMake, makeDisplayName } from '../vehicleCatalog.js';
 import { getLang } from '../i18n.js';
 
@@ -23,7 +23,7 @@ export async function refresh() {
   if (!vehicle) {
     body.innerHTML = `
       <div class="card" style="text-align:center;padding:28px 16px;">
-        <div style="font-size:36px;margin-bottom:8px;">🚗</div>
+        <div style="margin-bottom:8px;color:var(--text-secondary);">${icon('car',{size:40})}</div>
         <div class="muted" style="margin-bottom:14px;" data-i18n="car.no_vehicle"></div>
         <button class="btn primary" id="car-choose" data-i18n="car.choose_vehicle"></button>
       </div>`;
@@ -92,8 +92,8 @@ export async function refresh() {
     <div class="section-title" data-i18n="records.title"></div>
     <div class="card" style="padding:0 14px;" id="records-list"></div>
     <div style="text-align:center;margin:12px 0 20px;">
-      <button class="btn sm" id="add-refuel">+ ⛽️ <span data-i18n="refuel.section"></span></button>
-      <button class="btn sm" id="add-expense">+ 💳 <span data-i18n="expense.section"></span></button>
+      <button class="btn sm" id="add-refuel">${icon('plus',{size:14})} ${EXPENSE_ICON.fuel} <span data-i18n="refuel.section"></span></button>
+      <button class="btn sm" id="add-expense">${icon('plus',{size:14})} ${EXPENSE_ICON.other} <span data-i18n="expense.section"></span></button>
     </div>
   `;
   applyI18nTree(body);
@@ -149,11 +149,11 @@ function computeMeasuredConsumption(refuels) {
 function renderQuickGrid(gridEl, templates, vehicle, odometer) {
   gridEl.innerHTML = templates.map(tpl => `
     <button class="quick-tile" data-tpl="${tpl.id}">
-      <span class="qi">${tpl.isRefuel ? '⛽️' : (EXPENSE_ICON[tpl.categoryKey] || '💳')}</span>
+      <span class="qi">${tpl.isRefuel ? EXPENSE_ICON.fuel : (EXPENSE_ICON[tpl.categoryKey] || EXPENSE_ICON.other)}</span>
       <span class="qt">${t(tpl.title) !== tpl.title ? t(tpl.title) : tpl.title}</span>
       <span class="qa">${tpl.isRefuel ? Fmt.liters(tpl.liters) : Fmt.money(tpl.amount, AppState.currency)}</span>
     </button>
-  `).join('') + `<button class="quick-tile add" id="quick-new"><span class="qi">＋</span><span class="qt" data-i18n="template.new_title"></span></button>`;
+  `).join('') + `<button class="quick-tile add" id="quick-new"><span class="qi">${icon('plus',{size:20})}</span><span class="qt" data-i18n="template.new_title"></span></button>`;
   applyI18nTree(gridEl);
 
   gridEl.querySelectorAll('[data-tpl]').forEach(btn => {
@@ -334,9 +334,9 @@ function renderRecords(listEl, records) {
   }
   listEl.innerHTML = records.map(r => {
     if (r.kind === 'refuel') {
-      return `<div class="list-item"><div class="icon-badge">⛽️</div><div class="grow"><div style="font-weight:600;">${Fmt.liters(r.liters)}${r.isFullTank ? ' · ' + t('refuel.full_tank') : ''}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.totalCost, AppState.currency)}</b></div>`;
+      return `<div class="list-item"><div class="icon-badge">${EXPENSE_ICON.fuel}</div><div class="grow"><div style="font-weight:600;">${Fmt.liters(r.liters)}${r.isFullTank ? ' · ' + t('refuel.full_tank') : ''}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.totalCost, AppState.currency)}</b></div>`;
     }
-    return `<div class="list-item"><div class="icon-badge">${EXPENSE_ICON[r.category]||'💳'}</div><div class="grow"><div style="font-weight:600;">${t('expense.'+r.category)}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.amount, AppState.currency)}</b></div>`;
+    return `<div class="list-item"><div class="icon-badge">${EXPENSE_ICON[r.category]||EXPENSE_ICON.other}</div><div class="grow"><div style="font-weight:600;">${t('expense.'+r.category)}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.amount, AppState.currency)}</b></div>`;
   }).join('');
 }
 

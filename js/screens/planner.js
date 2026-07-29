@@ -88,7 +88,7 @@ export async function refresh() {
 
     return `
       <div class="list-item" data-plan="${item.id}">
-        <div class="icon-badge">${CATEGORY_ICON[item.category] || '⚪'}</div>
+        <div class="icon-badge">${CATEGORY_ICON[item.category] || CATEGORY_ICON.none}</div>
         <div class="grow">
           <div style="font-weight:600;text-decoration:${item.completed?'line-through':'none'};opacity:${item.completed?0.6:1};">${escapeHtml(item.title)}</div>
           <div class="muted">${Fmt.time(item.plannedStart)} · ${item.plannedDurationMin} мин</div>

@@ -2,7 +2,7 @@ import { DB } from '../db.js';
 import { AppState, setThemeId, setLanguage, setCurrency, setUnits, setWeight, getPrimaryVehicle } from '../state.js';
 import { addDays, dayKeyOf, Fmt, todayKey } from '../format.js';
 import { t, getLang } from '../i18n.js';
-import { applyI18nTree } from '../ui.js';
+import { applyI18nTree, icon, MODE_ICON, EXPENSE_ICON } from '../ui.js';
 import { calcCalories, calcFuel } from '../geo.js';
 import { THEMES, THEME_ORDER } from '../theme.js';
 import { CURRENCY_SYMBOLS } from '../format.js';
@@ -74,12 +74,12 @@ export async function refresh() {
     <div class="section-title" data-i18n="stats.totals"></div>
     <div class="card">
       <div class="day-summary-row">
-        <div class="day-summary-chip"><span data-i18n="stats.total_foot"></span><b>${Fmt.distanceKm(totals.walkKm*1000, AppState.units)}</b></div>
-        <div class="day-summary-chip"><span data-i18n="stats.total_car"></span><b>${Fmt.distanceKm(totals.carKm*1000, AppState.units)}</b></div>
+        <div class="day-summary-chip">${MODE_ICON.walk} <span data-i18n="stats.total_foot"></span><b>${Fmt.distanceKm(totals.walkKm*1000, AppState.units)}</b></div>
+        <div class="day-summary-chip">${MODE_ICON.car} <span data-i18n="stats.total_car"></span><b>${Fmt.distanceKm(totals.carKm*1000, AppState.units)}</b></div>
       </div>
       <div class="day-summary-row">
-        <div class="day-summary-chip"><span data-i18n="stats.total_kcal"></span><b>${Fmt.kcal(totals.kcal)}</b></div>
-        <div class="day-summary-chip"><span data-i18n="stats.total_fuel"></span><b>${Fmt.money(totals.fuelCost, AppState.currency)}</b></div>
+        <div class="day-summary-chip">${icon('flame',{size:16})} <span data-i18n="stats.total_kcal"></span><b>${Fmt.kcal(totals.kcal)}</b></div>
+        <div class="day-summary-chip">${EXPENSE_ICON.fuel} <span data-i18n="stats.total_fuel"></span><b>${Fmt.money(totals.fuelCost, AppState.currency)}</b></div>
       </div>
     </div>
 

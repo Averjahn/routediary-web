@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { el } from './ui.js';
+import { el, icon } from './ui.js';
 
 const DISMISS_KEY = 'routediary.installBannerDismissed';
 let bannerEl = null;
@@ -29,7 +29,7 @@ export function initInstallBanner() {
 
   bannerEl = el(`
     <div class="install-banner">
-      <div class="install-banner-icon">📲</div>
+      <div class="install-banner-icon">${icon('install', { size: 22 })}</div>
       <div class="install-banner-body">
         <div class="install-banner-title">${t('install.title')}</div>
         <div class="install-banner-text">${t('install.text')}</div>

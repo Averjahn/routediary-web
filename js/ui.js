@@ -1,4 +1,6 @@
 import { t, getLang } from './i18n.js';
+import { icon } from './icons.js';
+export { icon };
 
 export function el(html) {
   const tpl = document.createElement('template');
@@ -44,6 +46,6 @@ export function toast(message, { actionLabel, onAction, duration = 5000 } = {}) 
   return node;
 }
 
-export const MODE_ICON = { walk: '🚶', run: '🏃', bike: '🚴', car: '🚗' };
-export const CATEGORY_ICON = { none: '⚪', work: '💼', home: '🏠', shop: '🛒', medical: '⚕️', leisure: '⭐', other: '⋯' };
-export const EXPENSE_ICON = { fuel: '⛽️', wash: '✨', service: '🔧', repairs: '🛠️', tires: '⚙️', insurance: '🛡️', tax: '📄', parking: '🅿️', fine: '⚠️', other: '⋯' };
+export const MODE_ICON = { walk: icon('walk'), run: icon('run'), bike: icon('bike'), car: icon('car') };
+export const CATEGORY_ICON = { none: icon('categoryNone'), work: icon('work'), home: icon('home'), shop: icon('shop'), medical: icon('medical'), leisure: icon('leisure'), other: icon('other') };
+export const EXPENSE_ICON = { fuel: icon('fuel'), wash: icon('wash'), service: icon('service'), repairs: icon('repairs'), tires: icon('tires'), insurance: icon('insurance'), tax: icon('tax'), parking: icon('parking'), fine: icon('fine'), other: icon('other') };
