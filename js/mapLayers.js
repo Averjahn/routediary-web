@@ -42,6 +42,37 @@ export const MAP_LAYERS = {
     maxZoom: 17,
     subdomains: 'abc',
   },
+  // Дизайнерские стили Thunderforest — требуют бесплатный личный API-ключ
+  // (регистрация без карты, ~150k тайлов/мес на free-плане).
+  tfOutdoors: {
+    nameKey: 'map.layer_tf_outdoors',
+    url: 'https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey={apiKey}',
+    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://www.thunderforest.com/">Thunderforest</a>',
+    maxZoom: 22,
+    requiresKey: 'thunderforest',
+  },
+  tfPioneer: {
+    nameKey: 'map.layer_tf_pioneer',
+    url: 'https://tile.thunderforest.com/pioneer/{z}/{x}/{y}.png?apikey={apiKey}',
+    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://www.thunderforest.com/">Thunderforest</a>',
+    maxZoom: 22,
+    requiresKey: 'thunderforest',
+  },
+  tfNeighbourhood: {
+    nameKey: 'map.layer_tf_neighbourhood',
+    url: 'https://tile.thunderforest.com/neighbourhood/{z}/{x}/{y}.png?apikey={apiKey}',
+    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://www.thunderforest.com/">Thunderforest</a>',
+    maxZoom: 22,
+    requiresKey: 'thunderforest',
+  },
+};
+
+// Провайдеры, требующие персональный ключ пользователя.
+export const KEY_PROVIDERS = {
+  thunderforest: {
+    signupUrl: 'https://www.thunderforest.com/docs/apikeys/',
+    storeKey: 'routediary.apiKey.thunderforest',
+  },
 };
 
 const STORE_KEY = 'routediary.mapProvider';
@@ -53,4 +84,23 @@ export function getMapProvider() {
 
 export function setMapProvider(id) {
   if (MAP_LAYERS[id]) localStorage.setItem(STORE_KEY, id);
+}
+
+export function getApiKey(providerId) {
+  const p = KEY_PROVIDERS[providerId];
+  return (p && localStorage.getItem(p.storeKey)) || '';
+}
+
+export function setApiKey(providerId, value) {
+  const p = KEY_PROVIDERS[providerId];
+  if (p) localStorage.setItem(p.storeKey, value.trim());
+}
+
+export function isLayerUnlocked(layer) {
+  return !layer.requiresKey || !!getApiKey(layer.requiresKey);
+}
+
+export function buildTileUrl(layer) {
+  if (!layer.requiresKey) return layer.url;
+  return layer.url.replace('{apiKey}', encodeURIComponent(getApiKey(layer.requiresKey)));
 }
