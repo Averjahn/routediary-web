@@ -42,6 +42,18 @@ export const MAP_LAYERS = {
     maxZoom: 17,
     subdomains: 'abc',
   },
+  natgeo: {
+    nameKey: 'map.layer_natgeo',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; National Geographic, DeLorme, NAVTEQ',
+    maxZoom: 16,
+  },
+  streetsEsri: {
+    nameKey: 'map.layer_streets_esri',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 19,
+  },
   // Дизайнерские стили Thunderforest — требуют бесплатный личный API-ключ
   // (регистрация без карты, ~150k тайлов/мес на free-плане).
   tfOutdoors: {
