@@ -235,8 +235,8 @@ function drawCumulative(canvas, byDay) {
 
 function renderSettings(el) {
   el.innerHTML = `
-    <div class="settings-row"><span data-i18n="settings.theme"></span></div>
-    <div class="row" style="gap:10px;padding-bottom:12px;">
+    <div class="muted" style="font-weight:600;padding-top:10px;margin-bottom:8px;" data-i18n="settings.theme"></div>
+    <div class="row" style="gap:10px;padding-bottom:14px;border-bottom:1px solid var(--separator);">
       ${THEME_ORDER.map(id => `<button class="theme-swatch ${AppState.theme===id?'active':''}" data-theme="${id}" style="background:${THEMES[id].background};color:${THEMES[id].accent};border-color:${AppState.theme===id?THEMES[id].accent:'transparent'}">●</button>`).join('')}
     </div>
     <div class="settings-row"><span data-i18n="settings.language"></span>
