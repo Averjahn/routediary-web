@@ -22,6 +22,13 @@ export const MAP_LAYERS = {
     maxZoom: 20,
     subdomains: 'abcd',
   },
+  cartoVoyager: {
+    nameKey: 'map.layer_carto_voyager',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    maxZoom: 20,
+    subdomains: 'abcd',
+  },
   satellite: {
     nameKey: 'map.layer_satellite',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
