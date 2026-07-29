@@ -38,7 +38,7 @@ export const MAP_LAYERS = {
   topo: {
     nameKey: 'map.layer_topo',
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors, SRTM | &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+    attribution: '&copy; OpenStreetMap, SRTM, <a href="https://opentopomap.org">OpenTopoMap</a>',
     maxZoom: 17,
     subdomains: 'abc',
   },

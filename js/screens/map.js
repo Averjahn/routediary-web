@@ -131,6 +131,7 @@ function openLayerPicker() {
 function initLeaflet(container) {
   const mapEl = container.querySelector('#leaflet-map');
   leafletMap = L.map(mapEl, { zoomControl: false, attributionControl: true }).setView([55.751244, 37.618423], 12);
+  leafletMap.attributionControl.setPrefix(false);
   currentTileLayer = createTileLayer(getMapProvider());
   currentTileLayer.addTo(leafletMap);
   L.control.zoom({ position: 'bottomright' }).addTo(leafletMap);
