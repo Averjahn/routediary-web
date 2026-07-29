@@ -17,7 +17,7 @@ function isSafari() {
   return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Mercury/.test(ua);
 }
 
-function isStandalone() {
+export function isStandalone() {
   return window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
 }

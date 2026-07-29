@@ -7,6 +7,7 @@ import { startRecording, stopRecording, isRecording, onLivePoint, addManualTrip,
 import { THEMES } from '../theme.js';
 import { calcFuel, calcCalories } from '../geo.js';
 import { getPrimaryVehicle } from '../state.js';
+import { isStandalone } from '../installBanner.js';
 
 let leafletMap = null;
 let liveLine = null;
@@ -26,7 +27,7 @@ export function render(container) {
         </div>
       </div>
       <div class="map-bottom-sheet">
-        <div class="gps-hint" id="map-bg-warning" data-i18n="map.bg_warning"></div>
+        <div class="gps-hint" id="map-bg-warning"></div>
         <div class="day-summary-row" id="map-summary"></div>
         <button class="record-btn" id="map-record-btn"></button>
         <div style="text-align:center;margin-top:10px;">
@@ -36,6 +37,7 @@ export function render(container) {
     </div>
   `;
   applyI18nTree(container);
+  container.querySelector('#map-bg-warning').textContent = t(isStandalone() ? 'map.bg_warning_standalone' : 'map.bg_warning');
 
   container.querySelector('#map-day-prev').addEventListener('click', () => changeDay(-1));
   container.querySelector('#map-day-next').addEventListener('click', () => changeDay(1));
