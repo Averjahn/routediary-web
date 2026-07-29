@@ -183,6 +183,24 @@ canvas.chart { width: 100%; display: block; }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
+/* Подсказка "установить как приложение" (iOS Safari, не standalone) */
+.install-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1500;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
+  background: var(--surface); border-bottom: 1px solid var(--separator);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.install-banner-icon { font-size: 22px; flex-shrink: 0; }
+.install-banner-body { flex: 1; min-width: 0; }
+.install-banner-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.install-banner-text { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+.install-banner-close {
+  background: var(--surface-alt); border: none; border-radius: 50%;
+  width: 26px; height: 26px; font-size: 13px; color: var(--text-secondary);
+  cursor: pointer; flex-shrink: 0;
+}
+
 /* ===== Desktop layout ===== */
 @media (min-width: 900px) {
   :root { --sidebar-w: 232px; }

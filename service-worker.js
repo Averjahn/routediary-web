@@ -1,4 +1,4 @@
-const CACHE_NAME = 'routediary-v2';
+const CACHE_NAME = 'routediary-v3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './js/geo.js',
   './js/tracking.js',
   './js/ui.js',
+  './js/installBanner.js',
   './js/vehicleCatalog.js',
   './js/vehicleData.js',
   './js/screens/map.js',
@@ -52,8 +53,14 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Статика приложения — cache-first.
+  // Статика приложения — network-first: свежий деплой виден сразу,
+  // кэш подстраховывает только офлайн (cache-first раньше показывал
+  // старую версию сколько угодно долго без ручного bump CACHE_NAME).
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request).then((resp) => {
+      const clone = resp.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+      return resp;
+    }).catch(() => caches.match(event.request))
   );
 });

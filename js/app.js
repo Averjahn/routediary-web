@@ -1,6 +1,7 @@
 import { loadSettings, AppState } from './state.js';
 import { applyI18nTree } from './ui.js';
 import { applyTheme } from './theme.js';
+import { initInstallBanner } from './installBanner.js';
 import * as MapScreen from './screens/map.js';
 import * as TripsScreen from './screens/trips.js';
 import * as CarScreen from './screens/car.js';
@@ -33,6 +34,7 @@ async function init() {
     applyI18nTree(document.body);
     for (const key of Object.keys(SCREENS)) SCREENS[key].rendered = false;
     switchTab(currentTab, true);
+    initInstallBanner();
   });
   document.addEventListener('theme-changed', () => {
     // темы влияют на цвета карты/графиков — просто перерисуем текущий и соседние экраны
@@ -40,6 +42,7 @@ async function init() {
   });
 
   switchTab('map');
+  initInstallBanner();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(() => {});

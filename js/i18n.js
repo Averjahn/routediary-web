@@ -81,6 +81,9 @@ export const STRINGS = {
     'settings.theme': 'Тема оформления', 'settings.language': 'Язык', 'settings.currency': 'Валюта',
     'settings.units': 'Единицы измерения', 'settings.units.metric': 'Километры', 'settings.units.imperial': 'Мили',
     'settings.weight': 'Вес, кг (для калорий)', 'settings.title': 'Настройки',
+    'install.title': 'Установите RouteDiary как приложение',
+    'install.text': 'Нажмите «Поделиться» ⬆️ внизу экрана и выберите «На экран «Домой»»',
+    'install.close': 'Закрыть подсказку',
   },
   en: {
     'common.save': 'Save', 'common.cancel': 'Cancel', 'common.done': 'Done',
@@ -163,6 +166,9 @@ export const STRINGS = {
     'settings.theme': 'Theme', 'settings.language': 'Language', 'settings.currency': 'Currency',
     'settings.units': 'Units', 'settings.units.metric': 'Kilometers', 'settings.units.imperial': 'Miles',
     'settings.weight': 'Weight, kg (for calories)', 'settings.title': 'Settings',
+    'install.title': 'Install RouteDiary as an app',
+    'install.text': 'Tap Share ⬆️ at the bottom of the screen and choose "Add to Home Screen"',
+    'install.close': 'Dismiss hint',
   },
 };
 
