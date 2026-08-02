@@ -16,6 +16,7 @@ const APP_SHELL = [
   './js/installBanner.js',
   './js/mapLayers.js',
   './js/icons.js',
+  './js/carArt.js',
   './js/vehicleCatalog.js',
   './js/vehicleData.js',
   './js/screens/map.js',

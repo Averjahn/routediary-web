@@ -198,6 +198,19 @@ canvas.chart { width: 100%; display: block; }
 
 .icon { display: inline-block; vertical-align: -4px; flex-shrink: 0; }
 
+/* Карточка «гаража»: машина, здоровье, выбор цвета */
+.garage-card { text-align: center; }
+.garage-art { display: flex; justify-content: center; margin: 2px 0 4px; }
+.garage-art svg { max-width: 100%; height: auto; }
+.garage-name { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.health-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+.color-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.color-dot {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--separator); padding: 0;
+}
+.color-dot.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+
 ::-webkit-scrollbar { width: 0; height: 0; }
 
 /* Подсказка "установить как приложение" (iOS Safari, не standalone) */

@@ -4,6 +4,7 @@ import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
 import { VEHICLE_MAKES, searchMakes, searchModels, getMake, makeDisplayName } from '../vehicleCatalog.js';
+import { bodyTypeFor, carSilhouette, CAR_COLORS } from '../carArt.js';
 import { getLang } from '../i18n.js';
 
 let containerRef = null;
@@ -55,11 +56,23 @@ export async function refresh() {
     .sort((a, b) => b.date - a.date)
     .slice(0, 20);
 
+  const health = computeHealth(maintenance, odometer);
+
   body.innerHTML = `
-    <div class="card" style="text-align:center;">
-      <div class="muted">${escapeHtml(vehicle.displayName || 'Авто')}</div>
+    <div class="card garage-card">
+      <div class="garage-art">${carSilhouette(
+        vehicle.bodyType || bodyTypeFor(vehicle.modelId, vehicle.displayName),
+        (CAR_COLORS.find(c => c.id === vehicle.colorId) || CAR_COLORS[8]).hex,
+        { width: 250 }
+      )}</div>
+      <div class="garage-name">${escapeHtml(vehicle.displayName || 'Авто')}</div>
+      ${healthBlock(health)}
       <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${t('unit.km')}</span></div>
       <div class="muted" data-i18n="car.odometer_caption"></div>
+      <div class="color-row" id="car-colors">
+        ${CAR_COLORS.map(c => `<button class="color-dot${c.id === (vehicle.colorId || 'blue') ? ' active' : ''}"
+           data-color="${c.id}" style="background:${c.hex}" aria-label="${c.id}"></button>`).join('')}
+      </div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:10px;">
         <button class="btn sm" id="car-adjust" data-i18n="car.adjust_odometer"></button>
         <button class="btn sm" id="car-change" data-i18n="car.change_vehicle"></button>
@@ -100,6 +113,13 @@ export async function refresh() {
 
   body.querySelector('#car-adjust').addEventListener('click', () => openOdometerAdjust(vehicle));
   body.querySelector('#car-change').addEventListener('click', openVehiclePicker);
+  body.querySelector('#car-colors').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-color]');
+    if (!btn) return;
+    vehicle.colorId = btn.dataset.color;
+    await DB.put('vehicles', vehicle);
+    refresh();
+  });
   body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer));
   body.querySelector('#add-refuel').addEventListener('click', () => openRefuelForm(vehicle, odometer));
   body.querySelector('#add-expense').addEventListener('click', () => openExpenseForm(vehicle, odometer));
@@ -467,6 +487,33 @@ function openVehiclePicker() {
   applyI18nTree(overlay);
 }
 
+/**
+ * «Здоровье» автомобиля 0..100 — средний остаток ресурса по расходникам.
+ * Падает по мере пробега и восстанавливается, когда пользователь отмечает
+ * замену. Нет расходников — считаем, что ухаживать пока не за чем (100).
+ */
+function computeHealth(items, odometer) {
+  if (!items || items.length === 0) return 100;
+  const sum = items.reduce((acc, item) => {
+    const interval = item.intervalKm > 0 ? item.intervalKm : 10000;
+    const remaining = interval - (odometer - item.lastServiceOdometerKm);
+    return acc + Math.max(0, Math.min(1, remaining / interval));
+  }, 0);
+  return Math.round((sum / items.length) * 100);
+}
+
+function healthBlock(health) {
+  const key = health >= 70 ? 'car.health_good' : health >= 35 ? 'car.health_soon' : 'car.health_bad';
+  const color = health >= 70 ? 'var(--success)' : health >= 35 ? 'var(--warning)' : 'var(--danger)';
+  return `
+    <div class="health-row">
+      <span class="muted" data-i18n="car.health"></span>
+      <b style="color:${color}">${health}%</b>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:${health}%;background:${color}"></div></div>
+    <div class="muted" style="font-size:12px;margin-top:4px;" data-i18n="${key}"></div>`;
+}
+
 async function saveVehicleFromTrim(make, model, trim) {
   const vehicle = {
     id: uuid(), makeId: make.id, modelId: model.id, trimId: trim.id, customName: '',
@@ -474,6 +521,7 @@ async function saveVehicleFromTrim(make, model, trim) {
     engineVolumeL: trim.engineVolumeL, fuelType: trim.fuelType, powerHp: trim.powerHp,
     tankLiters: trim.tankLiters, consumptionL100: trim.consumptionCombinedL100, curbWeightKg: trim.curbWeightKg,
     odometerBaseKm: 0, odometerBaseDate: Date.now(), isPrimary: true, fuelPriceRub: 60,
+    bodyType: bodyTypeFor(model.id, model.name), colorId: 'blue',
   };
   vehicle.rangeKm = vehicle.consumptionL100 > 0 ? vehicle.tankLiters / vehicle.consumptionL100 * 100 : 0;
   await DB.put('vehicles', vehicle);
