@@ -263,7 +263,7 @@ canvas.chart { width: 100%; display: block; }
     flex-shrink: 0;
   }
   #tabbar::before {
-    content: 'RouteDiary';
+    content: 'Автопульс';
     display: block;
     font-size: 17px;
     font-weight: 800;

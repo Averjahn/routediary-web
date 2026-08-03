@@ -70,4 +70,4 @@ function switchTab(tab, force) {
   }
 }
 
-init().catch(err => console.error('RouteDiary init failed:', err));
+init().catch(err => console.error('Автопульс init failed:', err));

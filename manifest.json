@@ -1,6 +1,6 @@
 {
-  "name": "RouteDiary — Мои маршруты",
-  "short_name": "RouteDiary",
+  "name": "Автопульс — Мои маршруты",
+  "short_name": "Автопульс",
   "description": "Дневник поездок: GPS-трек, авто, калории и расходы — офлайн, без сервера.",
   "start_url": "./index.html",
   "scope": "./",

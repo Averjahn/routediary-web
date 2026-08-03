@@ -1,4 +1,4 @@
-const CACHE_NAME = 'routediary-v3';
+const CACHE_NAME = 'avtopuls-v4';
 const APP_SHELL = [
   './',
   './index.html',
