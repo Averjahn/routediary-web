@@ -25,6 +25,10 @@ const APP_SHELL = [
   './js/screens/planner.js',
   './js/screens/stats.js',
   './icons/icon.svg',
+  './icons/favicon-16.png',
+  './icons/favicon-32.png',
+  './icons/apple-touch-icon.png',
+  './favicon.ico',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];
