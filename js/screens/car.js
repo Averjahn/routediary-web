@@ -1,5 +1,10 @@
 import { DB } from '../db.js';
-import { AppState, getPrimaryVehicle, currentOdometerKm } from '../state.js';
+import {
+  AppState, getPrimaryVehicle, currentOdometerKm,
+  ensureServicePlan, currentAvgKmPerDay, getSevereConditions, setSevereConditions, recalcIntervals,
+  rebaseUntouchedItems,
+} from '../state.js';
+import { componentStatus, fleetHealth, STATUS } from '../maintenance.js';
 import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
@@ -34,11 +39,17 @@ export async function refresh() {
   }
 
   const odometer = await currentOdometerKm(vehicle);
-  const [refuels, expenses, maintenance] = await Promise.all([
+  const [refuels, expenses, maintenance, avgKmPerDay, severe] = await Promise.all([
     DB.getAllByIndex('refuels', 'vehicleId', vehicle.id),
     DB.getAllByIndex('expenses', 'vehicleId', vehicle.id),
-    DB.getAll('maintenanceItems'),
+    // Регламент строится под класс машины при первом заходе и дальше живёт своей жизнью.
+    ensureServicePlan(vehicle, odometer),
+    currentAvgKmPerDay(),
+    getSevereConditions(),
   ]);
+  // Контекст расчёта: пробег, «сегодня» и реальный среднесуточный пробег,
+  // из которого получается прогноз дат обслуживания.
+  const maintCtx = { odometerKm: odometer, now: Date.now(), avgKmPerDay };
 
   const measured = computeMeasuredConsumption(refuels);
   const consumptionToUse = measured.value != null ? measured.value : vehicle.consumptionL100;
@@ -56,7 +67,7 @@ export async function refresh() {
     .sort((a, b) => b.date - a.date)
     .slice(0, 20);
 
-  const health = computeHealth(maintenance, odometer);
+  const health = fleetHealth(maintenance, maintCtx);
 
   body.innerHTML = `
     <div class="card garage-card">
@@ -100,6 +111,13 @@ export async function refresh() {
 
     <div class="section-title" data-i18n="car.section_maintenance"></div>
     <div class="card" id="maint-list"></div>
+    <label class="row between" style="padding:10px 14px;gap:10px;">
+      <span>
+        <span data-i18n="maint.severe"></span>
+        <span class="muted" style="display:block;font-size:12px;" data-i18n="maint.severe_hint"></span>
+      </span>
+      <input type="checkbox" id="maint-severe"${severe ? ' checked' : ''}>
+    </label>
     <div style="text-align:center;margin:0 0 4px;"><button class="btn sm" id="maint-add">+ <span data-i18n="maint.name"></span></button></div>
 
     <div class="section-title" data-i18n="records.title"></div>
@@ -120,12 +138,18 @@ export async function refresh() {
     await DB.put('vehicles', vehicle);
     refresh();
   });
-  body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer));
+  body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer, vehicle));
+  body.querySelector('#maint-severe').addEventListener('change', async (e) => {
+    // Меняем режим эксплуатации — пересчитываем интервалы, но не историю замен.
+    await setSevereConditions(e.target.checked);
+    await recalcIntervals(vehicle, e.target.checked);
+    refresh();
+  });
   body.querySelector('#add-refuel').addEventListener('click', () => openRefuelForm(vehicle, odometer));
   body.querySelector('#add-expense').addEventListener('click', () => openExpenseForm(vehicle, odometer));
 
   renderQuickGrid(body.querySelector('#quick-grid'), templates, vehicle, odometer);
-  renderMaintenance(body.querySelector('#maint-list'), maintenance, odometer);
+  renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
   renderRecords(body.querySelector('#records-list'), records);
 }
 
@@ -276,51 +300,100 @@ function openTemplateEdit(tplId) {
 }
 
 // --- Maintenance ---
-function renderMaintenance(listEl, items, odometer) {
-  items.sort((a, b) => a.sortOrder - b.sortOrder);
-  if (items.length === 0) {
+
+const STATUS_COLOR = {
+  [STATUS.OK]: 'var(--success)',
+  [STATUS.SOON]: 'var(--warning)',
+  [STATUS.DUE]: 'var(--warning)',
+  [STATUS.OVERDUE]: 'var(--danger)',
+};
+
+/** Короткая строка «сколько осталось» — по тому измерению, что кончится раньше. */
+function remainingLabel(item, st) {
+  if (st.status === STATUS.OVERDUE) {
+    return st.limitedBy === 'time' && st.daysLeft != null
+      ? t('car.overdue_days', { days: Math.round(-st.daysLeft) })
+      : t('car.overdue', { km: Math.round(-(st.kmLeft || 0)) });
+  }
+  return st.limitedBy === 'time'
+    ? t('car.remaining_days', { days: Math.max(0, st.daysLeft) })
+    : t('car.remaining', { km: Math.round(Math.max(0, st.kmLeft || 0)) });
+}
+
+function renderMaintenance(listEl, items, ctx, vehicle) {
+  // Самое срочное — наверх: список нужен, чтобы понять, что делать сейчас,
+  // а не чтобы любоваться порядком, в котором пункты когда-то завели.
+  const rows = items
+    .map(item => ({ item, st: componentStatus(item, ctx) }))
+    .sort((a, b) => a.st.fraction - b.st.fraction);
+
+  if (rows.length === 0) {
     listEl.innerHTML = `<div class="empty-state" data-i18n="car.no_items"></div>`;
     applyI18nTree(listEl);
     return;
   }
-  listEl.innerHTML = items.map(item => {
-    const remaining = item.intervalKm - (odometer - item.lastServiceOdometerKm);
-    const pct = Math.max(0, Math.min(100, (remaining / item.intervalKm) * 100));
-    let color = 'var(--success)';
-    if (remaining <= 0) color = 'var(--danger)';
-    else if (remaining <= 1000) color = 'var(--warning)';
+
+  listEl.innerHTML = rows.map(({ item, st }) => {
+    const pct = st.fraction * 100;
+    const color = STATUS_COLOR[st.status];
     const title = t(item.title) !== item.title ? t(item.title) : item.title;
+    // «Ориентировочно» для всего, что не подтверждено официальным регламентом:
+    // выдавать медианную оценку из спорных источников за точный срок нельзя.
+    const approx = item.confidence && item.confidence !== 'high' ? `${t('maint.approx')} ` : '';
+    // Прогноз показываем, только пока ресурс ещё есть. У просроченного узла
+    // дата «примерно до …» в будущем противоречит надписи «просрочено»:
+    // по одному измерению срок вышел, а по второму формально ещё нет.
+    const due = st.dueDate && st.status !== STATUS.OVERDUE
+      ? `<span class="muted" style="font-size:12px;">${approx}${t('car.due_about', { date: Fmt.dateFromTs(st.dueDate) })}</span>`
+      : '';
+    const confirm = item.needsConfirm
+      ? `<span class="muted" style="font-size:12px;display:block;" data-i18n="maint.confirm_hint"></span>`
+      : '';
     return `
       <div style="padding:10px 0;border-bottom:1px solid var(--separator);" data-item="${item.id}">
-        <div class="row between"><b>${escapeHtml(title)}</b><span class="muted" style="font-size:12px;">${remaining >= 0 ? t('car.remaining', {km: Math.round(remaining)}) : t('car.overdue', {km: Math.round(-remaining)})}</span></div>
+        <div class="row between"><b>${escapeHtml(title)}</b><span class="muted" style="font-size:12px;">${remainingLabel(item, st)}</span></div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>
+        ${due}${confirm}
         <div class="row" style="margin-top:8px;gap:8px;">
           <button class="btn sm" data-replace="${item.id}" data-i18n="car.replaced_now"></button>
           <button class="btn sm" data-edit="${item.id}" data-i18n="common.edit"></button>
         </div>
       </div>`;
   }).join('');
+  const odometer = ctx.odometerKm;
   applyI18nTree(listEl);
   listEl.querySelectorAll('[data-replace]').forEach(btn => btn.addEventListener('click', async () => {
     const item = items.find(i => i.id === btn.dataset.replace);
     item.lastServiceOdometerKm = odometer;
+    // Дату тоже сбрасываем: у половины узлов интервал временной, и без этого
+    // тормозная жидкость осталась бы просроченной сразу после замены.
+    item.lastServiceDate = Date.now();
+    // С этого момента здесь настоящая история обслуживания — корректировка
+    // одометра больше не имеет права её двигать.
+    item.serviced = true;
     await DB.put('maintenanceItems', item);
     refresh();
   }));
   listEl.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
     const item = items.find(i => i.id === btn.dataset.edit);
-    openMaintenanceEdit(item, odometer);
+    openMaintenanceEdit(item, odometer, vehicle);
   }));
 }
 
-function openMaintenanceEdit(item, odometer) {
+function openMaintenanceEdit(item, odometer, vehicle) {
   const isNew = !item;
-  const draft = item || { id: uuid(), title: '', intervalKm: 10000, lastServiceOdometerKm: odometer, note: '', sortOrder: 99 };
+  const draft = item || {
+    id: uuid(), vehicleId: vehicle ? vehicle.id : null, title: '',
+    intervalKm: 10000, intervalMonths: 12,
+    lastServiceOdometerKm: odometer, lastServiceDate: Date.now(),
+    note: '', sortOrder: 99,
+  };
   const titleShown = draft.title && (t(draft.title) !== draft.title ? t(draft.title) : draft.title);
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="maint.name"></h2><button class="modal-close">✕</button></div>
     <label class="field"><span class="field-label" data-i18n="maint.name"></span><input id="mi-title" value="${escapeHtml(titleShown || '')}"></label>
-    <label class="field"><span class="field-label" data-i18n="maint.interval_km"></span><input id="mi-interval" type="number" value="${draft.intervalKm}"></label>
+    <label class="field"><span class="field-label" data-i18n="maint.interval_km"></span><input id="mi-interval" type="number" value="${draft.intervalKm || ''}"></label>
+    <label class="field"><span class="field-label" data-i18n="maint.interval_months"></span><input id="mi-months" type="number" value="${draft.intervalMonths || ''}"></label>
     <label class="field"><span class="field-label" data-i18n="maint.last_service_km"></span><input id="mi-last" type="number" value="${draft.lastServiceOdometerKm}"></label>
     <div class="row" style="gap:10px;">
       <button class="btn block" id="mi-save" data-i18n="common.save"></button>
@@ -331,8 +404,21 @@ function openMaintenanceEdit(item, odometer) {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
       overlay.querySelector('#mi-save').addEventListener('click', async () => {
         draft.title = overlay.querySelector('#mi-title').value.trim();
-        draft.intervalKm = parseFloat(overlay.querySelector('#mi-interval').value) || 0;
+        // Пустое поле — это «интервала по этому измерению нет», а не ноль:
+        // у аккумулятора нет пробега, у колодок нет срока годности.
+        const num = (sel) => {
+          const raw = overlay.querySelector(sel).value.trim();
+          if (raw === '') return null;
+          const v = parseFloat(raw);
+          return Number.isFinite(v) && v > 0 ? v : null;
+        };
+        draft.intervalKm = num('#mi-interval');
+        draft.intervalMonths = num('#mi-months');
         draft.lastServiceOdometerKm = parseFloat(overlay.querySelector('#mi-last').value) || 0;
+        // Пункт, заведённый руками, дальше не переписывается пересчётом интервалов
+        // и не сдвигается корректировкой одометра.
+        draft.needsConfirm = false;
+        draft.serviced = true;
         await DB.put('maintenanceItems', draft);
         closeModal(); refresh();
       });
@@ -370,9 +456,15 @@ function openOdometerAdjust(vehicle) {
     onMount: (overlay) => {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
       overlay.querySelector('#od-save').addEventListener('click', async () => {
+        const before = await currentOdometerKm(vehicle);
         vehicle.odometerBaseKm = parseFloat(overlay.querySelector('#od-value').value) || 0;
         vehicle.odometerBaseDate = Date.now();
         await DB.put('vehicles', vehicle);
+        // Регламент строится в момент выбора машины, когда пробег ещё нулевой.
+        // Когда владелец вводит реальные 96 000, нетронутые пункты едут следом,
+        // иначе весь список сразу оказался бы просрочен на весь пробег машины.
+        const after = await currentOdometerKm(vehicle);
+        await rebaseUntouchedItems(vehicle, after, before);
         closeModal(); refresh();
       });
     }
@@ -518,6 +610,9 @@ async function saveVehicleFromTrim(make, model, trim) {
   const vehicle = {
     id: uuid(), makeId: make.id, modelId: model.id, trimId: trim.id, customName: '',
     displayName: `${makeDisplayName(make, getLang())} ${model.name}`,
+    // trimName и years нужны движку регламента: по ним определяются тип КПП,
+    // привод, наддув и карбюратор/инжектор. Без них класс машины не вычислить.
+    trimName: trim.name, years: trim.years,
     engineVolumeL: trim.engineVolumeL, fuelType: trim.fuelType, powerHp: trim.powerHp,
     tankLiters: trim.tankLiters, consumptionL100: trim.consumptionCombinedL100, curbWeightKg: trim.curbWeightKg,
     odometerBaseKm: 0, odometerBaseDate: Date.now(), isPrimary: true, fuelPriceRub: 60,

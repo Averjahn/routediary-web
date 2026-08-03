@@ -67,6 +67,18 @@ export const Fmt = {
   },
 
   percent(v) { return `${Math.round(v * 100)}%`; },
+
+  /**
+   * Дата из timestamp — для прогнозов обслуживания.
+   * Год показываем только если он не текущий: «12 октября» читается легче,
+   * чем «12 октября 2026 г.», а вот «12 октября 2029 г.» без года соврал бы.
+   */
+  dateFromTs(ts) {
+    const d = new Date(ts);
+    const opts = { day: 'numeric', month: 'long' };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString(getLang() === 'ru' ? 'ru-RU' : 'en-US', opts);
+  },
 };
 
 export function todayKey() {

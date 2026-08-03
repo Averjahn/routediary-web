@@ -1,0 +1,7 @@
+{
+  "name": "avtopuls-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Автопульс — дневник поездок и обслуживания авто. Статическое PWA без сборки.",
+  "type": "module"
+}

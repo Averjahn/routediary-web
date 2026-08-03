@@ -1,6 +1,8 @@
 // Тонкая обёртка над IndexedDB. Схема повторяет ios/Sources/Models/Entities.swift.
 const DB_NAME = 'routediary';
-const DB_VERSION = 1;
+// v2: у maintenanceItems появился vehicleId — регламент стал персональным
+// для каждой машины, а не общим списком на всё приложение.
+const DB_VERSION = 2;
 
 const STORES = {
   trackPoints: { keyPath: 'id', indexes: [['tripId', 'tripId'], ['timestamp', 'timestamp'], ['dayKey', 'dayKey']] },
@@ -9,7 +11,7 @@ const STORES = {
   refuels: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
   expenses: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
   expenseTemplates: { keyPath: 'id', indexes: [] },
-  maintenanceItems: { keyPath: 'id', indexes: [] },
+  maintenanceItems: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId']] },
   plannedActivities: { keyPath: 'id', indexes: [['dayKey', 'dayKey']] },
   settings: { keyPath: 'key', indexes: [] },
 };
@@ -20,13 +22,41 @@ function openDb() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result;
+      const tx = req.transaction;
+
       for (const [name, cfg] of Object.entries(STORES)) {
+        let store;
         if (!db.objectStoreNames.contains(name)) {
-          const store = db.createObjectStore(name, { keyPath: cfg.keyPath });
-          for (const [idxName, idxKey] of cfg.indexes) store.createIndex(idxName, idxKey, { unique: false });
+          store = db.createObjectStore(name, { keyPath: cfg.keyPath });
+        } else {
+          // Стор уже есть — берём его из транзакции апгрейда, чтобы дописать
+          // недостающие индексы существующей базе.
+          store = tx.objectStore(name);
         }
+        for (const [idxName, idxKey] of cfg.indexes) {
+          if (!store.indexNames.contains(idxName)) {
+            store.createIndex(idxName, idxKey, { unique: false });
+          }
+        }
+      }
+
+      // Записи регламента, созданные до v2, не привязаны ни к какой машине.
+      // Помечаем их, чтобы при первом запуске отдать текущему автомобилю,
+      // а не потерять историю замен, которую человек уже вёл.
+      if (event.oldVersion > 0 && event.oldVersion < 2) {
+        const store = tx.objectStore('maintenanceItems');
+        store.openCursor().onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (!cursor) return;
+          const item = cursor.value;
+          if (item.vehicleId === undefined) {
+            item.vehicleId = null;   // «ничей» — подхватится в migrateLegacyItems()
+            cursor.update(item);
+          }
+          cursor.continue();
+        };
       }
     };
     req.onsuccess = () => resolve(req.result);
