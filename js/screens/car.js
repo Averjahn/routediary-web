@@ -9,7 +9,7 @@ import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
 import { VEHICLE_MAKES, searchMakes, searchModels, getMake, makeDisplayName } from '../vehicleCatalog.js';
-import { bodyTypeFor, carSilhouette, CAR_COLORS } from '../carArt.js';
+import { bodyTypeFor } from '../carArt.js';
 import { getLang } from '../i18n.js';
 
 let containerRef = null;
@@ -71,19 +71,10 @@ export async function refresh() {
 
   body.innerHTML = `
     <div class="card garage-card">
-      <div class="garage-art">${carSilhouette(
-        vehicle.bodyType || bodyTypeFor(vehicle.modelId, vehicle.displayName),
-        (CAR_COLORS.find(c => c.id === vehicle.colorId) || CAR_COLORS[8]).hex,
-        { width: 250 }
-      )}</div>
       <div class="garage-name">${escapeHtml(vehicle.displayName || 'Авто')}</div>
       ${healthBlock(health)}
       <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${t('unit.km')}</span></div>
       <div class="muted" data-i18n="car.odometer_caption"></div>
-      <div class="color-row" id="car-colors">
-        ${CAR_COLORS.map(c => `<button class="color-dot${c.id === (vehicle.colorId || 'blue') ? ' active' : ''}"
-           data-color="${c.id}" style="background:${c.hex}" aria-label="${c.id}"></button>`).join('')}
-      </div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:10px;">
         <button class="btn sm" id="car-adjust" data-i18n="car.adjust_odometer"></button>
         <button class="btn sm" id="car-change" data-i18n="car.change_vehicle"></button>
@@ -131,13 +122,6 @@ export async function refresh() {
 
   body.querySelector('#car-adjust').addEventListener('click', () => openOdometerAdjust(vehicle));
   body.querySelector('#car-change').addEventListener('click', openVehiclePicker);
-  body.querySelector('#car-colors').addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-color]');
-    if (!btn) return;
-    vehicle.colorId = btn.dataset.color;
-    await DB.put('vehicles', vehicle);
-    refresh();
-  });
   body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer, vehicle));
   body.querySelector('#maint-severe').addEventListener('change', async (e) => {
     // Меняем режим эксплуатации — пересчитываем интервалы, но не историю замен.
@@ -563,6 +547,14 @@ function openVehiclePicker() {
 
       function renderTrims(make, modelId) {
         const model = make.models.find(m => m.id === modelId);
+        // Модели из внешнего справочника идут без комплектаций: марок и моделей
+        // там 400 и 4900, а характеристик двигателя нет. Показывать пустой
+        // список — тупик, поэтому сразу открываем ручной ввод с уже
+        // подставленными маркой и моделью: человек допишет только мотор.
+        if (model.trims.length === 0) {
+          openCustomVehicleForm({ make, model });
+          return;
+        }
         listEl.innerHTML = `<div class="list-item" data-back="1"><div class="grow">← ${escapeHtml(model.name)}</div></div>` +
           model.trims.map(tr => `<div class="list-item" data-trim="${tr.id}"><div class="grow"><div>${escapeHtml(tr.name)}</div><div class="muted">${tr.powerHp} л.с. · бак ${tr.tankLiters} · ${tr.consumptionCombinedL100} /100 · ${tr.years}</div></div></div>`).join('');
         listEl.querySelector('[data-back]').addEventListener('click', () => renderModels(make.id));
@@ -624,11 +616,35 @@ async function saveVehicleFromTrim(make, model, trim) {
   refresh();
 }
 
-function openCustomVehicleForm() {
+const FUEL_OPTIONS = ['petrol', 'diesel', 'hybrid', 'electric', 'gas'];
+const TX_OPTIONS = ['mt', 'at', 'cvt', 'amt', 'dsg'];
+
+/**
+ * Ручной ввод автомобиля.
+ *
+ * preset — марка и модель из справочника, если человек выбрал модель,
+ * у которой нет готовых комплектаций. Тогда остаётся дописать только мотор,
+ * а марка попадает в vehicle.makeId, и движок регламента понимает,
+ * что перед ним, например, отечественная машина.
+ *
+ * Топливо и коробку спрашиваем обязательно: от них напрямую зависит состав
+ * работ. У электромобиля не должно быть свечей, у вариатора интервал масла
+ * свой. Раньше здесь молча подставлялся бензин.
+ */
+function openCustomVehicleForm(preset = null) {
+  const presetName = preset
+    ? `${makeDisplayName(preset.make, getLang())} ${preset.model.name}`
+    : '';
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="vehicle.other"></h2><button class="modal-close">✕</button></div>
-    <div class="muted" style="margin-bottom:12px;" data-i18n="vehicle.other_footer"></div>
-    <label class="field"><span class="field-label" data-i18n="vehicle.custom_name"></span><input id="cv-name" placeholder="Toyota Camry"></label>
+    <div class="muted" style="margin-bottom:12px;" data-i18n="${preset ? 'vehicle.preset_footer' : 'vehicle.other_footer'}"></div>
+    <label class="field"><span class="field-label" data-i18n="vehicle.custom_name"></span><input id="cv-name" placeholder="Toyota Camry" value="${escapeHtml(presetName)}"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.fuel_type"></span>
+      <select id="cv-fuel">${FUEL_OPTIONS.map(f => `<option value="${f}">${t('fuel.' + f)}</option>`).join('')}</select>
+    </label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.transmission"></span>
+      <select id="cv-tx"><option value="">${t('vehicle.tx_unknown')}</option>${TX_OPTIONS.map(x => `<option value="${x}">${t('vehicle.tx.' + x)}</option>`).join('')}</select>
+    </label>
     <label class="field"><span class="field-label" data-i18n="vehicle.engine"></span><input id="cv-engine" type="number" step="0.1" value="1.6"></label>
     <label class="field"><span class="field-label" data-i18n="vehicle.power"></span><input id="cv-power" type="number" value="110"></label>
     <label class="field"><span class="field-label" data-i18n="vehicle.tank"></span><input id="cv-tank" type="number" value="50"></label>
@@ -639,19 +655,33 @@ function openCustomVehicleForm() {
     onMount: (overlay) => {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
       overlay.querySelector('#cv-save').addEventListener('click', async () => {
+        const name = overlay.querySelector('#cv-name').value.trim() || presetName || 'Мой автомобиль';
+        const tx = overlay.querySelector('#cv-tx').value;
         const vehicle = {
-          id: uuid(), makeId: '', modelId: '', trimId: null,
-          customName: overlay.querySelector('#cv-name').value.trim() || 'Мой автомобиль',
-          displayName: overlay.querySelector('#cv-name').value.trim() || 'Мой автомобиль',
+          id: uuid(),
+          makeId: preset ? preset.make.id : '',
+          modelId: preset ? preset.model.id : '',
+          trimId: null,
+          // Движок регламента читает тип коробки из названия комплектации —
+          // подставляем выбранное, чтобы вариатор не считался автоматом.
+          trimName: tx ? tx.toUpperCase() : '',
+          years: '',
+          customName: name, displayName: name,
           engineVolumeL: parseFloat(overlay.querySelector('#cv-engine').value) || 0,
-          fuelType: 'petrol', powerHp: parseInt(overlay.querySelector('#cv-power').value) || 0,
+          fuelType: overlay.querySelector('#cv-fuel').value || 'petrol',
+          powerHp: parseInt(overlay.querySelector('#cv-power').value) || 0,
           tankLiters: parseFloat(overlay.querySelector('#cv-tank').value) || 50,
           consumptionL100: parseFloat(overlay.querySelector('#cv-cons').value) || 8,
           curbWeightKg: parseFloat(overlay.querySelector('#cv-weight').value) || 1300,
           odometerBaseKm: 0, odometerBaseDate: Date.now(), isPrimary: true, fuelPriceRub: 60,
         };
+        vehicle.rangeKm = vehicle.consumptionL100 > 0
+          ? vehicle.tankLiters / vehicle.consumptionL100 * 100 : 0;
+        vehicle.bodyType = bodyTypeFor(vehicle.modelId, vehicle.displayName);
+        vehicle.colorId = 'blue';
         await DB.put('vehicles', vehicle);
-        closeModal(); closeModal();
+        closeModal();
+        if (preset) closeModal();
         refresh();
       });
     }

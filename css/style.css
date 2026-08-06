@@ -200,16 +200,8 @@ canvas.chart { width: 100%; display: block; }
 
 /* Карточка «гаража»: машина, здоровье, выбор цвета */
 .garage-card { text-align: center; }
-.garage-art { display: flex; justify-content: center; margin: 2px 0 4px; }
-.garage-art svg { max-width: 100%; height: auto; }
 .garage-name { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
 .health-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
-.color-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
-.color-dot {
-  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
-  border: 2px solid var(--separator); padding: 0;
-}
-.color-dot.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 
 ::-webkit-scrollbar { width: 0; height: 0; }
 
@@ -307,4 +299,39 @@ canvas.chart { width: 100%; display: block; }
     filter: brightness(0.96);
   }
   .list-item:hover, .quick-tile:hover { background: var(--surface-alt); border-radius: 10px; }
+}
+
+/* ---------------------------------------------------------------------------
+   Низкие экраны: телефон в альбомной ориентации (~320–430 px высоты) и
+   маленькие устройства вроде iPhone SE. Здесь дефицитна не ширина, а ВЫСОТА:
+   таббар в 60 px съедает шестую часть экрана, а в модалке помещается четыре
+   строки списка из шестидесяти. Поджимаем всё вертикальное, ширину не трогаем.
+   Идёт последним блоком: правила той же специфичности должны победить базовые.
+--------------------------------------------------------------------------- */
+@media (max-height: 480px) {
+  :root { --tabbar-h: 44px; }
+
+  .tab-btn { flex-direction: row; gap: 6px; padding: 0 2px; }
+  .tab-icon { width: 18px; height: 18px; }
+  .tab-label { font-size: 10px; }
+
+  /* Шторка занимает почти весь экран — иначе список нечитаем */
+  .modal-sheet { max-height: 94vh; }
+  .modal-header { padding-top: 10px; padding-bottom: 10px; }
+  .modal-header h2 { font-size: 16px; }
+
+  /* Вертикальные отступы карточек и секций вдвое меньше */
+  .card { padding: 10px 12px; margin-bottom: 8px; }
+  .section-title { margin: 10px 16px 6px; }
+  .big-number { font-size: 30px; }
+  .list-item { padding-top: 9px; padding-bottom: 9px; }
+  .pad { padding-top: 8px; padding-bottom: 8px; }
+}
+
+/* Совсем низкие экраны — прячем подписи вкладок, оставляем иконки */
+@media (max-height: 380px) {
+  :root { --tabbar-h: 38px; }
+  .tab-label { display: none; }
+  .tab-icon { width: 20px; height: 20px; }
+  .modal-sheet { max-height: 96vh; }
 }

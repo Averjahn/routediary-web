@@ -8,7 +8,7 @@ import { THEMES } from '../theme.js';
 import { calcFuel, calcCalories } from '../geo.js';
 import { getPrimaryVehicle } from '../state.js';
 import { isStandalone } from '../installBanner.js';
-import { MAP_LAYERS, KEY_PROVIDERS, getMapProvider, setMapProvider, isLayerUnlocked, buildTileUrl, getApiKey, setApiKey } from '../mapLayers.js';
+import { MAP_LAYERS, getMapProvider, setMapProvider, buildTileUrl } from '../mapLayers.js';
 
 let leafletMap = null;
 let currentTileLayer = null;
@@ -60,7 +60,7 @@ export function render(container) {
 }
 
 function createTileLayer(providerId) {
-  const p = MAP_LAYERS[providerId] || MAP_LAYERS.osm;
+  const p = MAP_LAYERS[providerId] || MAP_LAYERS.plain;
   return L.tileLayer(buildTileUrl(p), { maxZoom: p.maxZoom, attribution: p.attribution, subdomains: p.subdomains || 'abc' });
 }
 
@@ -74,54 +74,25 @@ function switchTileLayer(providerId) {
 
 function renderLayerList() {
   const current = getMapProvider();
-  return Object.entries(MAP_LAYERS).map(([id, p]) => {
-    const unlocked = isLayerUnlocked(p);
-    return `
+  return Object.entries(MAP_LAYERS).map(([id, p]) => `
       <button type="button" class="list-item layer-option" data-id="${id}">
         <span class="grow">${t(p.nameKey)}</span>
-        ${!unlocked ? `<span class="muted">${icon('lock',{size:15})}</span>` : id === current ? '<span>✓</span>' : ''}
-      </button>`;
-  }).join('');
-}
-
-function renderKeyForm(providerId) {
-  const kp = KEY_PROVIDERS[providerId];
-  return `
-    <div class="card" id="layer-key-form" style="margin:12px 0 0;">
-      <div class="muted" style="margin-bottom:8px;">${t('map.layer_key_hint')}</div>
-      <a href="${kp.signupUrl}" target="_blank" rel="noopener" class="muted" style="display:block;margin-bottom:10px;">${kp.signupUrl}</a>
-      <input id="layer-key-input" type="text" placeholder="${t('map.layer_key_placeholder')}" value="${getApiKey(providerId)}">
-      <button type="button" class="btn primary block" id="layer-key-save" style="margin-top:10px;">${t('map.layer_key_save')}</button>
-    </div>`;
+        ${id === current ? '<span>✓</span>' : ''}
+      </button>`).join('');
 }
 
 function openLayerPicker() {
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="map.layers_title"></h2><button class="modal-close">✕</button></div>
     <div id="layer-list">${renderLayerList()}</div>
-    <div id="layer-key-slot"></div>
   `, {
     onMount: (modalOverlay) => {
       modalOverlay.querySelector('.modal-close').addEventListener('click', closeModal);
       modalOverlay.querySelector('#layer-list').addEventListener('click', (e) => {
         const btn = e.target.closest('.layer-option');
         if (!btn) return;
-        const id = btn.dataset.id;
-        const layer = MAP_LAYERS[id];
-        const slot = modalOverlay.querySelector('#layer-key-slot');
-        if (isLayerUnlocked(layer)) {
-          switchTileLayer(id);
-          closeModal();
-          return;
-        }
-        slot.innerHTML = renderKeyForm(layer.requiresKey);
-        slot.querySelector('#layer-key-save').addEventListener('click', () => {
-          const value = slot.querySelector('#layer-key-input').value;
-          if (!value.trim()) return;
-          setApiKey(layer.requiresKey, value);
-          switchTileLayer(id);
-          closeModal();
-        });
+        switchTileLayer(btn.dataset.id);
+        closeModal();
       });
     },
   });
