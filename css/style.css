@@ -248,38 +248,103 @@ canvas.chart { width: 100%; display: block; }
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    gap: 3px;
-    padding: 22px 10px;
+    gap: 2px;
+    padding: 18px 12px;
     border-top: none;
     border-right: 1px solid var(--separator);
     flex-shrink: 0;
   }
+
+  /* Заголовок выровнен с иконками пунктов по левому краю: одинаковый
+     горизонтальный отступ у обоих, иначе шапка «висит» относительно меню. */
   #tabbar::before {
     content: 'Автопульс';
     display: block;
     font-size: 17px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    padding: 4px 12px 18px;
+    padding: 6px 14px 16px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--separator);
   }
+
   .tab-btn {
+    /* Ключевое: на мобильном у кнопок flex: 1, чтобы поделить ширину поровну.
+       В вертикальной колонке это же правило растягивает каждый пункт на всю
+       высоту меню — пункты разъезжались, а подсветка активного превращалась
+       в блок высотой в треть экрана. */
+    flex: 0 0 auto;
     flex-direction: row;
     justify-content: flex-start;
+    align-items: center;
     gap: 12px;
-    padding: 11px 14px;
-    border-radius: 12px;
+    /* Одинаковая высота у всех пунктов независимо от длины подписи. */
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 10px;
     font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+  }
+  .tab-btn .tab-icon {
+    /* Фиксированная ширина иконки — иначе подписи начинаются на разном
+       расстоянии от края и колонка текста «пляшет». */
+    width: 20px;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tab-btn .tab-label { line-height: 1.2; }
+  .tab-btn.active {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
     font-weight: 600;
   }
-  .tab-btn.active { background: var(--surface-alt); }
+  .tab-btn.active .tab-icon { opacity: 1; }
 
   #screens { flex: 1; padding-bottom: 0; overflow: hidden; min-width: 0; }
   .screen { padding-bottom: 0; }
 
   /* Центрируем текстовый контент, кроме карты — она занимает всю ширину. */
-  .screen:not(#screen-map) { max-width: 760px; margin: 0 auto; }
+  .screen:not(#screen-map) { max-width: 980px; margin: 0 auto; padding: 0 12px; }
 
   h1.page-title { margin-top: 24px; }
+
+  /* Экран «Авто» в одну колонку оставлял половину ширины пустой,
+     а список приходилось долго прокручивать. Раскладываем карточки
+     в две колонки: заголовок раздела прилипает к своей карточке,
+     поэтому разрывов «заголовок в одной колонке, карточка в другой» нет. */
+  #car-body {
+    column-count: 2;
+    column-gap: 18px;
+  }
+  #car-body > * {
+    break-inside: avoid;
+    /* Без этого хром иногда разрывает карточку между колонками. */
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  #car-body .section-title {
+    margin-left: 4px;
+    margin-right: 4px;
+    /* Заголовок обязан остаться со своей карточкой: без этого «РАСХОДНИКИ»
+       оказывался внизу левой колонки, а список — вверху правой. */
+    break-after: avoid;
+    -webkit-column-break-after: avoid;
+  }
+  #car-body .card,
+  #car-body .pad,
+  #car-body > div[style*="text-align:center"],
+  #car-body > label { margin-left: 4px; margin-right: 4px; }
+  /* Гараж — над колонками, во всю ширину: это переключатель контекста
+     для всего экрана, а не одна из карточек. */
+  .garage-bar { column-span: all; padding-left: 4px; }
+
+  /* Карточка машины на широком экране: имя и пробег рядом, а не столбиком —
+     иначе половина карточки пустая. */
+  .garage-card { text-align: left; }
+  .garage-card .big-number { font-size: 34px; }
+
+  .quick-grid { grid-template-columns: repeat(2, 1fr); }
 
   /* Карта: боковая панель вместо нижней шторки */
   #map-view { padding-bottom: 0; }
