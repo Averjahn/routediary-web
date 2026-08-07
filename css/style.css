@@ -553,3 +553,29 @@ canvas.chart { width: 100%; display: block; }
   gap: 10px; margin-top: 10px;
 }
 .pay-test-current { font-size: 12px; color: var(--text-secondary); }
+
+/* ---------- Экран настроек ---------- */
+
+/* Ряд настройки: подпись слева, управление справа. Верх по baseline,
+   чтобы многострочная подсказка не сдвигала переключатель вниз. */
+.settings-row { align-items: flex-start; gap: 14px; }
+.settings-row > span:first-child { flex: 1; min-width: 0; }
+.settings-row select, .settings-row input[type="number"] { flex-shrink: 0; }
+
+.theme-row { display: flex; gap: 10px; padding: 4px 0 2px; }
+.theme-swatch.locked { opacity: 0.75; }
+
+/* Карточка уровня доступа — первое, что видно на экране. */
+.sub-card { border: 1.5px solid var(--separator); }
+.sub-card.paid { border-color: var(--accent); }
+.sub-tier { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+
+.lock-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent);
+}

@@ -6,14 +6,14 @@ import { initInstallBanner } from './installBanner.js';
 import * as MapScreen from './screens/map.js';
 import * as TripsScreen from './screens/trips.js';
 import * as CarScreen from './screens/car.js';
-import * as PlannerScreen from './screens/planner.js';
+import * as SettingsScreen from './screens/settings.js';
 import * as StatsScreen from './screens/stats.js';
 
 const SCREENS = {
   map: { module: MapScreen, el: null, rendered: false },
   trips: { module: TripsScreen, el: null, rendered: false },
   car: { module: CarScreen, el: null, rendered: false },
-  planner: { module: PlannerScreen, el: null, rendered: false },
+  settings: { module: SettingsScreen, el: null, rendered: false },
   stats: { module: StatsScreen, el: null, rendered: false },
 };
 

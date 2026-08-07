@@ -33,6 +33,7 @@ export const FEATURES = [
   { id: 'full_history', tier: TIER.PLUS, titleKey: 'pay.f.full_history', descKey: 'pay.f.full_history_d' },
   { id: 'export', tier: TIER.PLUS, titleKey: 'pay.f.export', descKey: 'pay.f.export_d' },
   { id: 'custom_schedule', tier: TIER.PLUS, titleKey: 'pay.f.custom_schedule', descKey: 'pay.f.custom_schedule_d' },
+  { id: 'themes', tier: TIER.PLUS, titleKey: 'pay.f.themes', descKey: 'pay.f.themes_d' },
   { id: 'sale_report', tier: TIER.PLUS, titleKey: 'pay.f.sale_report', descKey: 'pay.f.sale_report_d' },
   { id: 'sync', tier: TIER.PRO, titleKey: 'pay.f.sync', descKey: 'pay.f.sync_d' },
   { id: 'backup', tier: TIER.PRO, titleKey: 'pay.f.backup', descKey: 'pay.f.backup_d' },

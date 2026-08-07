@@ -1,11 +1,9 @@
 import { DB } from '../db.js';
-import { AppState, setThemeId, setLanguage, setCurrency, setUnits, setWeight, getPrimaryVehicle } from '../state.js';
+import { AppState, getPrimaryVehicle } from '../state.js';
 import { addDays, dayKeyOf, Fmt, todayKey } from '../format.js';
 import { t, getLang } from '../i18n.js';
 import { applyI18nTree, icon, MODE_ICON, EXPENSE_ICON } from '../ui.js';
 import { calcCalories, calcFuel } from '../geo.js';
-import { THEMES, THEME_ORDER } from '../theme.js';
-import { CURRENCY_SYMBOLS } from '../format.js';
 
 let containerRef = null;
 let period = 'week';
@@ -21,9 +19,6 @@ export function render(container) {
       </div>
     </div>
     <div id="stats-body"></div>
-
-    <div class="section-title" data-i18n="settings.title"></div>
-    <div class="card" id="settings-body"></div>
   `;
   applyI18nTree(container);
   container.querySelectorAll('[data-period]').forEach(btn => btn.addEventListener('click', () => {
@@ -31,7 +26,6 @@ export function render(container) {
     container.querySelectorAll('[data-period]').forEach(b => b.classList.toggle('active', b === btn));
     refresh();
   }));
-  renderSettings(container.querySelector('#settings-body'));
   refresh();
 }
 
@@ -233,53 +227,3 @@ function drawCumulative(canvas, byDay) {
   ctx.fillText(`${Math.round(cum)} ${t('unit.km')}`, width - 4, 12);
 }
 
-function renderSettings(el) {
-  el.innerHTML = `
-    <div class="muted" style="font-weight:600;padding-top:10px;margin-bottom:8px;" data-i18n="settings.theme"></div>
-    <div class="row" style="gap:10px;padding-bottom:14px;border-bottom:1px solid var(--separator);">
-      ${THEME_ORDER.map(id => `<button class="theme-swatch ${AppState.theme===id?'active':''}" data-theme="${id}" style="background:${THEMES[id].background};color:${THEMES[id].accent};border-color:${AppState.theme===id?THEMES[id].accent:'transparent'}">●</button>`).join('')}
-    </div>
-    <div class="settings-row"><span data-i18n="settings.language"></span>
-      <div class="chip-row">
-        <button class="chip ${AppState.lang==='ru'?'active':''}" data-lang="ru">RU</button>
-        <button class="chip ${AppState.lang==='en'?'active':''}" data-lang="en">EN</button>
-      </div>
-    </div>
-    <div class="settings-row"><span data-i18n="settings.currency"></span>
-      <select id="set-currency">
-        ${Object.keys(CURRENCY_SYMBOLS).map(c => `<option value="${c}" ${AppState.currency===c?'selected':''}>${c} (${CURRENCY_SYMBOLS[c]})</option>`).join('')}
-      </select>
-    </div>
-    <div class="settings-row"><span data-i18n="settings.units"></span>
-      <div class="chip-row">
-        <button class="chip ${AppState.units==='metric'?'active':''}" data-units="metric" data-i18n="settings.units.metric"></button>
-        <button class="chip ${AppState.units==='imperial'?'active':''}" data-units="imperial" data-i18n="settings.units.imperial"></button>
-      </div>
-    </div>
-    <div class="settings-row"><span data-i18n="settings.weight"></span><input id="set-weight" type="number" style="width:80px;" value="${AppState.weightKg}"></div>
-  `;
-  applyI18nTree(el);
-  el.querySelectorAll('[data-theme]').forEach(btn => btn.addEventListener('click', async () => {
-    await setThemeId(btn.dataset.theme);
-    renderSettings(el);
-    refresh();
-    document.dispatchEvent(new CustomEvent('theme-changed'));
-  }));
-  el.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', async () => {
-    await setLanguage(btn.dataset.lang);
-    document.dispatchEvent(new CustomEvent('lang-changed'));
-  }));
-  el.querySelector('#set-currency').addEventListener('change', async (e) => {
-    await setCurrency(e.target.value);
-    refresh();
-  });
-  el.querySelectorAll('[data-units]').forEach(btn => btn.addEventListener('click', async () => {
-    await setUnits(btn.dataset.units);
-    renderSettings(el);
-    refresh();
-  }));
-  el.querySelector('#set-weight').addEventListener('change', async (e) => {
-    await setWeight(parseFloat(e.target.value) || 75);
-    refresh();
-  });
-}
