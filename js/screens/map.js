@@ -10,6 +10,11 @@ import { getPrimaryVehicle } from '../state.js';
 import { isStandalone } from '../installBanner.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider, buildTileUrl } from '../mapLayers.js';
 
+// Тот же префикс, что и у остальных ключей localStorage в проекте
+// (installBanner.js, mapLayers.js) — переименование в «Автопульс» это
+// хранилище намеренно не тронуло, сайт уже живой.
+const BG_WARNING_DISMISS_KEY = 'routediary.bgWarningDismissed';
+
 let leafletMap = null;
 let currentTileLayer = null;
 let liveLine = null;
@@ -29,7 +34,10 @@ export function render(container) {
         </div>
       </div>
       <div class="map-bottom-sheet">
-        <div class="gps-hint" id="map-bg-warning"></div>
+        <div class="gps-hint" id="map-bg-warning">
+          <span id="map-bg-warning-text"></span>
+          <button class="gps-hint-close" id="map-bg-warning-close" aria-label="${t('common.close')}">✕</button>
+        </div>
         <div class="day-summary-row" id="map-summary"></div>
         <button class="record-btn" id="map-record-btn"></button>
         <div style="text-align:center;margin-top:10px;">
@@ -39,7 +47,31 @@ export function render(container) {
     </div>
   `;
   applyI18nTree(container);
-  container.querySelector('#map-bg-warning').textContent = t(isStandalone() ? 'map.bg_warning_standalone' : 'map.bg_warning');
+  container.querySelector('#map-bg-warning-text').textContent = t(isStandalone() ? 'map.bg_warning_standalone' : 'map.bg_warning');
+
+  // Плашка предупреждает о фоновых ограничениях, но на мобильных экранах
+  // перекрывает почти весь нижний лист — кнопку записи и сводку за день.
+  // Закрывается насовсем (не до следующей записи): раз человек прочитал
+  // предупреждение, второй раз объяснять не нужно. Клик по всей плашке
+  // и отдельный крестик делают одно и то же — так удобнее попасть пальцем.
+  const bgWarning = container.querySelector('#map-bg-warning');
+  if (localStorage.getItem(BG_WARNING_DISMISS_KEY)) {
+    bgWarning.remove();
+  } else {
+    const dismiss = () => bgWarning.remove();
+    bgWarning.addEventListener('click', () => {
+      localStorage.setItem(BG_WARNING_DISMISS_KEY, '1');
+      dismiss();
+    });
+    container.querySelector('#map-bg-warning-close').addEventListener('click', (e) => {
+      // Оба обработчика делают одно и то же (см. комментарий выше), но клик
+      // по крестику не должен ещё и всплыть до общего — тогда localStorage
+      // писался бы дважды без вреда, но лучше явно.
+      e.stopPropagation();
+      localStorage.setItem(BG_WARNING_DISMISS_KEY, '1');
+      dismiss();
+    });
+  }
 
   container.querySelector('#map-day-prev').addEventListener('click', () => changeDay(-1));
   container.querySelector('#map-day-next').addEventListener('click', () => changeDay(1));

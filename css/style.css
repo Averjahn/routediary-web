@@ -133,7 +133,37 @@ label.field .field-label { display: block; font-size: 13px; color: var(--text-se
   background: var(--surface); border-top-left-radius: 20px; border-top-right-radius: 20px;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.15); padding: 12px 16px calc(14px + var(--tabbar-h));
 }
-.gps-hint { font-size: 12px; background: rgba(255,193,7,0.16); color: var(--warning); border-radius: 10px; padding: 8px 10px; margin: 0 16px 8px; }
+.gps-hint {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  background: rgba(255,193,7,0.16);
+  color: var(--warning);
+  border-radius: 10px;
+  padding: 8px 30px 8px 10px;
+  margin: 0 16px 8px;
+  cursor: pointer;
+}
+.gps-hint-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  /* Собственная зона нажатия чуть больше видимого крестика — палец, не курсор. */
+  padding: 0;
+}
 .record-btn {
   width: 100%; padding: 14px; border-radius: 14px; border: none; font-weight: 700; font-size: 16px;
   background: var(--accent); color: var(--on-accent); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
