@@ -3,7 +3,9 @@ import {
   AppState, getPrimaryVehicle, currentOdometerKm,
   ensureServicePlan, currentAvgKmPerDay, getSevereConditions, setSevereConditions, recalcIntervals,
   rebaseUntouchedItems,
+  getVehicles, setPrimaryVehicle, removeVehicle, adoptOrphanTrips,
 } from '../state.js';
+import { openPaywall } from '../paywall.js';
 import { componentStatus, fleetHealth, STATUS } from '../maintenance.js';
 import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
@@ -38,13 +40,18 @@ export async function refresh() {
     return;
   }
 
+  // Поездки, оставшиеся без машины (обновление с версии до гаража либо
+  // удаление автомобиля), достаются основной — иначе её пробег обнулится.
+  if (vehicle.isPrimary) await adoptOrphanTrips(vehicle.id);
+
   const odometer = await currentOdometerKm(vehicle);
-  const [refuels, expenses, maintenance, avgKmPerDay, severe] = await Promise.all([
+  const [vehicles, refuels, expenses, maintenance, avgKmPerDay, severe] = await Promise.all([
+    getVehicles(),
     DB.getAllByIndex('refuels', 'vehicleId', vehicle.id),
     DB.getAllByIndex('expenses', 'vehicleId', vehicle.id),
     // Регламент строится под класс машины при первом заходе и дальше живёт своей жизнью.
     ensureServicePlan(vehicle, odometer),
-    currentAvgKmPerDay(),
+    currentAvgKmPerDay(vehicle),
     getSevereConditions(),
   ]);
   // Контекст расчёта: пробег, «сегодня» и реальный среднесуточный пробег,
@@ -70,6 +77,7 @@ export async function refresh() {
   const health = fleetHealth(maintenance, maintCtx);
 
   body.innerHTML = `
+    ${garageSwitcher(vehicles, vehicle)}
     <div class="card garage-card">
       <div class="garage-name">${escapeHtml(vehicle.displayName || 'Авто')}</div>
       ${healthBlock(health)}
@@ -120,6 +128,27 @@ export async function refresh() {
   `;
   applyI18nTree(body);
 
+  body.querySelectorAll('[data-switch]').forEach(btn => btn.addEventListener('click', async () => {
+    if (btn.dataset.switch === vehicle.id) return;
+    await setPrimaryVehicle(btn.dataset.switch);
+    refresh();
+  }));
+  body.querySelector('#garage-add').addEventListener('click', async () => {
+    // Первая машина бесплатна всегда — упереться в оплату на пустом гараже
+    // означало бы запереть то, ради чего приложение и скачали.
+    if (vehicles.length === 0) {
+      openVehiclePicker({ add: true });
+      return;
+    }
+    // Вторая и последующие — платная возможность. Показываем витрину,
+    // а пройти дальше даём либо после «покупки», либо кнопкой тестового
+    // режима: иначе функцию нечем было бы проверять.
+    openPaywall({
+      reason: 'pay.reason_multi_vehicle',
+      onDone: () => openVehiclePicker({ add: true }),
+    });
+  });
+
   body.querySelector('#car-adjust').addEventListener('click', () => openOdometerAdjust(vehicle));
   body.querySelector('#car-change').addEventListener('click', openVehiclePicker);
   body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer, vehicle));
@@ -135,6 +164,33 @@ export async function refresh() {
   renderQuickGrid(body.querySelector('#quick-grid'), templates, vehicle, odometer);
   renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
   renderRecords(body.querySelector('#records-list'), records);
+}
+
+/**
+ * Переключатель машин.
+ *
+ * При одной машине не показывается вовсе — не занимать экран элементом
+ * управления, которым нечего переключать. Появляется со второй машины,
+ * а кнопка «добавить» есть всегда: именно через неё человек узнаёт,
+ * что гараж вообще бывает не один.
+ */
+function garageSwitcher(vehicles, current) {
+  const chips = vehicles.map(v => `
+    <button class="garage-chip${v.id === current.id ? ' active' : ''}" data-switch="${v.id}">
+      ${escapeHtml(shortName(v))}
+    </button>`).join('');
+
+  return `
+    <div class="garage-bar">
+      ${vehicles.length > 1 ? chips : ''}
+      <button class="garage-chip add" id="garage-add" title="${t('garage.add')}">+</button>
+    </div>`;
+}
+
+/** Короткое имя для чипа: «Lada Vesta SW Cross» в кнопку не влезет. */
+function shortName(vehicle) {
+  const name = (vehicle.displayName || 'Авто').trim();
+  return name.length > 18 ? name.slice(0, 17) + '…' : name;
 }
 
 function escapeHtml(s) {
@@ -517,7 +573,7 @@ function openExpenseForm(vehicle, odometer) {
 }
 
 // --- Vehicle picker ---
-function openVehiclePicker() {
+function openVehiclePicker({ add = false } = {}) {
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="vehicle.title"></h2><button class="modal-close">✕</button></div>
     <div class="search-box"><input id="veh-search" data-i18n-ph="common.search"></div>
@@ -534,7 +590,7 @@ function openVehiclePicker() {
           + `<div class="list-item" data-other="1"><div class="grow" data-i18n="vehicle.other"></div></div>`;
         applyI18nTree(listEl);
         listEl.querySelectorAll('[data-make]').forEach(node => node.addEventListener('click', () => renderModels(node.dataset.make)));
-        listEl.querySelector('[data-other]').addEventListener('click', () => openCustomVehicleForm());
+        listEl.querySelector('[data-other]').addEventListener('click', () => openCustomVehicleForm({ add }));
       }
 
       function renderModels(makeId) {
@@ -552,7 +608,7 @@ function openVehiclePicker() {
         // список — тупик, поэтому сразу открываем ручной ввод с уже
         // подставленными маркой и моделью: человек допишет только мотор.
         if (model.trims.length === 0) {
-          openCustomVehicleForm({ make, model });
+          openCustomVehicleForm({ make, model, add });
           return;
         }
         listEl.innerHTML = `<div class="list-item" data-back="1"><div class="grow">← ${escapeHtml(model.name)}</div></div>` +
@@ -560,7 +616,7 @@ function openVehiclePicker() {
         listEl.querySelector('[data-back]').addEventListener('click', () => renderModels(make.id));
         listEl.querySelectorAll('[data-trim]').forEach(node => node.addEventListener('click', () => {
           const trim = model.trims.find(t2 => t2.id === node.dataset.trim);
-          saveVehicleFromTrim(make, model, trim);
+          saveVehicleFromTrim(make, model, trim, { add });
         }));
       }
 
@@ -598,9 +654,15 @@ function healthBlock(health) {
     <div class="muted" style="font-size:12px;margin-top:4px;" data-i18n="${key}"></div>`;
 }
 
-async function saveVehicleFromTrim(make, model, trim) {
+async function saveVehicleFromTrim(make, model, trim, { add = false } = {}) {
+  // «Добавить» кладёт машину рядом и делает её основной — человек только что
+  // её выбрал, логично показать именно её. «Сменить» заменяет текущую.
+  if (!add) {
+    const existing = await getVehicles();
+    for (const v of existing) await removeVehicle(v.id);
+  }
   const vehicle = {
-    id: uuid(), makeId: make.id, modelId: model.id, trimId: trim.id, customName: '',
+    id: uuid(), addedAt: Date.now(), makeId: make.id, modelId: model.id, trimId: trim.id, customName: '',
     displayName: `${makeDisplayName(make, getLang())} ${model.name}`,
     // trimName и years нужны движку регламента: по ним определяются тип КПП,
     // привод, наддув и карбюратор/инжектор. Без них класс машины не вычислить.
@@ -612,6 +674,9 @@ async function saveVehicleFromTrim(make, model, trim) {
   };
   vehicle.rangeKm = vehicle.consumptionL100 > 0 ? vehicle.tankLiters / vehicle.consumptionL100 * 100 : 0;
   await DB.put('vehicles', vehicle);
+  // Именно эту машину человек только что выбрал — её и показываем.
+  // setPrimaryVehicle снимает флаг у остальных: двух основных быть не может.
+  await setPrimaryVehicle(vehicle.id);
   closeModal(); closeModal();
   refresh();
 }
@@ -632,6 +697,7 @@ const TX_OPTIONS = ['mt', 'at', 'cvt', 'amt', 'dsg'];
  * свой. Раньше здесь молча подставлялся бензин.
  */
 function openCustomVehicleForm(preset = null) {
+  const addMode = !!(preset && preset.add);
   const presetName = preset
     ? `${makeDisplayName(preset.make, getLang())} ${preset.model.name}`
     : '';
@@ -657,8 +723,12 @@ function openCustomVehicleForm(preset = null) {
       overlay.querySelector('#cv-save').addEventListener('click', async () => {
         const name = overlay.querySelector('#cv-name').value.trim() || presetName || 'Мой автомобиль';
         const tx = overlay.querySelector('#cv-tx').value;
+        if (!addMode) {
+          const existing = await getVehicles();
+          for (const v of existing) await removeVehicle(v.id);
+        }
         const vehicle = {
-          id: uuid(),
+          id: uuid(), addedAt: Date.now(),
           makeId: preset ? preset.make.id : '',
           modelId: preset ? preset.model.id : '',
           trimId: null,
@@ -680,6 +750,7 @@ function openCustomVehicleForm(preset = null) {
         vehicle.bodyType = bodyTypeFor(vehicle.modelId, vehicle.displayName);
         vehicle.colorId = 'blue';
         await DB.put('vehicles', vehicle);
+        await setPrimaryVehicle(vehicle.id);
         closeModal();
         if (preset) closeModal();
         refresh();

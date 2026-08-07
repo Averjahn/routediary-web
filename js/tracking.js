@@ -1,5 +1,5 @@
 import { DB, setSetting, getSetting } from './db.js';
-import { AppState } from './state.js';
+import { AppState, getPrimaryVehicle } from './state.js';
 import { uuid, todayKey, dayKeyOf } from './format.js';
 import { segmentDay, detectMode, computeMetrics, userFreeFlowSpeed, congestionScore } from './geo.js';
 
@@ -102,12 +102,20 @@ export async function recomputeSegmentation(dayKey) {
   const freeFlow = userFreeFlowSpeed(allCarTrips);
 
   const newTrips = [];
+  // Машина по умолчанию — основная. Спрашивать в момент завершения поездки
+  // не даём: человек только что вышел из машины, ему не до диалогов.
+  // Вместо вопроса — ненавязчивое сообщение с возможностью переназначить,
+  // и смена машины всегда доступна в карточке поездки.
+  const primary = await getPrimaryVehicle();
+
   for (const seg of segments) {
     const metrics = computeMetrics(seg);
     const mode = detectMode(seg);
     const trip = {
       id: uuid(),
       dayKey,
+      // Пешие прогулки к машине не относятся — привязываем только поездки.
+      vehicleId: mode === 'car' && primary ? primary.id : null,
       startTime: seg[0].timestamp,
       endTime: seg[seg.length - 1].timestamp,
       mode,
@@ -133,8 +141,10 @@ export async function addManualTrip({ dayKey, startTime, endTime, distanceKm, mo
   const durationSec = Math.max(1, (endTime - startTime) / 1000);
   const distanceMeters = distanceKm * 1000;
   const avgSpeedKmh = (distanceMeters / durationSec) * 3.6;
+  const primary = await getPrimaryVehicle();
   const trip = {
     id: uuid(), dayKey, startTime, endTime,
+    vehicleId: mode === 'car' && primary ? primary.id : null,
     mode, isModeManual: true, label: label || '', category: category || 'none',
     distanceMeters, movingTimeSec: durationSec,
     avgMovingSpeedKmh: avgSpeedKmh, maxSpeedKmh: avgSpeedKmh,

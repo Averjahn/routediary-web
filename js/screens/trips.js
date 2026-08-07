@@ -1,5 +1,5 @@
 import { DB } from '../db.js';
-import { AppState } from '../state.js';
+import { getVehicles, AppState } from '../state.js';
 import { addDays, dayLabel, Fmt } from '../format.js';
 import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, MODE_ICON, CATEGORY_ICON } from '../ui.js';
@@ -103,6 +103,17 @@ async function openTripCardById(id) {
     metricsHtml = `<div class="row between"><span class="muted" data-i18n="metric.calories"></span><b>${Fmt.kcal(kcal)}</b></div>`;
   }
 
+  // Выбор машины показываем только там, где он осмысленный: поездка на авто
+  // и в гараже есть из чего выбирать. Пешая прогулка к машине не относится,
+  // а при единственной машине ряд был бы кнопкой без альтернативы.
+  const vehicles = await getVehicles();
+  const vehicleFieldHtml = (trip.mode === 'car' && vehicles.length > 1) ? `
+    <div class="field"><span class="field-label" data-i18n="trip.vehicle"></span>
+      <div class="chip-row" id="tc-vehicle">
+        ${vehicles.map(v => `<button class="chip ${v.id === trip.vehicleId ? 'active' : ''}" data-veh="${v.id}">${(v.displayName || 'Авто').replace(/[<>&"]/g, '')}</button>`).join('')}
+      </div>
+    </div>` : '';
+
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="trip.title"></h2><button class="modal-close">✕</button></div>
     <div id="trip-mini-map" style="height:160px;border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--surface-alt);"></div>
@@ -112,6 +123,7 @@ async function openTripCardById(id) {
         ${['walk','run','bike','car'].map(m => `<button class="chip ${m===trip.mode?'active':''}" data-mode="${m}">${MODE_ICON[m]} ${t('mode.'+m)}</button>`).join('')}
       </div>
     </div>
+    ${vehicleFieldHtml}
     <div class="field"><span class="field-label" data-i18n="trip.category"></span>
       <div class="chip-row" id="tc-category">
         ${['none','work','home','shop','medical','leisure','other'].map(c => `<button class="chip ${c===trip.category?'active':''}" data-cat="${c}">${CATEGORY_ICON[c]} ${t('category.'+c)}</button>`).join('')}
@@ -139,6 +151,12 @@ async function openTripCardById(id) {
         overlay.querySelectorAll('#tc-mode .chip').forEach(c => c.classList.remove('active'));
         btn.classList.add('active'); mode = btn.dataset.mode;
       });
+      let vehicleId = trip.vehicleId;
+      overlay.querySelector('#tc-vehicle')?.addEventListener('click', e => {
+        const btn = e.target.closest('.chip'); if (!btn) return;
+        overlay.querySelectorAll('#tc-vehicle .chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active'); vehicleId = btn.dataset.veh;
+      });
       overlay.querySelector('#tc-category').addEventListener('click', e => {
         const btn = e.target.closest('.chip'); if (!btn) return;
         overlay.querySelectorAll('#tc-category .chip').forEach(c => c.classList.remove('active'));
@@ -148,6 +166,8 @@ async function openTripCardById(id) {
         trip.label = overlay.querySelector('#tc-label').value.trim();
         trip.notes = overlay.querySelector('#tc-notes').value.trim();
         trip.mode = mode; trip.isModeManual = mode !== trip.mode;
+        // Смена машины меняет пробег сразу у двух: у прежней он уменьшится.
+        trip.vehicleId = mode === 'car' ? vehicleId : null;
         trip.category = category;
         await DB.put('trips', trip);
         closeModal();

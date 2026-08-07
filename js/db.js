@@ -2,11 +2,13 @@
 const DB_NAME = 'routediary';
 // v2: у maintenanceItems появился vehicleId — регламент стал персональным
 // для каждой машины, а не общим списком на всё приложение.
-const DB_VERSION = 2;
+// v3: vehicleId появился и у поездки. В гараже теперь может быть несколько
+// машин, и пробег каждой считается только по её поездкам.
+const DB_VERSION = 3;
 
 const STORES = {
   trackPoints: { keyPath: 'id', indexes: [['tripId', 'tripId'], ['timestamp', 'timestamp'], ['dayKey', 'dayKey']] },
-  trips: { keyPath: 'id', indexes: [['dayKey', 'dayKey'], ['startTime', 'startTime']] },
+  trips: { keyPath: 'id', indexes: [['dayKey', 'dayKey'], ['startTime', 'startTime'], ['vehicleId', 'vehicleId']] },
   vehicles: { keyPath: 'id', indexes: [] },
   refuels: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
   expenses: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
@@ -54,6 +56,24 @@ function openDb() {
           if (item.vehicleId === undefined) {
             item.vehicleId = null;   // «ничей» — подхватится в migrateLegacyItems()
             cursor.update(item);
+          }
+          cursor.continue();
+        };
+      }
+
+      // Поездки, записанные до v3, сделаны на единственной машине —
+      // помечаем их «ничьими», чтобы при первом запуске отдать основной.
+      // Просто проставить id здесь нельзя: в транзакции апгрейда его ещё
+      // неоткуда взять, машина лежит в другом сторе.
+      if (event.oldVersion > 0 && event.oldVersion < 3) {
+        const store = tx.objectStore('trips');
+        store.openCursor().onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (!cursor) return;
+          const trip = cursor.value;
+          if (trip.vehicleId === undefined) {
+            trip.vehicleId = null;
+            cursor.update(trip);
           }
           cursor.continue();
         };

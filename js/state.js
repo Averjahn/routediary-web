@@ -99,6 +99,70 @@ export async function getPrimaryVehicle() {
   return vehicles.find(v => v.isPrimary) || vehicles[0] || null;
 }
 
+// --- Гараж: несколько машин ---------------------------------------------
+
+/** Все машины гаража. Порядок стабильный — по времени добавления. */
+export async function getVehicles() {
+  const vehicles = await DB.getAll('vehicles');
+  return vehicles.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+}
+
+/**
+ * Делает машину основной. Основная — та, на которую по умолчанию
+ * записываются новые поездки и которую показывает экран «Авто».
+ */
+export async function setPrimaryVehicle(vehicleId) {
+  const vehicles = await DB.getAll('vehicles');
+  const updated = vehicles.map(v => ({ ...v, isPrimary: v.id === vehicleId }));
+  await DB.putMany('vehicles', updated);
+  return updated.find(v => v.isPrimary) || null;
+}
+
+/** Удаляет машину вместе с её регламентом. Поездки остаются, но станут «ничьими». */
+export async function removeVehicle(vehicleId) {
+  const items = await getMaintenanceFor(vehicleId);
+  for (const item of items) await DB.delete('maintenanceItems', item.id);
+
+  const trips = await DB.getAllByIndex('trips', 'vehicleId', vehicleId).catch(() => []);
+  if (trips.length) {
+    await DB.putMany('trips', trips.map(t => ({ ...t, vehicleId: null })));
+  }
+
+  await DB.delete('vehicles', vehicleId);
+
+  // Если удалили основную — основной становится первая из оставшихся,
+  // иначе гараж окажется без «машины по умолчанию».
+  const rest = await getVehicles();
+  if (rest.length && !rest.some(v => v.isPrimary)) {
+    await setPrimaryVehicle(rest[0].id);
+  }
+}
+
+/**
+ * Привязывает поездку к машине и пересчитывает пробег обеих.
+ * Отдельная функция, потому что смена машины у поездки меняет пробег
+ * сразу у двух автомобилей — у прежнего он уменьшится.
+ */
+export async function assignTripToVehicle(tripId, vehicleId) {
+  const trip = await DB.get('trips', tripId);
+  if (!trip) return null;
+  trip.vehicleId = vehicleId;
+  await DB.put('trips', trip);
+  return trip;
+}
+
+/**
+ * Поездки без машины — из версии до появления гаража либо оставшиеся
+ * после удаления автомобиля. Отдаются основной машине при первом запуске.
+ */
+export async function adoptOrphanTrips(vehicleId) {
+  const all = await DB.getAll('trips');
+  const orphans = all.filter(t => t.vehicleId == null);
+  if (orphans.length === 0) return 0;
+  await DB.putMany('trips', orphans.map(t => ({ ...t, vehicleId })));
+  return orphans.length;
+}
+
 // --- Регламент обслуживания ---------------------------------------------
 
 /** Тяжёлые условия: город, короткие поездки, пыль, мороз. Сокращают интервалы. */
@@ -199,19 +263,33 @@ export async function rebaseUntouchedItems(vehicle, newOdometerKm, prevOdometerK
 }
 
 /** Среднесуточный пробег по истории — основа прогноза дат обслуживания. */
-export async function currentAvgKmPerDay() {
+export async function currentAvgKmPerDay(vehicle = null) {
   const trips = await DB.getAll('trips');
-  return averageKmPerDay(trips);
+  // Прогноз обслуживания строится по пробегу КОНКРЕТНОЙ машины: если человек
+  // ездит на рабочей каждый день, а дачную заводит раз в месяц, общий
+  // среднесуточный пробег наврал бы обеим.
+  const mine = vehicle
+    ? trips.filter(t => t.vehicleId === vehicle.id || (t.vehicleId == null && vehicle.isPrimary))
+    : trips;
+  return averageKmPerDay(mine);
 }
 
+/**
+ * Текущий пробег машины: введённая база плюс её поездки после ввода базы.
+ *
+ * Считаем ТОЛЬКО поездки этой машины. В гараже их может быть несколько,
+ * и без фильтра пробег второй машины наматывался бы на первую.
+ * Поездки без машины (из версии до гаража) достаются основной — иначе
+ * при обновлении приложения пробег обнулился бы.
+ */
 export async function currentOdometerKm(vehicle) {
   if (!vehicle) return 0;
-  const trips = await DB.getAllByIndex('trips', 'dayKey', null).catch(() => []);
-  // trips index by dayKey is per-day; для суммарного пробега читаем все.
   const all = await DB.getAll('trips');
   const base = new Date(vehicle.odometerBaseDate).getTime();
   const carDistanceM = all
-    .filter(t => t.mode === 'car' && new Date(t.startTime).getTime() >= base)
+    .filter(t => t.mode === 'car'
+      && (t.vehicleId === vehicle.id || (t.vehicleId == null && vehicle.isPrimary))
+      && new Date(t.startTime).getTime() >= base)
     .reduce((s, t) => s + t.distanceMeters, 0);
   return vehicle.odometerBaseKm + carDistanceM / 1000;
 }

@@ -335,3 +335,126 @@ canvas.chart { width: 100%; display: block; }
   .tab-icon { width: 20px; height: 20px; }
   .modal-sheet { max-height: 96vh; }
 }
+
+/* ---------- Гараж: переключатель машин ---------- */
+
+.garage-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 16px 10px;
+  scrollbar-width: none;
+}
+.garage-bar::-webkit-scrollbar { display: none; }
+
+.garage-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--separator);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  /* Палец, а не курсор: минимальная зона нажатия. */
+  min-height: 38px;
+}
+.garage-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.garage-chip.add {
+  min-width: 38px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 12px;
+  color: var(--accent);
+}
+
+/* ---------- Экран покупки ---------- */
+
+.pay { text-align: left; }
+.pay-close { position: absolute; top: 12px; right: 12px; }
+
+.pay-head { text-align: center; padding: 4px 0 18px; }
+.pay-icon {
+  width: 54px; height: 54px;
+  margin: 0 auto 12px;
+  border-radius: 15px;
+  display: grid; place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 26px;
+}
+.pay-head h2 { margin: 0 0 6px; font-size: 21px; line-height: 1.25; }
+.pay-sub { margin: 0; color: var(--text-secondary); font-size: 14px; }
+
+.pay-features { display: grid; gap: 2px; margin-bottom: 18px; }
+.pay-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--separator);
+}
+.pay-feature:last-child { border-bottom: none; }
+.pay-check { color: var(--accent); font-weight: 700; line-height: 1.5; }
+.pay-feature b { display: block; font-size: 15px; font-weight: 600; }
+.pay-feature span { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
+.pay-badge {
+  margin-left: auto;
+  align-self: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--surface-alt, var(--separator));
+  color: var(--text-secondary);
+}
+
+.pay-plans { display: grid; gap: 10px; }
+.pay-plan {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  border: 1.5px solid var(--separator);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pay-plan.primary { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); }
+.pay-plan-title { font-size: 15px; font-weight: 700; }
+.pay-plan-price { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.pay-plan-note { font-size: 12px; color: var(--text-secondary); }
+
+.pay-legal {
+  margin: 14px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Блок тестового режима. В релизе не показывается — TEST_MODE = false. */
+.pay-test {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px dashed var(--separator);
+  background: var(--surface-alt, transparent);
+}
+.pay-test b { display: block; font-size: 13px; }
+.pay-test > span { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+.pay-test-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 10px;
+}
+.pay-test-current { font-size: 12px; color: var(--text-secondary); }
