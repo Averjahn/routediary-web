@@ -1,5 +1,5 @@
 import { loadSettings, AppState } from './state.js';
-import { applyI18nTree } from './ui.js';
+import { applyI18nTree, keepScroll } from './ui.js';
 import { t } from './i18n.js';
 import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
@@ -39,10 +39,14 @@ async function init() {
   });
 
   document.addEventListener('lang-changed', () => {
-    applyI18nTree(document.body);
-    applyBrand();
-    for (const key of Object.keys(SCREENS)) SCREENS[key].rendered = false;
-    switchTab(currentTab, true);
+    // Экран собирается заново, поэтому положение прокрутки удерживаем сами:
+    // смена языка не должна выбрасывать человека в начало страницы.
+    keepScroll(SCREENS[currentTab]?.el, () => {
+      applyI18nTree(document.body);
+      applyBrand();
+      for (const key of Object.keys(SCREENS)) SCREENS[key].rendered = false;
+      switchTab(currentTab, true);
+    });
     initInstallBanner();
   });
   document.addEventListener('theme-changed', () => {

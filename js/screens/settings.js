@@ -5,7 +5,7 @@ import {
 } from '../state.js';
 import { CURRENCY_SYMBOLS } from '../format.js';
 import { t } from '../i18n.js';
-import { applyI18nTree, openModal, closeModal, toast, icon } from '../ui.js';
+import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll } from '../ui.js';
 import { THEMES, THEME_ORDER } from '../theme.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase } from '../subscription.js';
@@ -18,6 +18,23 @@ export function render(container) {
   container.innerHTML = `<h1 class="page-title" data-i18n="settings.title"></h1><div id="settings-body"></div>`;
   applyI18nTree(container);
   refresh();
+}
+
+/** Контейнер с прокруткой, в котором лежит экран. */
+function scrollBox() {
+  return containerRef?.closest('.screen') || containerRef;
+}
+
+/**
+ * Перерисовка экрана с сохранением позиции прокрутки.
+ * Нужна для действий внутри самого экрана — смены темы, единиц, валюты:
+ * они пересобирают содержимое и без этого выбрасывают человека наверх.
+ */
+async function refreshKeepingScroll() {
+  const box = scrollBox();
+  const top = box ? box.scrollTop : 0;
+  await refresh();
+  restoreScroll(box, top);
 }
 
 export async function refresh() {
@@ -113,6 +130,7 @@ export async function refresh() {
   applyI18nTree(body);
   bind(body);
   showStorageUsage(body);
+
 }
 
 /** Карточка уровня доступа — единственная точка входа в оплату из настроек. */
@@ -159,7 +177,7 @@ function bind(body) {
   body.querySelectorAll('[data-theme]').forEach(btn => btn.addEventListener('click', async () => {
     await setThemeId(btn.dataset.theme);
     document.dispatchEvent(new CustomEvent('theme-changed'));
-    refresh();
+    refreshKeepingScroll();
   }));
 
   body.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', async () => {
@@ -169,12 +187,12 @@ function bind(body) {
 
   body.querySelectorAll('[data-units]').forEach(btn => btn.addEventListener('click', async () => {
     await setUnits(btn.dataset.units);
-    refresh();
+    refreshKeepingScroll();
   }));
 
   body.querySelector('#set-currency').addEventListener('change', async (e) => {
     await setCurrency(e.target.value);
-    refresh();
+    refreshKeepingScroll();
   });
 
   body.querySelector('#set-weight').addEventListener('change', async (e) => {

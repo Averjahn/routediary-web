@@ -46,6 +46,54 @@ export function toast(message, { actionLabel, onAction, duration = 5000 } = {}) 
   return node;
 }
 
+/**
+ * Сохраняет положение прокрутки экрана на время его перерисовки.
+ *
+ * Экраны наполняются асинхронно (читают данные из БД). В момент, когда
+ * содержимое уже заменено, а новое ещё не готово, высота экрана меньше
+ * прежней — и браузер обрезает позицию прокрутки до нуля. Обратно она
+ * сама не возвращается: человек оказывается наверху, хотя ничего для
+ * этого не делал.
+ *
+ * Просто выставить scrollTop сразу нельзя — прокручивать ещё некуда.
+ * Поэтому ждём, пока содержимое дорастёт до нужной высоты, и только
+ * тогда возвращаем позицию. Ограничение по времени нужно на случай,
+ * если экран стал короче: тогда возвращаем сколько получится.
+ *
+ * @param {HTMLElement} el       контейнер с прокруткой
+ * @param {Function} rerender    действие, перерисовывающее содержимое
+ */
+export function keepScroll(el, rerender) {
+  const top = el ? el.scrollTop : 0;
+  rerender();
+  restoreScroll(el, top);
+}
+
+/**
+ * Возвращает прокрутку на сохранённую позицию, когда содержимое дорастёт.
+ * Вынесено отдельно: экраны, которые перерисовывают себя сами (настройки),
+ * сохраняют позицию до вызова, а восстанавливают после.
+ */
+export function restoreScroll(el, top) {
+  if (!el || top <= 0) return;
+
+  const deadline = performance.now() + 2000;
+  const tryRestore = () => {
+    if (el.scrollHeight - el.clientHeight >= top) {
+      el.scrollTop = top;
+      return;
+    }
+    if (performance.now() < deadline) {
+      requestAnimationFrame(tryRestore);
+      return;
+    }
+    // Содержимое так и не выросло — экран стал короче. Прокручиваем
+    // максимально близко к прежнему месту, а не бросаем человека наверху.
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+  };
+  requestAnimationFrame(tryRestore);
+}
+
 export const MODE_ICON = { walk: icon('walk'), run: icon('run'), bike: icon('bike'), car: icon('car') };
 export const CATEGORY_ICON = { none: icon('categoryNone'), work: icon('work'), home: icon('home'), shop: icon('shop'), medical: icon('medical'), leisure: icon('leisure'), other: icon('other') };
 export const EXPENSE_ICON = { fuel: icon('fuel'), wash: icon('wash'), service: icon('service'), repairs: icon('repairs'), tires: icon('tires'), insurance: icon('insurance'), tax: icon('tax'), parking: icon('parking'), fine: icon('fine'), other: icon('other') };
