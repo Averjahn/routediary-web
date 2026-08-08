@@ -78,9 +78,9 @@ export async function refresh() {
     </div>
 
     ${hasData ? `
-    <div class="section-title" data-i18n="chart.foot_km" data-i18n2></div>
+    <div class="section-title" data-i18n="chart.foot_km"></div>
     <div class="card"><canvas class="chart" id="chart-walk" height="120"></canvas></div>
-    <div class="section-title" data-i18n="chart.car_km" data-i18n2></div>
+    <div class="section-title" data-i18n="chart.car_km"></div>
     <div class="card"><canvas class="chart" id="chart-car" height="120"></canvas></div>
     <div class="section-title" data-i18n="stats.expenses_title"></div>
     <div class="card"><canvas class="chart" id="chart-pie" height="180"></canvas></div>
@@ -89,12 +89,6 @@ export async function refresh() {
     ` : `<div class="empty-state" data-i18n="stats.no_data"></div>`}
   `;
   applyI18nTree(body);
-  // fix duplicate data-i18n keys set for section-titles reused (walk/car reuse translation of chart bars section headers not in dict) - use direct text
-  body.querySelectorAll('[data-i18n2]').forEach(n => n.removeAttribute('data-i18n'));
-  const walkHeader = body.querySelector('#chart-walk')?.closest('.card')?.previousElementSibling;
-  if (walkHeader) walkHeader.textContent = getLang() === 'ru' ? 'Км пешком по дням' : 'Walking km by day';
-  const carHeader = body.querySelector('#chart-car')?.closest('.card')?.previousElementSibling;
-  if (carHeader) carHeader.textContent = getLang() === 'ru' ? 'Км на авто по дням' : 'Car km by day';
 
   if (!hasData) return;
 

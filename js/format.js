@@ -49,11 +49,14 @@ export const Fmt = {
   kcal(v) { return `${Math.round(v)} ${t('unit.kcal')}`; },
 
   duration(sec) {
+    // Единицы берём из словаря, а не ветвлением по языку: иначе третий язык
+    // потребует правки кода, а не перевода.
     const totalMin = Math.round(sec / 60);
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
-    if (h > 0) return getLang() === 'ru' ? `${h} ч ${String(m).padStart(2, '0')} мин` : `${h}h ${String(m).padStart(2, '0')}m`;
-    return getLang() === 'ru' ? `${m} мин` : `${m} min`;
+    const mm = String(m).padStart(2, '0');
+    if (h > 0) return `${h}${t('unit.hour_short')} ${mm}${t('unit.min_short')}`;
+    return `${m}${t('unit.min_short')}`;
   },
 
   time(ts) {

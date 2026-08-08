@@ -1,5 +1,6 @@
 import { loadSettings, AppState } from './state.js';
 import { applyI18nTree } from './ui.js';
+import { t } from './i18n.js';
 import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
@@ -27,6 +28,8 @@ async function init() {
     SCREENS[key].el = document.getElementById('screen-' + key);
   }
 
+  applyBrand();
+
   document.querySelectorAll('.tab-icon[data-icon]').forEach(span => {
     span.innerHTML = icon(span.dataset.icon, { size: 22 });
   });
@@ -37,6 +40,7 @@ async function init() {
 
   document.addEventListener('lang-changed', () => {
     applyI18nTree(document.body);
+    applyBrand();
     for (const key of Object.keys(SCREENS)) SCREENS[key].rendered = false;
     switchTab(currentTab, true);
     initInstallBanner();
@@ -52,6 +56,11 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(() => {});
   }
+}
+
+/** Название приложения в боковом меню (широкий экран) — через атрибут: см. CSS. */
+function applyBrand() {
+  document.getElementById('tabbar')?.setAttribute('data-brand', t('app.name'));
 }
 
 function switchTab(tab, force) {
@@ -70,4 +79,4 @@ function switchTab(tab, force) {
   }
 }
 
-init().catch(err => console.error('Автопульс init failed:', err));
+init().catch(err => console.error('Avtopuls init failed:', err));

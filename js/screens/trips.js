@@ -110,7 +110,7 @@ async function openTripCardById(id) {
   const vehicleFieldHtml = (trip.mode === 'car' && vehicles.length > 1) ? `
     <div class="field"><span class="field-label" data-i18n="trip.vehicle"></span>
       <div class="chip-row" id="tc-vehicle">
-        ${vehicles.map(v => `<button class="chip ${v.id === trip.vehicleId ? 'active' : ''}" data-veh="${v.id}">${(v.displayName || 'Авто').replace(/[<>&"]/g, '')}</button>`).join('')}
+        ${vehicles.map(v => `<button class="chip ${v.id === trip.vehicleId ? 'active' : ''}" data-veh="${v.id}">${(v.displayName || t('car.default_name')).replace(/[<>&"]/g, '')}</button>`).join('')}
       </div>
     </div>` : '';
 

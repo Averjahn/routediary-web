@@ -31,7 +31,6 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
         <b>${t(f.titleKey)}</b>
         <span>${t(f.descKey)}</span>
       </div>
-      ${f.tier === TIER.PRO ? `<span class="pay-badge">PRO</span>` : ''}
     </div>`;
 
   const planCard = (p) => `
@@ -106,7 +105,6 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
 }
 
 function tierLabel(tier) {
-  if (tier === TIER.PLUS) return t('pay.plan.plus');
   if (tier === TIER.PRO) return t('pay.plan.pro');
   return t('pay.plan.free');
 }

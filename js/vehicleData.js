@@ -146,6 +146,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >gta|GTA|гта
 #am_general|AM General|АМ Дженерал|am general,ам дженерал
 >hmmwv|HMMWV (Humvee)|хамви
+#amberavto|Amberauto|Амберавто|амберавто
+>a5|А5|
 #amc|AMC|АМС|amc,амс
 >eagle|Eagle|игл
 >gremlin|Gremlin|гремлин
@@ -207,6 +209,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >vanquish_zagato|Vanquish Zagato|ванквиш загато
 >virage|Virage|вираж
 >vulcan|Vulcan|вулкан
+#atom|Atom|Атом|атом
+>01|01|
 #auburn|Auburn|Оберн|auburn,оберн
 >speedster|Speedster|спидстер
 #audi|Audi|Audi|ауди
@@ -449,15 +453,15 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #blaval|Blaval|Блавал|blaval,блавал
 >fh_eq|FH-EQ|фх-еку
 #bmw|BMW|BMW|бмв,бэха
->bmw3|3 series|тройка,е90,f30,g20
+>bmw3|3 series|3 series,3 серии,f30,g20,е90,тройка
 -320i 2.0 AT|2.0|p|184|59|6.6|1495|2011–
 -330i 2.0 AT|2.0|p|258|59|7.0|1545|2015–
 -320d 2.0 AT|2.0|d|190|57|4.8|1560|2011–
->bmw5|5 series|пятёрка,е60,f10,g30
+>bmw5|5 series|5 series,5 серии,f10,g30,е60,пятёрка
 -520i 2.0 AT|2.0|p|184|68|6.6|1610|2010–
 -530i 2.0 AT 4WD|2.0|p|249|68|7.3|1690|2017–
 -530d 3.0 AT|3.0|d|249|66|5.4|1755|2010–
->bmw7|7 series|семёрка бмв
+>bmw7|7 series|7 series,7 серии,семёрка бмв
 -3.0 AT 4WD|3.0|p|326|78|8.2|1970|2015–
 >bmwx1|X1|икс1
 -2.0 AT 4WD|2.0|p|192|61|7.2|1620|2015–
@@ -470,12 +474,11 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >bmwx6|X6|икс6
 -3.0 AT 4WD|3.0|p|306|83|9.0|2145|2014–
 >02|02 (E10)|02
->1_serii|1 серии|
+>1_serii|1 Series|1 серии
 >1m|1M|1м
->2_serii|2 серии|
->2_serii_active_tourer|2 серии Active Tourer|2 серии актив турер
->2_serii_gran_tourer|2 серии Gran Tourer|2 серии гран турер
->3_serii|3 серии|
+>2_serii|2 Series|2 серии
+>2_serii_active_tourer|2 Series Active Tourer|2 серии active tourer,2 серии актив турер
+>2_serii_gran_tourer|2 Series Gran Tourer|2 серии gran tourer,2 серии гран турер
 >3_15|3/15|
 >315|315|
 >320|320|
@@ -484,17 +487,15 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >326|326|
 >327|327|
 >340|340|
->4_serii|4 серии|
->5_serii|5 серии|
+>4_serii|4 Series|4 серии
 >501|501|
 >502|502|
 >503|503|
 >507|507|
->6_serii|6 серии|
+>6_serii|6 Series|6 серии
 >600|600|
->7_serii|7 серии|
 >700|700|
->8_serii|8 серии|
+>8_serii|8 Series|8 серии
 >e3|E3|е3
 >e9|E9|е9
 >i3|i3|и3
@@ -2057,6 +2058,30 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -2.0 MT 4WD|2.0|p|122|65|10.5|1750|2010–2016
 >wingle|Wingle|вингл
 -2.4 MT 4WD|2.4|p|136|70|11.0|1900|2007–
+>coolbear|Coolbear|кулбир
+>cowry|Cowry (V80)|каури
+>deer|Deer|дир
+>florid|Florid|флорид
+>hover|Hover|ховер
+>hover_h5|Hover H5|ховер h5
+>hover_h6|Hover H6|ховер h6
+>hover_m1|Hover M1 (Peri 4x4)|ховер м1
+>hover_m2|Hover M2|ховер м2
+>hover_m4|Hover M4|ховер м4
+>hover_pi|Hover Pi|ховер пи
+>pegasus|Pegasus|пегасус
+>peri|Peri|пери
+>poer|Poer|поер
+>poer_king_kong|Poer King Kong|кинг конг
+>safe|Safe|сэйф
+>sailor|Sailor|сейлор
+>shanhai_poer|Shanhai Poer|шанхай поер
+>sing_ruv|Sing RUV|синг
+>socool|Socool|сокул
+>voleex_c10|Voleex C10 (Phenom)|воликс c10
+>voleex_c30|Voleex C30|воликс c30
+>voleex_c50|Voleex C50|воликс с50
+>wingle_7|Wingle 7|вингл 7
 #gumpert|Gumpert|Гумперт|gumpert,гумперт
 >apollo|Apollo|аполло
 #hafei|Hafei|Хафэй|hafei,хафэй
@@ -2875,12 +2900,12 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >lada2101|2101 «Копейка»|копейка,2101,жигули
 -1.2 MT|1.2|p|64|39|8.5|955|1970–1988
 -1.3 MT|1.3|p|69|39|8.8|955|1974–1988
->lada2102|2102 универсал|2102,двойка
+>lada2102|2102 wagon|2102,2102 универсал,двойка
 -1.2 MT|1.2|p|64|39|9.0|1010|1971–1986
 -1.3 MT|1.3|p|69|39|9.2|1010|1972–1986
 >lada2103|2103 «Тройка»|тройка,2103
 -1.5 MT|1.5|p|75|39|9.5|1030|1972–1984
->lada2104|2104 универсал|2104,четвёрка
+>lada2104|2104 wagon|2104,2104 универсал,четвёрка
 -1.3 MT|1.3|p|64|39|9.0|1060|1984–2012
 -1.5 MT|1.5|p|72|39|9.3|1060|1984–2012
 -1.6 инжектор|1.6|p|80|39|8.7|1070|2000–2012
@@ -2908,16 +2933,16 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >lada21099|21099|099,зубило седан
 -1.5 MT|1.5|p|70|43|8.0|955|1990–2004
 -1.5 инжектор|1.5|p|78|43|7.7|960|2000–2004
->lada2110|2110 седан|2110,десятка
+>lada2110|2110 sedan|2110,2110 седан,десятка
 -1.5 8V|1.5|p|79|43|8.0|1010|1995–2007
 -1.5 16V|1.5|p|93|43|8.2|1030|1997–2007
 -1.6 8V|1.6|p|81|43|7.9|1020|2004–2007
 -1.6 16V|1.6|p|89|43|8.1|1040|2004–2007
->lada2111|2111 универсал|2111
+>lada2111|2111 wagon|2111,2111 универсал
 -1.5 8V|1.5|p|79|43|8.3|1060|1998–2009
 -1.6 8V|1.6|p|81|43|8.2|1060|2004–2009
 -1.6 16V|1.6|p|89|43|8.4|1080|2004–2009
->lada2112|2112 хэтчбек|2112,двенашка
+>lada2112|2112 hatchback|2112,2112 хэтчбек,двенашка
 -1.5 16V|1.5|p|93|43|8.2|1040|1999–2008
 -1.6 8V|1.6|p|81|43|7.9|1030|2004–2008
 -1.6 16V|1.6|p|89|43|8.1|1050|2004–2008
@@ -2927,7 +2952,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >lada2114|2114|2114,четырка
 -1.5 инжектор|1.5|p|78|43|7.7|1000|2001–2013
 -1.6 8V|1.6|p|81|43|7.6|1010|2007–2013
->lada2115|2115 седан|2115,пятнашка
+>lada2115|2115 sedan|2115,2115 седан,пятнашка
 -1.5 инжектор|1.5|p|78|43|7.8|1020|1997–2012
 -1.6 8V|1.6|p|81|43|7.7|1030|2007–2012
 >lada21213|21213 «Тайга»|21213,тайга,нива
@@ -3489,10 +3514,10 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >monte_carlo|Monte Carlo|монте карло
 >track|Track|трек
 #mercedes|Mercedes-Benz|Mercedes-Benz|мерседес,мерс,mercedes,benz
->mb_c|C-Class|ц класс,цешка,w204,w205
+>mb_c|C-Class|c-class,c-класс,w204,w205,ц класс,ц-класс,цешка
 -C200 2.0 AT|2.0|p|184|66|6.5|1520|2014–
 -C220d 2.0 AT|2.0|d|194|66|4.8|1580|2014–
->mb_e|E-Class|е класс,ешка,w212,w213
+>mb_e|E-Class|e-class,e-класс,w212,w213,е класс,е-класс,ешка
 -E200 2.0 AT|2.0|p|197|66|6.6|1680|2016–
 -E220d 2.0 AT|2.0|d|194|66|4.9|1720|2016–
 >mb_gla|GLA|гла
@@ -3502,7 +3527,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -GLC 220d 2.0 AT 4WD|2.0|d|170|66|5.5|1800|2015–
 >mb_gle|GLE|гле
 -GLE 350d 3.0 AT 4WD|3.0|d|249|85|7.2|2200|2015–
->mb_s|S-Class|с класс,эска,w222
+>mb_s|S-Class|s-class,s-класс,w222,с класс,эска
 -S400 3.0 AT 4WD|3.0|p|367|76|8.5|2035|2013–
 >mb_sprinter|Sprinter|спринтер
 -2.1 CDI MT|2.1|d|143|75|8.5|2100|2006–
@@ -3512,30 +3537,28 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >190_sl|190 SL|190 сл
 >220|220 (W187)|220 (в187)
 >300_slr|300 SLR|300 слр
->a_klass|A-Класс|а-класс
->a_klass_amg|A-Класс AMG|а-класс амг
+>a_klass|A-Class|a-класс,а-класс
+>a_klass_amg|A-Class AMG|a-класс amg,а-класс амг
 >amg_gt|AMG GT|амг gt
 >amg_gt_4_door_coupe|AMG GT 4-Door Coupe|амг гт 4-дверное купе
 >amg_one|AMG ONE|амг уан
 >amg_purespeed|AMG PureSpeed|амг пьюрспид
->b_klass|B-Класс|
->c_klass|C-Класс|ц-класс
->c_klass_amg|C-Класс AMG|ц-класс амг
+>b_klass|B-Class|b-класс
+>c_klass_amg|C-Class AMG|c-класс amg,ц-класс амг
 >citan|Citan|цитан
->cl_klass|CL-Класс|цл-класс
->cl_klass_amg|CL-Класс AMG|цл-класс амг
+>cl_klass|CL-Class|cl-класс,цл-класс
+>cl_klass_amg|CL-Class AMG|cl-класс amg,цл-класс амг
 >cla|CLA|цла-класс
 >cla_amg|CLA AMG|цла-класс амг
->clc_klass|CLC-Класс|цлц-класс
+>clc_klass|CLC-Class|clc-класс,цлц-класс
 >cle|CLE|цле-класс
 >cle_amg|CLE AMG|цле-класс амг
 >clk_amg_gtr|CLK AMG GTR|цлк амг гтр
->clk_klass|CLK-Класс|цлк-класс
->clk_klass_amg|CLK-Класс AMG|цлк-класс амг
+>clk_klass|CLK-Class|clk-класс,цлк-класс
+>clk_klass_amg|CLK-Class AMG|clk-класс amg,цлк-класс амг
 >cls|CLS|цлс-класс
 >cls_amg|CLS AMG|цлс-класс амг
->e_klass|E-Класс|е-класс
->e_klass_amg|E-Класс AMG|е-класс амг
+>e_klass_amg|E-Class AMG|e-класс amg,е-класс амг
 >eqa|EQA|екьюа
 >eqb|EQB|екьюб
 >eqc|EQC|екьюс
@@ -3548,11 +3571,11 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >eqs_suv|EQS SUV|екьюэс сув
 >eqt|EQT|екьюти
 >eqv|EQV|екьюв
->g_klass|G-Класс|
->g_klass_amg|G-Класс AMG|g-класс амг
->g_klass_amg_6x6|G-Класс AMG 6x6|g-класс амг 6x6
->gl_klass|GL-Класс|
->gl_klass_amg|GL-Класс AMG|gl-класс амг
+>g_klass|G-Class|g-класс
+>g_klass_amg|G-Class AMG|g-класс amg,g-класс амг
+>g_klass_amg_6x6|G-Class AMG 6x6|g-класс amg 6x6,g-класс амг 6x6
+>gl_klass|GL-Class|gl-класс
+>gl_klass_amg|GL-Class AMG|gl-класс amg,gl-класс амг
 >gla_amg|GLA AMG|гла-класс амг
 >glb|GLB|глб
 >glb_amg|GLB AMG|глб амг
@@ -3562,34 +3585,33 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >gle_amg|GLE AMG|гле амг
 >gle_coupe|GLE Coupe|гле купе
 >gle_coupe_amg|GLE Coupe AMG|гле купе амг
->glk_klass|GLK-Класс|
+>glk_klass|GLK-Class|glk-класс
 >gls|GLS|gls-класс
 >gls_amg|GLS AMG|gls-класс амг
->m_klass|M-Класс|
->m_klass_amg|M-Класс AMG|м-класс амг
+>m_klass|M-Class|m-класс
+>m_klass_amg|M-Class AMG|m-класс amg,м-класс амг
 >marco_polo|Marco Polo|марко поло
 >maybach_eqs_suv|Maybach EQS SUV|майбах екьюэс сув
 >maybach_g_650_landaulet|Maybach G 650 Landaulet|майбах джи 650
 >maybach_gls|Maybach GLS|майбах глс
->maybach_s_klass|Maybach S-Класс|майбах эс-класс
+>maybach_s_klass|Maybach S-Class|maybach s-класс,майбах эс-класс
 >maybach_sl|Maybach SL|майбах сл
 >metris|Metris|метрис
->r_klass|R-Класс|р-класс
->r_klass_amg|R-Класс AMG|р-класс амг
->s_klass|S-Класс|
->s_klass_amg|S-Класс AMG|s-класс амг
+>r_klass|R-Class|r-класс,р-класс
+>r_klass_amg|R-Class AMG|r-класс amg,р-класс амг
+>s_klass_amg|S-Class AMG|s-класс amg,s-класс амг
 >simplex|Simplex|симплекс
->sl_klass|SL-Класс|
->sl_klass_amg|SL-Класс AMG|сл-класс амг
+>sl_klass|SL-Class|sl-класс
+>sl_klass_amg|SL-Class AMG|sl-класс amg,сл-класс амг
 >slc|SLC|cлц-класс
 >slc_amg|SLC AMG|cлц-класс amg
->slk_klass|SLK-Класс|слк-класс
->slk_klass_amg|SLK-Класс AMG|слк-класс амг
+>slk_klass|SLK-Class|slk-класс,слк-класс
+>slk_klass_amg|SLK-Class AMG|slk-класс amg,слк-класс амг
 >slr_mclaren|SLR McLaren|slr макларен
 >sls_amg|SLS AMG|
->t_klass|T-Класс|т-класс
+>t_klass|T-Class|t-класс,т-класс
 >typ_630|Typ 630|тип 630
->v_klass|V-Класс|
+>v_klass|V-Class|v-класс
 >vaneo|Vaneo|ванео
 >viano|Viano|виано
 >vle|VLE|вле
@@ -3615,7 +3637,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >w191|W191|в191
 >w21|W21|в21
 >w29|W29|в29
->x_klass|X-Класс|
+>x_klass|X-Class|x-класс
 #mercury|Mercury|Меркури|mercury,меркури
 >capri|Capri|капри
 >colony_park|Colony Park|колони парк
@@ -4759,6 +4781,11 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >forfour|Forfour|фофо
 >fortwo|Fortwo|фоту
 >roadster|Roadster|роадстер
+#smz|SMZ|СМЗ|смз
+>s_1l|С-1Л|
+>s_3a|С-3А|
+>s_3d|С-3Д|
+>s_3l|С-3Л|
 #solaris|Solaris|Солярис|solaris,солярис
 >hc|HC|хц
 >hs|HS|хс
@@ -4813,6 +4840,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >tivoli|Tivoli|тиволи
 >torres|Torres|торрес
 >xlv|XLV|хлв
+#start|Start|Старт|старт
+>1963_1968|1963-1968|
 #stelato|Stelato|стелато|stelato,стелато
 >g9|G9|г9
 >s9|S9|с9
@@ -4948,6 +4977,14 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >tiger|Tiger|тайгер
 >x3|X3|икс 3
 >x7|X7|икс7
+#tagaz|TagAZ|ТагАЗ|тагаз
+>aquila|Aquila|аквила
+>c_30|C-30|с-30
+>c10|C10|с10
+>c190|C190|с190
+>road_partner|Road Partner|роуд партнер
+>tager|Tager|тагер
+>vega|Vega|вега
 #talbot|Talbot|Толбет|talbot,толбет
 >1510|1510|
 >avenger|Avenger|эвенджер
@@ -5275,7 +5312,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >uaz3909|3909 «Буханка»|буханка,3909,санитарка
 -2.4 УМЗ-4178|2.4|p|75|77|16.5|1790|1965–1997
 -2.7 ЗМЗ-409|2.7|p|112|77|15.5|1855|1997–
->uaz452|452 фургон|452,головастик
+>uaz452|452 van|452,452 фургон,головастик
 -2.4 УМЗ-4178|2.4|p|75|77|16.0|1720|1965–1997
 >uaz469|469 / 3151|469,3151,козлик,военный
 -2.4 УМЗ-451|2.4|p|75|78|14.5|1600|1972–1985
@@ -5650,6 +5687,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >m8|M8|м8
 >nammi_01|Nammi 01|намми 01
 >nammi_06|Nammi 06|намми 06
+#e_mobil|Yo-mobile|Ё-мобиль|ё-мобиль
+>e_krossover|Ё-Кроссовер|
 #yudo|Yudo|Юдо|yudo,юдо
 >yuntu|Yuntu|юнти
 #yulon|Yulon|Юлон|yulon,юлон
@@ -5735,25 +5774,4 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >grand_tiger|Grand Tiger|гранд тайгер
 >grandlion|Grandlion|грандлайон
 >landmark|Landmark|лендмарк
->terralord|Terralord|терралорд
-#amberavto|Амберавто|Амберавто|амберавто
->a5|А5|
-#atom|Атом|Атом|атом
->01|01|
-#smz|СМЗ|СМЗ|смз
->s_1l|С-1Л|
->s_3a|С-3А|
->s_3d|С-3Д|
->s_3l|С-3Л|
-#start|Старт|Старт|старт
->1963_1968|1963-1968|
-#tagaz|ТагАЗ|ТагАЗ|тагаз
->aquila|Aquila|аквила
->c_30|C-30|с-30
->c10|C10|с10
->c190|C190|с190
->road_partner|Road Partner|роуд партнер
->tager|Tager|тагер
->vega|Vega|вега
-#e_mobil|Ё-мобиль|Ё-мобиль|ё-мобиль
->e_krossover|Ё-Кроссовер|`;
+>terralord|Terralord|терралорд`;

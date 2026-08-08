@@ -79,7 +79,7 @@ export async function refresh() {
   body.innerHTML = `
     ${garageSwitcher(vehicles, vehicle)}
     <div class="card garage-card">
-      <div class="garage-name">${escapeHtml(vehicle.displayName || 'Авто')}</div>
+      <div class="garage-name">${escapeHtml(vehicle.displayName || t('car.default_name'))}</div>
       ${healthBlock(health)}
       <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${t('unit.km')}</span></div>
       <div class="muted" data-i18n="car.odometer_caption"></div>
@@ -189,7 +189,7 @@ function garageSwitcher(vehicles, current) {
 
 /** Короткое имя для чипа: «Lada Vesta SW Cross» в кнопку не влезет. */
 function shortName(vehicle) {
-  const name = (vehicle.displayName || 'Авто').trim();
+  const name = (vehicle.displayName || t('car.default_name')).trim();
   return name.length > 18 ? name.slice(0, 17) + '…' : name;
 }
 
@@ -612,7 +612,7 @@ function openVehiclePicker({ add = false } = {}) {
           return;
         }
         listEl.innerHTML = `<div class="list-item" data-back="1"><div class="grow">← ${escapeHtml(model.name)}</div></div>` +
-          model.trims.map(tr => `<div class="list-item" data-trim="${tr.id}"><div class="grow"><div>${escapeHtml(tr.name)}</div><div class="muted">${tr.powerHp} л.с. · бак ${tr.tankLiters} · ${tr.consumptionCombinedL100} /100 · ${tr.years}</div></div></div>`).join('');
+          model.trims.map(tr => `<div class="list-item" data-trim="${tr.id}"><div class="grow"><div>${escapeHtml(tr.name)}</div><div class="muted">${t('vehicle.trim_line', { hp: tr.powerHp, tank: tr.tankLiters, cons: tr.consumptionCombinedL100, years: tr.years })}</div></div></div>`).join('');
         listEl.querySelector('[data-back]').addEventListener('click', () => renderModels(make.id));
         listEl.querySelectorAll('[data-trim]').forEach(node => node.addEventListener('click', () => {
           const trim = model.trims.find(t2 => t2.id === node.dataset.trim);
@@ -721,7 +721,7 @@ function openCustomVehicleForm(preset = null) {
     onMount: (overlay) => {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
       overlay.querySelector('#cv-save').addEventListener('click', async () => {
-        const name = overlay.querySelector('#cv-name').value.trim() || presetName || 'Мой автомобиль';
+        const name = overlay.querySelector('#cv-name').value.trim() || presetName || t('car.default_name');
         const tx = overlay.querySelector('#cv-tx').value;
         if (!addMode) {
           const existing = await getVehicles();

@@ -13,11 +13,16 @@
 
 import { getSetting, setSetting } from './db.js';
 
-/** Уровни доступа. */
+/**
+ * Уровни доступа. Тариф ровно один: либо бесплатно, либо Про.
+ *
+ * Разовая покупка отдельным уровнем не выделяется намеренно: два платных
+ * тарифа заставляют человека выбирать, а выбор на экране оплаты — это
+ * лишняя причина уйти подумать и не вернуться.
+ */
 export const TIER = {
   FREE: 'free',
-  PLUS: 'plus',   // разовая покупка
-  PRO: 'pro',     // подписка
+  PRO: 'pro',
 };
 
 /**
@@ -27,34 +32,28 @@ export const TIER = {
  */
 export const TEST_MODE = true;
 
-/** Что во что входит. Порядок = порядок показа на экране покупки. */
+/**
+ * Что входит в Про. Порядок = порядок показа на экране покупки:
+ * первым идёт то, ради чего подписку купят.
+ *
+ * Две из трёх возможностей требуют сервера, которого у приложения пока нет
+ * (синхронизация и резервная копия). До его появления реально продаётся
+ * только гараж на несколько машин.
+ */
 export const FEATURES = [
-  { id: 'multi_vehicle', tier: TIER.PLUS, titleKey: 'pay.f.multi_vehicle', descKey: 'pay.f.multi_vehicle_d' },
-  { id: 'full_history', tier: TIER.PLUS, titleKey: 'pay.f.full_history', descKey: 'pay.f.full_history_d' },
-  { id: 'export', tier: TIER.PLUS, titleKey: 'pay.f.export', descKey: 'pay.f.export_d' },
-  { id: 'custom_schedule', tier: TIER.PLUS, titleKey: 'pay.f.custom_schedule', descKey: 'pay.f.custom_schedule_d' },
-  { id: 'themes', tier: TIER.PLUS, titleKey: 'pay.f.themes', descKey: 'pay.f.themes_d' },
-  { id: 'sale_report', tier: TIER.PLUS, titleKey: 'pay.f.sale_report', descKey: 'pay.f.sale_report_d' },
+  { id: 'multi_vehicle', tier: TIER.PRO, titleKey: 'pay.f.multi_vehicle', descKey: 'pay.f.multi_vehicle_d' },
   { id: 'sync', tier: TIER.PRO, titleKey: 'pay.f.sync', descKey: 'pay.f.sync_d' },
   { id: 'backup', tier: TIER.PRO, titleKey: 'pay.f.backup', descKey: 'pay.f.backup_d' },
-  { id: 'share_vehicle', tier: TIER.PRO, titleKey: 'pay.f.share_vehicle', descKey: 'pay.f.share_vehicle_d' },
 ];
 
-/** Тарифы. Цены — ориентир для российского рынка. */
+/** Единственный тариф. Цены — ориентир для российского рынка. */
 export const PLANS = [
-  {
-    id: TIER.PLUS,
-    titleKey: 'pay.plan.plus',
-    priceKey: 'pay.plan.plus_price',
-    noteKey: 'pay.plan.plus_note',
-    highlight: true,
-  },
   {
     id: TIER.PRO,
     titleKey: 'pay.plan.pro',
     priceKey: 'pay.plan.pro_price',
     noteKey: 'pay.plan.pro_note',
-    highlight: false,
+    highlight: true,
   },
 ];
 
@@ -75,10 +74,8 @@ export async function currentTier() {
 export async function hasFeature(featureId) {
   if (TEST_MODE) return true;
   const feature = FEATURES.find(f => f.id === featureId);
-  if (!feature) return true;
-  const tier = await currentTier();
-  if (tier === TIER.PRO) return true;
-  return tier === TIER.PLUS && feature.tier === TIER.PLUS;
+  if (!feature) return true;   // всё, чего нет в списке, бесплатно
+  return (await currentTier()) === TIER.PRO;
 }
 
 /** Имитация покупки — чтобы посмотреть, как выглядит приложение после неё. */

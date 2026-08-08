@@ -13,15 +13,6 @@ import { openPaywall } from '../paywall.js';
 
 let containerRef = null;
 
-/**
- * Темы сверх бесплатных — платные.
- *
- * Косметика — единственное, что можно закрыть без обиды: она ничего не ломает
- * в работе приложения. Запирать за деньги учёт пробега или регламент нельзя,
- * ради них приложение и скачивают.
- */
-const FREE_THEMES = ['classic', 'midnight'];
-
 export function render(container) {
   containerRef = container;
   container.innerHTML = `<h1 class="page-title" data-i18n="settings.title"></h1><div id="settings-body"></div>`;
@@ -38,11 +29,6 @@ export async function refresh() {
     getSevereConditions(),
     getVehicles(),
   ]);
-  // Темы — единственное место, где замок показывается по РЕАЛЬНОМУ уровню,
-  // а не через hasFeature (тот в тестовом режиме открывает всё). Так виден
-  // весь цикл: замок → витрина → «покупка» → тема открылась. Пройти его
-  // насквозь нужно, чтобы проверить подачу монетизации, а не только код.
-  const canThemes = tier !== TIER.FREE;
   const provider = getMapProvider();
 
   body.innerHTML = `
@@ -54,9 +40,8 @@ export async function refresh() {
         <span data-i18n="settings.theme"></span>
       </div>
       <div class="theme-row" id="set-themes">
-        ${THEME_ORDER.map(id => themeSwatch(id, canThemes)).join('')}
+        ${THEME_ORDER.map(themeSwatch).join('')}
       </div>
-      ${!canThemes ? `<div class="muted" style="font-size:12px;margin-top:8px;" data-i18n="settings.themes_locked"></div>` : ''}
     </div>
 
     <div class="section-title" data-i18n="settings.section_regional"></div>
@@ -113,13 +98,6 @@ export async function refresh() {
       <div class="settings-row"><span data-i18n="settings.storage"></span>
         <span class="muted" id="set-storage">…</span>
       </div>
-      <div class="settings-row" style="cursor:pointer;" id="set-export">
-        <span>
-          <span data-i18n="settings.export"></span>
-          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.export_hint"></span>
-        </span>
-        <span class="lock-badge" data-i18n="settings.paid"></span>
-      </div>
       <div class="settings-row" style="cursor:pointer;" id="set-wipe">
         <span style="color:var(--danger);" data-i18n="settings.wipe"></span>
       </div>
@@ -133,14 +111,14 @@ export async function refresh() {
     </div>
   `;
   applyI18nTree(body);
-  bind(body, canThemes);
+  bind(body);
   showStorageUsage(body);
 }
 
 /** Карточка уровня доступа — единственная точка входа в оплату из настроек. */
 function subscriptionCard(tier) {
   const isPaid = tier !== TIER.FREE;
-  const nameKey = tier === TIER.PRO ? 'pay.plan.pro' : tier === TIER.PLUS ? 'pay.plan.plus' : 'pay.plan.free';
+  const nameKey = tier === TIER.PRO ? 'pay.plan.pro' : 'pay.plan.free';
   return `
     <div class="card sub-card${isPaid ? ' paid' : ''}">
       <div class="row between">
@@ -158,17 +136,16 @@ function subscriptionCard(tier) {
     </div>`;
 }
 
-function themeSwatch(id, unlocked) {
+function themeSwatch(id) {
   const theme = THEMES[id];
-  const locked = !unlocked && !FREE_THEMES.includes(id);
   return `
-    <button class="theme-swatch ${AppState.theme === id ? 'active' : ''}${locked ? ' locked' : ''}"
-            data-theme="${id}" data-locked="${locked ? '1' : ''}"
+    <button class="theme-swatch ${AppState.theme === id ? 'active' : ''}"
+            data-theme="${id}"
             style="background:${theme.background};color:${theme.accent};border-color:${AppState.theme === id ? theme.accent : 'transparent'}"
-            aria-label="${t('theme.' + id)}">${locked ? '🔒' : '●'}</button>`;
+            aria-label="${t('theme.' + id)}">●</button>`;
 }
 
-function bind(body, canThemes) {
+function bind(body) {
   body.querySelector('#set-upgrade').addEventListener('click', () => {
     openPaywall({ reason: 'pay.reason_default', onDone: refresh });
   });
@@ -180,10 +157,6 @@ function bind(body, canThemes) {
   });
 
   body.querySelectorAll('[data-theme]').forEach(btn => btn.addEventListener('click', async () => {
-    if (btn.dataset.locked) {
-      openPaywall({ reason: 'pay.reason_themes', onDone: refresh });
-      return;
-    }
     await setThemeId(btn.dataset.theme);
     document.dispatchEvent(new CustomEvent('theme-changed'));
     refresh();
@@ -219,10 +192,6 @@ function bind(body, canThemes) {
     const vehicle = await getPrimaryVehicle();
     if (vehicle) await recalcIntervals(vehicle, e.target.checked);
     toast(t('settings.severe_saved'));
-  });
-
-  body.querySelector('#set-export').addEventListener('click', () => {
-    openPaywall({ reason: 'pay.reason_export', onDone: refresh });
   });
 
   body.querySelector('#set-wipe').addEventListener('click', confirmWipe);
