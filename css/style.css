@@ -581,3 +581,34 @@ canvas.chart { width: 100%; display: block; }
   background: var(--accent);
   color: var(--on-accent);
 }
+
+/* --- Приглашение друга --- */
+
+/* Белая подложка обязательна: на тёмной теме код без неё не читается,
+   а сканеры ждут тёмные модули на светлом фоне, не наоборот. */
+.share-qr {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  margin: 4px 0 10px;
+  background: #fff;
+  border-radius: 14px;
+}
+.share-qr svg { display: block; max-width: 100%; height: auto; }
+
+.share-code-box { text-align: center; margin-top: 14px; }
+.share-code {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  /* Моноширинный: код диктуют и переписывают, разница I/l/O/0 должна быть видна. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.share-link {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-secondary);
+}

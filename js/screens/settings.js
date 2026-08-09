@@ -10,6 +10,8 @@ import { THEMES, THEME_ORDER } from '../theme.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase } from '../subscription.js';
 import { openPaywall } from '../paywall.js';
+import { getReferralCode, getShareUrl, getInvitedBy } from '../referral.js';
+import { qrSvg } from '../qr.js';
 
 let containerRef = null;
 
@@ -108,6 +110,15 @@ export async function refresh() {
         </span>
         <input type="checkbox" id="set-severe" style="width:auto;"${severe ? ' checked' : ''}>
       </label>
+    </div>
+
+    <div class="section-title" data-i18n="settings.section_share"></div>
+    <div class="card">
+      <div class="settings-row" style="cursor:pointer;" id="set-share">
+        <span data-i18n="settings.share"></span>
+        <span class="muted" id="set-share-code">…</span>
+      </div>
+      <div class="muted" style="font-size:12px;" data-i18n="settings.share_hint"></div>
     </div>
 
     <div class="section-title" data-i18n="settings.section_data"></div>
@@ -212,7 +223,69 @@ function bind(body) {
     toast(t('settings.severe_saved'));
   });
 
+  body.querySelector('#set-share').addEventListener('click', openShare);
+  getReferralCode().then(code => {
+    const el = body.querySelector('#set-share-code');
+    if (el) el.textContent = code;
+  });
+
   body.querySelector('#set-wipe').addEventListener('click', confirmWipe);
+}
+
+/**
+ * Приглашение друга. QR рисуется на устройстве: обращение к внешнему
+ * генератору выдало бы наружу и ссылку, и IP — ровно то, чего приложение
+ * не делает нигде больше.
+ */
+async function openShare() {
+  const [code, url, invitedBy] = await Promise.all([
+    getReferralCode(), getShareUrl(), getInvitedBy(),
+  ]);
+
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="share.title"></h2><button class="modal-close">✕</button></div>
+    <div class="share-qr">${qrSvg(url, { size: 232, dark: '#000', light: '#fff' })}</div>
+    <div class="muted" style="text-align:center;font-size:12px;" data-i18n="share.scan_hint"></div>
+    <div class="share-code-box">
+      <div class="muted" style="font-size:12px;" data-i18n="share.your_code"></div>
+      <div class="share-code">${code}</div>
+    </div>
+    <input class="share-link" id="share-link" readonly value="${url}">
+    <div class="row" style="gap:10px;margin-top:12px;">
+      <button class="btn block" id="share-copy" data-i18n="share.copy"></button>
+      ${navigator.share ? `<button class="btn primary" id="share-send" data-i18n="share.send"></button>` : ''}
+    </div>
+    ${invitedBy ? `<div class="muted" style="font-size:12px;margin-top:14px;">
+      <span data-i18n="share.invited_by"></span>: <b>${invitedBy}</b>
+    </div>` : ''}
+    <div class="muted" style="font-size:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--separator);"
+         data-i18n="share.no_counting"></div>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+
+      root.querySelector('#share-copy').addEventListener('click', async () => {
+        const field = root.querySelector('#share-link');
+        try {
+          await navigator.clipboard.writeText(url);
+          toast(t('share.copied'));
+        } catch {
+          // Без https или с закрытым доступом к буферу — выделяем текст,
+          // чтобы скопировать вручную было одним движением.
+          field.focus();
+          field.select();
+          toast(t('share.copy_failed'));
+        }
+      });
+
+      root.querySelector('#share-send')?.addEventListener('click', async () => {
+        try {
+          await navigator.share({ title: t('app.name'), text: t('share.message'), url });
+        } catch { /* человек передумал в системном окне — это не ошибка */ }
+      });
+    }
+  });
+  applyI18nTree(overlay);
 }
 
 /**

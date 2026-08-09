@@ -4,6 +4,7 @@ import { t } from './i18n.js';
 import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
+import { captureIncomingReferral } from './referral.js';
 import * as MapScreen from './screens/map.js';
 import * as TripsScreen from './screens/trips.js';
 import * as CarScreen from './screens/car.js';
@@ -22,6 +23,9 @@ let currentTab = null;
 
 async function init() {
   await loadSettings();
+  // До первой отрисовки: код приглашения убирается из адресной строки,
+  // чтобы не осесть в истории и закладках.
+  await captureIncomingReferral().catch(() => {});
   applyI18nTree(document.body);
 
   for (const key of Object.keys(SCREENS)) {

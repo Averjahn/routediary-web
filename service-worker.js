@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v12';
+const CACHE_NAME = 'avtopuls-v13';
 const APP_SHELL = [
   './',
   './index.html',
@@ -21,6 +21,8 @@ const APP_SHELL = [
   './js/carArt.js',
   './js/vehicleCatalog.js',
   './js/vehicleData.js',
+  './js/referral.js',
+  './js/qr.js',
   './js/screens/map.js',
   './js/screens/trips.js',
   './js/screens/car.js',
