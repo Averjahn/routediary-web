@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v13';
+const CACHE_NAME = 'avtopuls-v14';
 const APP_SHELL = [
   './',
   './index.html',
@@ -22,6 +22,9 @@ const APP_SHELL = [
   './js/vehicleCatalog.js',
   './js/vehicleData.js',
   './js/referral.js',
+  './js/crypto.js',
+  './js/sync.js',
+  './js/syncClient.js',
   './js/qr.js',
   './js/screens/map.js',
   './js/screens/trips.js',
@@ -81,6 +84,13 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // Обмен с сервером синхронизации мимо кэша — всегда и с любого источника.
+  // Иначе офлайн отдался бы сохранённый «список изменений», клиент принял бы
+  // его за свежий и сдвинул номер ревизии, после чего пропустил бы настоящие
+  // правки с других устройств. Отсутствие сети движок обрабатывает сам.
+  if (url.pathname.startsWith('/api/')) return;
+
   // Тайлы карт и внешние CDN — сеть, затем кэш как fallback (не блокируем офлайн-старт).
   if (url.origin !== self.location.origin) {
     event.respondWith(

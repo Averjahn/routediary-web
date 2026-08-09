@@ -97,3 +97,13 @@ export function restoreScroll(el, top) {
 export const MODE_ICON = { walk: icon('walk'), run: icon('run'), bike: icon('bike'), car: icon('car') };
 export const CATEGORY_ICON = { none: icon('categoryNone'), work: icon('work'), home: icon('home'), shop: icon('shop'), medical: icon('medical'), leisure: icon('leisure'), other: icon('other') };
 export const EXPENSE_ICON = { fuel: icon('fuel'), wash: icon('wash'), service: icon('service'), repairs: icon('repairs'), tires: icon('tires'), insurance: icon('insurance'), tax: icon('tax'), parking: icon('parking'), fine: icon('fine'), other: icon('other') };
+
+/**
+ * Экранирование пользовательского текста перед вставкой в разметку.
+ * Названия машин и подписи поездок человек вводит сам, а с появлением
+ * синхронизации они ещё и приезжают с другого устройства.
+ */
+export function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}

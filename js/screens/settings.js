@@ -5,13 +5,14 @@ import {
 } from '../state.js';
 import { CURRENCY_SYMBOLS } from '../format.js';
 import { t } from '../i18n.js';
-import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll } from '../ui.js';
+import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER } from '../theme.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
-import { currentTier, TIER, TEST_MODE, resetPurchase } from '../subscription.js';
+import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
 import { openPaywall } from '../paywall.js';
 import { getReferralCode, getShareUrl, getInvitedBy } from '../referral.js';
 import { qrSvg } from '../qr.js';
+import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
 
 let containerRef = null;
 
@@ -43,10 +44,11 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles] = await Promise.all([
+  const [tier, severe, vehicles, sync] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
+    Sync.status(),
   ]);
   const provider = getMapProvider();
 
@@ -112,6 +114,9 @@ export async function refresh() {
       </label>
     </div>
 
+    <div class="section-title" data-i18n="settings.section_sync"></div>
+    <div class="card" id="sync-card">${syncCard(sync)}</div>
+
     <div class="section-title" data-i18n="settings.section_share"></div>
     <div class="card">
       <div class="settings-row" style="cursor:pointer;" id="set-share">
@@ -142,6 +147,39 @@ export async function refresh() {
   bind(body);
   showStorageUsage(body);
 
+}
+
+/** Карточка синхронизации: разное содержимое до и после входа. */
+function syncCard(sync) {
+  if (!sync.signedIn) {
+    return `
+      <div class="settings-row" style="cursor:pointer;" id="sync-signin">
+        <span data-i18n="sync.sign_in"></span>
+        <span class="muted" data-i18n="sync.off"></span>
+      </div>
+      <div class="muted" style="font-size:12px;" data-i18n="sync.hint_off"></div>`;
+  }
+
+  const last = sync.lastAt
+    ? new Date(sync.lastAt).toLocaleString(AppState.lang === 'en' ? 'en-GB' : 'ru-RU')
+    : t('sync.never');
+
+  return `
+    <div class="settings-row"><span data-i18n="sync.account"></span>
+      <span class="muted">${escapeHtml(sync.login || '')}</span></div>
+    <div class="settings-row"><span data-i18n="sync.last"></span>
+      <span class="muted" id="sync-last">${escapeHtml(last)}</span></div>
+    ${sync.pending ? `<div class="settings-row"><span data-i18n="sync.pending"></span>
+      <span class="muted">${sync.pending}</span></div>` : ''}
+    <div class="row" style="gap:10px;margin-top:12px;">
+      <button class="btn primary block" id="sync-now" data-i18n="sync.now"></button>
+    </div>
+    <div class="settings-row" style="cursor:pointer;margin-top:6px;" id="sync-password">
+      <span data-i18n="sync.change_password"></span></div>
+    <div class="settings-row" style="cursor:pointer;" id="sync-signout">
+      <span data-i18n="sync.sign_out"></span></div>
+    <div class="settings-row" style="cursor:pointer;" id="sync-delete">
+      <span style="color:var(--danger);" data-i18n="sync.delete_account"></span></div>`;
 }
 
 /** Карточка уровня доступа — единственная точка входа в оплату из настроек. */
@@ -223,6 +261,8 @@ function bind(body) {
     toast(t('settings.severe_saved'));
   });
 
+  bindSync(body);
+
   body.querySelector('#set-share').addEventListener('click', openShare);
   getReferralCode().then(code => {
     const el = body.querySelector('#set-share-code');
@@ -230,6 +270,211 @@ function bind(body) {
   });
 
   body.querySelector('#set-wipe').addEventListener('click', confirmWipe);
+}
+
+// --- Синхронизация ---
+
+function syncErrorText(code) {
+  const key = 'sync.err.' + code;
+  const text = t(key);
+  return text === key ? t('sync.err.unknown') : text;
+}
+
+function bindSync(body) {
+  body.querySelector('#sync-signin')?.addEventListener('click', async () => {
+    // Синхронизация — платная возможность. В тестовом режиме доступ открыт
+    // всем, чтобы её можно было пощупать до появления настоящих покупок.
+    if (!(await hasFeature('sync'))) {
+      openPaywall({ reason: 'pay.reason_sync', onDone: refresh });
+      return;
+    }
+    openSyncAuth();
+  });
+
+  body.querySelector('#sync-now')?.addEventListener('click', async (e) => {
+    const button = e.currentTarget;
+    button.disabled = true;
+    button.textContent = t('sync.running');
+    try {
+      const { received, sent } = await Sync.syncNow();
+      toast(t('sync.done_counts', { received, sent }));
+    } catch (err) {
+      toast(syncErrorText(err?.code));
+    } finally {
+      refreshKeepingScroll();
+    }
+  });
+
+  body.querySelector('#sync-password')?.addEventListener('click', openPasswordChange);
+  body.querySelector('#sync-signout')?.addEventListener('click', confirmSignOut);
+  body.querySelector('#sync-delete')?.addEventListener('click', confirmDeleteAccount);
+}
+
+/**
+ * Вход и регистрация.
+ *
+ * Про невосстановимость пароля сказано прямо в окне, а не спрятано в справке:
+ * это единственное необратимое следствие того, что сервер не знает ключа,
+ * и человек должен встретить его до того, как доверит данные, а не после.
+ */
+function openSyncAuth() {
+  let mode = 'in';
+
+  const overlay = openModal(`
+    <div class="modal-header"><h2 id="sync-title" data-i18n="sync.title_in"></h2><button class="modal-close">✕</button></div>
+    <div class="chip-row" style="margin-bottom:14px;">
+      <button class="chip active" data-mode="in" data-i18n="sync.tab_in"></button>
+      <button class="chip" data-mode="up" data-i18n="sync.tab_up"></button>
+    </div>
+    <label class="field"><span class="field-label" data-i18n="sync.login"></span>
+      <input id="sync-in-login" type="email" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+    <label class="field"><span class="field-label" data-i18n="sync.password"></span>
+      <input id="sync-in-pass" type="password" autocomplete="current-password"></label>
+    <label class="field" id="sync-repeat-field" hidden><span class="field-label" data-i18n="sync.password_repeat"></span>
+      <input id="sync-in-pass2" type="password" autocomplete="new-password"></label>
+    <div class="muted" style="font-size:12px;margin:10px 0;" data-i18n="sync.encryption_note"></div>
+    <div class="muted" id="sync-in-error" style="color:var(--danger);font-size:13px;min-height:18px;"></div>
+    <button class="btn primary block" id="sync-in-go" data-i18n="sync.submit_in"></button>
+  `, {
+    onMount: (root) => {
+      const error = root.querySelector('#sync-in-error');
+      const button = root.querySelector('#sync-in-go');
+      const repeat = root.querySelector('#sync-repeat-field');
+
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+
+      root.querySelectorAll('[data-mode]').forEach(chip => chip.addEventListener('click', () => {
+        mode = chip.dataset.mode;
+        root.querySelectorAll('[data-mode]').forEach(c => c.classList.toggle('active', c === chip));
+        repeat.hidden = mode !== 'up';
+        root.querySelector('#sync-title').textContent = t(mode === 'up' ? 'sync.title_up' : 'sync.title_in');
+        button.textContent = t(mode === 'up' ? 'sync.submit_up' : 'sync.submit_in');
+        root.querySelector('#sync-in-pass').setAttribute(
+          'autocomplete', mode === 'up' ? 'new-password' : 'current-password');
+        error.textContent = '';
+      }));
+
+      button.addEventListener('click', async () => {
+        const login = root.querySelector('#sync-in-login').value.trim();
+        const password = root.querySelector('#sync-in-pass').value;
+        const repeated = root.querySelector('#sync-in-pass2').value;
+
+        if (login.length < 3) return (error.textContent = t('sync.login_short'));
+        if (password.length < 8) return (error.textContent = t('sync.password_short'));
+        if (mode === 'up' && password !== repeated) return (error.textContent = t('sync.password_mismatch'));
+
+        error.textContent = '';
+        button.disabled = true;
+        // Растяжение пароля занимает около секунды: без подписи кажется,
+        // что кнопка не сработала, и на неё жмут второй раз.
+        button.textContent = t('sync.working');
+        try {
+          if (mode === 'up') await Sync.register(login, password, deviceLabel());
+          else await Sync.login(login, password, deviceLabel());
+
+          closeModal();
+          toast(t('sync.running'));
+          await syncQuietly();
+          startAutoSync();
+          toast(t('sync.done'));
+        } catch (err) {
+          error.textContent = syncErrorText(err?.code);
+        } finally {
+          button.disabled = false;
+          button.textContent = t(mode === 'up' ? 'sync.submit_up' : 'sync.submit_in');
+          refresh();
+        }
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function openPasswordChange() {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="sync.change_password"></h2><button class="modal-close">✕</button></div>
+    <label class="field"><span class="field-label" data-i18n="sync.new_password"></span>
+      <input id="pw-new" type="password" autocomplete="new-password"></label>
+    <label class="field"><span class="field-label" data-i18n="sync.password_repeat"></span>
+      <input id="pw-new2" type="password" autocomplete="new-password"></label>
+    <div class="muted" id="pw-error" style="color:var(--danger);font-size:13px;min-height:18px;"></div>
+    <button class="btn primary block" id="pw-go" data-i18n="common.save"></button>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+      root.querySelector('#pw-go').addEventListener('click', async (e) => {
+        const error = root.querySelector('#pw-error');
+        const password = root.querySelector('#pw-new').value;
+        if (password.length < 8) return (error.textContent = t('sync.password_short'));
+        if (password !== root.querySelector('#pw-new2').value) {
+          return (error.textContent = t('sync.password_mismatch'));
+        }
+        e.currentTarget.disabled = true;
+        e.currentTarget.textContent = t('sync.working');
+        try {
+          await Sync.changePassword(password);
+          closeModal();
+          toast(t('sync.password_changed'));
+        } catch (err) {
+          error.textContent = syncErrorText(err?.code);
+          e.currentTarget.disabled = false;
+          e.currentTarget.textContent = t('common.save');
+        }
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function confirmSignOut() {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="sync.sign_out"></h2><button class="modal-close">✕</button></div>
+    <p data-i18n="sync.sign_out_warning"></p>
+    <div class="row" style="gap:10px;margin-top:14px;">
+      <button class="btn block" id="so-cancel" data-i18n="common.cancel"></button>
+      <button class="btn primary" id="so-go" data-i18n="sync.sign_out"></button>
+    </div>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+      root.querySelector('#so-cancel').addEventListener('click', closeModal);
+      root.querySelector('#so-go').addEventListener('click', async () => {
+        stopAutoSync();
+        await Sync.logout();
+        closeModal();
+        refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function confirmDeleteAccount() {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="sync.delete_account"></h2><button class="modal-close">✕</button></div>
+    <p data-i18n="sync.delete_warning"></p>
+    <div class="row" style="gap:10px;margin-top:14px;">
+      <button class="btn block" id="da-cancel" data-i18n="common.cancel"></button>
+      <button class="btn danger" id="da-go" data-i18n="settings.wipe_confirm"></button>
+    </div>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+      root.querySelector('#da-cancel').addEventListener('click', closeModal);
+      root.querySelector('#da-go').addEventListener('click', async () => {
+        try {
+          stopAutoSync();
+          await Sync.deleteAccount();
+          toast(t('sync.account_deleted'));
+        } catch (err) {
+          toast(syncErrorText(err?.code));
+        }
+        closeModal();
+        refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
 }
 
 /**

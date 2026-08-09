@@ -4,7 +4,25 @@ const DB_NAME = 'routediary';
 // для каждой машины, а не общим списком на всё приложение.
 // v3: vehicleId появился и у поездки. В гараже теперь может быть несколько
 // машин, и пробег каждой считается только по её поездкам.
-const DB_VERSION = 3;
+// v4: у синхронизируемых записей появились updatedAt и признак удаления.
+// Без отметки времени нечем разрешать расхождения между устройствами,
+// а без «надгробий» удаление на одном телефоне не доехало бы до другого:
+// исчезнувшую запись не отличить от ещё не полученной, и она бы вернулась.
+const DB_VERSION = 4;
+
+/**
+ * Хранилища, попадающие в синхронизацию.
+ *
+ * trackPoints сюда не входят намеренно: точек трека десятки тысяч, и по
+ * отдельности они превратили бы обмен в поток мелких записей. Они едут
+ * вместе со своей поездкой, одним зашифрованным куском.
+ *
+ * settings тоже вне списка — тема, язык и единицы принадлежат устройству,
+ * а не человеку: странно, если выбор тёмной темы на телефоне перекрасил бы
+ * ноутбук. Там же лежит код приглашения, привязанный к устройству.
+ */
+export const SYNCED_STORES = ['trips', 'vehicles', 'refuels', 'expenses', 'expenseTemplates', 'maintenanceItems'];
+const isSynced = (storeName) => SYNCED_STORES.includes(storeName);
 
 const STORES = {
   trackPoints: { keyPath: 'id', indexes: [['tripId', 'tripId'], ['timestamp', 'timestamp'], ['dayKey', 'dayKey']] },
@@ -78,6 +96,24 @@ function openDb() {
           cursor.continue();
         };
       }
+
+      // Записи, созданные до v4, не имеют отметки времени. Проставляем момент
+      // обновления: без неё первая же синхронизация не смогла бы решить, чья
+      // версия свежее, и рискнула бы затереть данные с другого устройства.
+      if (event.oldVersion > 0 && event.oldVersion < 4) {
+        const stamp = Date.now();
+        for (const name of SYNCED_STORES) {
+          if (!db.objectStoreNames.contains(name)) continue;
+          tx.objectStore(name).openCursor().onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (!cursor) return;
+            if (cursor.value.updatedAt === undefined) {
+              cursor.update({ ...cursor.value, updatedAt: stamp });
+            }
+            cursor.continue();
+          };
+        }
+      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -89,22 +125,48 @@ function tx(storeName, mode) {
   return openDb().then(db => db.transaction(storeName, mode).objectStore(storeName));
 }
 
+/** Физическое удаление — без следа и без уведомления других устройств. */
+async function hardDelete(storeName, key) {
+  const store = await tx(storeName, 'readwrite');
+  return new Promise((resolve, reject) => {
+    const req = store.delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/** Скрытая от приложения запись: удалённая либо ещё не разрешённая к показу. */
+const isTombstone = (row) => !!row?.deleted;
+const visible = (rows) => rows.filter(row => !isTombstone(row));
+
 export const DB = {
-  async put(storeName, value) {
+  /**
+   * @param {object} [options]
+   * @param {boolean} [options.stamp=true] проставить время изменения.
+   *   Синхронизация ставит false: у пришедшей записи уже есть своё время,
+   *   и подмена его на текущее сделала бы чужую правку «самой свежей»,
+   *   после чего она затирала бы более новую версию на других устройствах.
+   */
+  async put(storeName, value, { stamp = true } = {}) {
+    const row = (stamp && isSynced(storeName)) ? { ...value, updatedAt: Date.now() } : value;
     const store = await tx(storeName, 'readwrite');
     return new Promise((resolve, reject) => {
-      const req = store.put(value);
-      req.onsuccess = () => resolve(value);
+      const req = store.put(row);
+      req.onsuccess = () => resolve(row);
       req.onerror = () => reject(req.error);
     });
   },
 
-  async putMany(storeName, values) {
+  async putMany(storeName, values, { stamp = true } = {}) {
+    const now = Date.now();
+    const rows = (stamp && isSynced(storeName))
+      ? values.map(v => ({ ...v, updatedAt: now }))
+      : values;
     const store = await tx(storeName, 'readwrite');
     return new Promise((resolve, reject) => {
-      let remaining = values.length;
+      let remaining = rows.length;
       if (remaining === 0) return resolve();
-      for (const v of values) {
+      for (const v of rows) {
         const req = store.put(v);
         req.onsuccess = () => { if (--remaining === 0) resolve(); };
         req.onerror = () => reject(req.error);
@@ -116,7 +178,7 @@ export const DB = {
     const store = await tx(storeName, 'readonly');
     return new Promise((resolve, reject) => {
       const req = store.get(key);
-      req.onsuccess = () => resolve(req.result || null);
+      req.onsuccess = () => resolve(isTombstone(req.result) ? null : (req.result || null));
       req.onerror = () => reject(req.error);
     });
   },
@@ -125,7 +187,7 @@ export const DB = {
     const store = await tx(storeName, 'readonly');
     return new Promise((resolve, reject) => {
       const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => resolve(visible(req.result || []));
       req.onerror = () => reject(req.error);
     });
   },
@@ -134,17 +196,50 @@ export const DB = {
     const store = await tx(storeName, 'readonly');
     return new Promise((resolve, reject) => {
       const req = store.index(indexName).getAll(value);
+      req.onsuccess = () => resolve(visible(req.result || []));
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  /** Всё, включая «надгробия». Нужно только синхронизации. */
+  async getAllRaw(storeName) {
+    const store = await tx(storeName, 'readonly');
+    return new Promise((resolve, reject) => {
+      const req = store.getAll();
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => reject(req.error);
     });
   },
 
+  /**
+   * Удаление.
+   *
+   * Если запись уже побывала на сервере, физически стереть её нельзя: другое
+   * устройство прислало бы её обратно, не отличив удаление от «ещё не видел».
+   * Вместо этого остаётся «надгробие» — пустая запись с признаком удаления,
+   * которая доедет до остальных устройств и там сотрёт данные.
+   *
+   * Запись, которую сервер никогда не видел, удаляется по-настоящему: сообщать
+   * о ней некому. Так короткие поездки, отброшенные при автотрекинге, не
+   * оставляют за собой мусора.
+   */
   async delete(storeName, key) {
+    if (!isSynced(storeName)) return hardDelete(storeName, key);
+
     const store = await tx(storeName, 'readwrite');
-    return new Promise((resolve, reject) => {
-      const req = store.delete(key);
-      req.onsuccess = () => resolve();
+    const existing = await new Promise((resolve, reject) => {
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => reject(req.error);
+    });
+
+    if (!existing || existing.syncRev === undefined) return hardDelete(storeName, key);
+
+    return DB.put(storeName, {
+      [STORES[storeName].keyPath]: key,
+      deleted: true,
+      syncRev: existing.syncRev,
+      syncedAt: existing.syncedAt,
     });
   },
 

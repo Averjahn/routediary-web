@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
 import { captureIncomingReferral } from './referral.js';
+import { startAutoSync } from './syncClient.js';
 import * as MapScreen from './screens/map.js';
 import * as TripsScreen from './screens/trips.js';
 import * as CarScreen from './screens/car.js';
@@ -60,6 +61,9 @@ async function init() {
 
   switchTab('map');
   initInstallBanner();
+  // Обмен идёт молча и только если человек вошёл: офлайн — штатное
+  // состояние приложения, и отсутствие сети не должно ничего ломать.
+  startAutoSync();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(() => {});
