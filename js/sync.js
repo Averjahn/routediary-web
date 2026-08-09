@@ -78,17 +78,20 @@ export function createSync({ db, request, getSetting, setSetting }) {
 
   // --- Учётная запись ---
 
-  async function register(login, password, device) {
+  async function register(login, password, device, { referralCode, invitedBy } = {}) {
     const kdfSalt = newKdfSalt();
     const { authHash, kek } = await deriveFromPassword(password, kdfSalt);
     const master = newMasterKey();
     const wrappedKey = await wrapMasterKey(kek, master);
 
+    // Код с устройства предлагается серверу к закреплению: его могли раздать
+    // до регистрации, и такие ссылки должны продолжать работать.
     const res = await request('POST', '/api/auth/register',
-      { login, authHash, kdfSalt, wrappedKey, device }, null);
+      { login, authHash, kdfSalt, wrappedKey, device, referralCode, invitedBy }, null);
     if (!res.ok) throw new SyncError(res.body?.error || 'register_failed');
 
     await saveSession(res.body, master);
+    await refreshAccount();
     return res.body;
   }
 
@@ -110,6 +113,31 @@ export function createSync({ db, request, getSetting, setSetting }) {
     }
 
     await saveSession(res.body, master);
+    await refreshAccount();
+    return res.body;
+  }
+
+  /**
+   * Сведения об аккаунте: код приглашения, счётчик приведённых и срок Про.
+   *
+   * Это единственное, что сервер знает о человеке содержательного, и оно
+   * нужно, чтобы показывать награду. Заодно досылается код пригласившего,
+   * если ссылку открыли уже после регистрации: сервер примет его один раз.
+   */
+  async function refreshAccount() {
+    const res = await api('GET', '/api/me');
+    if (!res.ok) return null;
+
+    const pendingInvite = await getSetting('invitedBy');
+    if (pendingInvite && !res.body.invitedBy) {
+      const credited = await api('POST', '/api/account/invited-by', { code: pendingInvite });
+      if (credited.ok && credited.body?.credited) return refreshAccount();
+    }
+
+    await setSetting('syncReferralCode', res.body.referralCode);
+    await setSetting('syncInvitedCount', res.body.invitedCount);
+    await setSetting('syncProUntil', res.body.proUntil || undefined);
+    await setSetting('syncRewardDays', res.body.rewardDays);
     return res.body;
   }
 
@@ -126,7 +154,8 @@ export function createSync({ db, request, getSetting, setSetting }) {
   async function logout() {
     try { await api('POST', '/api/auth/logout'); } catch { /* сеть не обязана быть */ }
     keys = null;
-    for (const key of ['syncToken', 'syncLogin', 'syncMasterKey', 'syncRev', 'syncLastAt']) {
+    for (const key of ['syncToken', 'syncLogin', 'syncMasterKey', 'syncRev', 'syncLastAt',
+                       'syncReferralCode', 'syncInvitedCount', 'syncProUntil', 'syncRewardDays']) {
       await setSetting(key, undefined);
     }
   }
@@ -137,6 +166,10 @@ export function createSync({ db, request, getSetting, setSetting }) {
       signedIn: !!(await getSetting('syncToken')),
       lastAt: await getSetting('syncLastAt'),
       pending: (await collectDirty()).length,
+      referralCode: await getSetting('syncReferralCode'),
+      invitedCount: (await getSetting('syncInvitedCount')) || 0,
+      proUntil: await getSetting('syncProUntil'),
+      rewardDays: (await getSetting('syncRewardDays')) || 90,
     };
   }
 
@@ -323,6 +356,7 @@ export function createSync({ db, request, getSetting, setSetting }) {
     // Отправка могла поднять ревизию — дотягиваем хвост, чтобы на следующем
     // круге не пришли собственные же записи.
     await pull();
+    await refreshAccount();
     await setSetting('syncLastAt', Date.now());
     return { received, sent };
   }
@@ -348,7 +382,7 @@ export function createSync({ db, request, getSetting, setSetting }) {
 
   return {
     register, login, logout, status, syncNow, pull, push,
-    changePassword, deleteAccount, collectDirty,
+    changePassword, deleteAccount, collectDirty, refreshAccount,
   };
 }
 

@@ -63,13 +63,28 @@ function generateCode() {
   return out;
 }
 
-/** Код этого устройства. Создаётся один раз и больше не меняется. */
+/**
+ * Код приглашения.
+ *
+ * После входа он принадлежит аккаунту, а не устройству: иначе у человека
+ * с телефоном и ноутбуком было бы два разных кода и приглашения делились бы
+ * между ними. До входа работает местный код — его можно раздавать сразу,
+ * а при регистрации сервер закрепит именно его, если он ещё свободен.
+ */
 export async function getReferralCode() {
+  const fromAccount = await getSetting('syncReferralCode');
+  if (fromAccount) return fromAccount;
+
   const saved = await getSetting(CODE_KEY);
   if (saved) return saved;
   const code = generateCode();
   await setSetting(CODE_KEY, code);
   return code;
+}
+
+/** Код, заведённый на этом устройстве до входа. Предлагается серверу при регистрации. */
+export async function getLocalCode() {
+  return getSetting(CODE_KEY);
 }
 
 /** Ссылка-приглашение с кодом этого устройства. */

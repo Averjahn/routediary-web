@@ -59,8 +59,29 @@ export const PLANS = [
 
 const KEY = 'tier';
 
-/** Текущий уровень доступа. */
+/**
+ * До какого момента Про выдан за приглашённых друзей.
+ * Срок присылает сервер, местное время на него не влияет — накрутить,
+ * переведя часы на телефоне, не выйдет.
+ */
+export async function rewardedProUntil() {
+  return getSetting('syncProUntil');
+}
+
+/** Действует ли награда за приглашения прямо сейчас. */
+export async function rewardActive() {
+  const until = await rewardedProUntil();
+  return !!until && new Date(until) > new Date();
+}
+
+/**
+ * Текущий уровень доступа.
+ *
+ * Про даёт либо покупка, либо действующая награда за приглашённых друзей —
+ * что из двух, для доступа неважно.
+ */
 export async function currentTier() {
+  if (await rewardActive()) return TIER.PRO;
   return (await getSetting(KEY, TIER.FREE)) || TIER.FREE;
 }
 

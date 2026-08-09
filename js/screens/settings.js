@@ -10,7 +10,7 @@ import { THEMES, THEME_ORDER } from '../theme.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
 import { openPaywall } from '../paywall.js';
-import { getReferralCode, getShareUrl, getInvitedBy } from '../referral.js';
+import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../referral.js';
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
 
@@ -369,7 +369,10 @@ function openSyncAuth() {
         // что кнопка не сработала, и на неё жмут второй раз.
         button.textContent = t('sync.working');
         try {
-          if (mode === 'up') await Sync.register(login, password, deviceLabel());
+          if (mode === 'up') {
+            await Sync.register(login, password, deviceLabel(),
+              { referralCode: await getLocalCode(), invitedBy: await getInvitedBy() });
+          }
           else await Sync.login(login, password, deviceLabel());
 
           closeModal();
@@ -483,9 +486,14 @@ function confirmDeleteAccount() {
  * не делает нигде больше.
  */
 async function openShare() {
-  const [code, url, invitedBy] = await Promise.all([
-    getReferralCode(), getShareUrl(), getInvitedBy(),
+  const [code, url, invitedBy, sync] = await Promise.all([
+    getReferralCode(), getShareUrl(), getInvitedBy(), Sync.status(),
   ]);
+
+  const locale = AppState.lang === 'en' ? 'en-GB' : 'ru-RU';
+  const proUntil = sync.proUntil && new Date(sync.proUntil) > new Date()
+    ? new Date(sync.proUntil).toLocaleDateString(locale)
+    : null;
 
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="share.title"></h2><button class="modal-close">✕</button></div>
@@ -500,11 +508,23 @@ async function openShare() {
       <button class="btn block" id="share-copy" data-i18n="share.copy"></button>
       ${navigator.share ? `<button class="btn primary" id="share-send" data-i18n="share.send"></button>` : ''}
     </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="muted" style="font-size:13px;">${t('share.reward', { days: sync.rewardDays })}</div>
+      ${sync.signedIn ? `
+        <div class="settings-row" style="margin-top:8px;">
+          <span data-i18n="share.invited_count"></span><b>${sync.invitedCount}</b></div>
+        ${proUntil ? `<div class="settings-row">
+          <span data-i18n="share.pro_until"></span><b>${escapeHtml(proUntil)}</b></div>` : ''}
+      ` : `<div class="muted" style="font-size:12px;margin-top:8px;color:var(--danger);"
+             data-i18n="share.need_account"></div>`}
+    </div>
+
     ${invitedBy ? `<div class="muted" style="font-size:12px;margin-top:14px;">
-      <span data-i18n="share.invited_by"></span>: <b>${invitedBy}</b>
+      <span data-i18n="share.invited_by"></span>: <b>${escapeHtml(invitedBy)}</b>
     </div>` : ''}
     <div class="muted" style="font-size:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--separator);"
-         data-i18n="share.no_counting"></div>
+         data-i18n="share.counting_note"></div>
   `, {
     onMount: (root) => {
       root.querySelector('.modal-close').addEventListener('click', closeModal);
