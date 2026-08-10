@@ -1,10 +1,11 @@
 import { DB } from '../db.js';
 import { AppState, getPrimaryVehicle } from '../state.js';
 import { addDays, dayKeyOf, Fmt, todayKey } from '../format.js';
-import { t, getLang } from '../i18n.js';
+import { t, getLang, plural } from '../i18n.js';
 import { applyI18nTree, icon, MODE_ICON, EXPENSE_ICON } from '../ui.js';
 import { calcCalories, calcFuel } from '../geo.js';
 import { THEMES } from '../theme.js';
+import { recurringStops } from '../stops.js';
 
 let containerRef = null;
 let period = 'week';
@@ -87,6 +88,8 @@ export async function refresh() {
     <div class="card"><canvas class="chart" id="chart-pie" height="180"></canvas></div>
     <div class="section-title" data-i18n="stats.cumulative_title"></div>
     <div class="card"><canvas class="chart" id="chart-cum" height="120"></canvas></div>
+    <div class="section-title" data-i18n="stops.title"></div>
+    <div class="card" id="stops-card"><div class="muted" data-i18n="stops.loading"></div></div>
     ` : `<div class="empty-state" data-i18n="stats.no_data"></div>`}
   `;
   applyI18nTree(body);
@@ -97,6 +100,50 @@ export async function refresh() {
   drawBarChart(body.querySelector('#chart-car'), byDay.map(d => d.carKm), THEMES[AppState.theme].car, dayKeys);
   drawPieChart(body.querySelector('#chart-pie'), expenses, refuels, totals.fuelCost);
   drawCumulative(body.querySelector('#chart-cum'), byDay);
+  renderStops(body, trips);
+}
+
+/**
+ * Места, где человек регулярно стоит.
+ *
+ * Считается по его собственным трекам и ничего не предсказывает: это
+ * измерение прошлого, а не обещание будущего. Формулировки подобраны так,
+ * чтобы это было понятно без чтения справки — «обычно стоите», а не
+ * «простоите».
+ */
+async function renderStops(body, trips) {
+  const card = body.querySelector('#stops-card');
+  if (!card) return;
+
+  // Точки берём только у поездок на машине: пешеходные остановки на
+  // светофоре измеряются, но человеку про них рассказывать незачем.
+  const carTrips = trips.filter(tr => tr.mode === 'car');
+  const tracks = [];
+  for (const trip of carTrips) {
+    tracks.push(await DB.getAllByIndex('trackPoints', 'tripId', trip.id));
+  }
+
+  const places = recurringStops(tracks).slice(0, 5);
+  if (places.length === 0) {
+    card.innerHTML = `<div class="muted">${t('stops.empty')}</div>`;
+    return;
+  }
+
+  card.innerHTML = places.map((place, index) => {
+    const worst = [...place.byHour].sort((a, b) => b.medianSeconds - a.medianSeconds)[0];
+    const showHour = place.byHour.length > 1 && worst.medianSeconds > place.medianSeconds * 1.4;
+    return `
+      <div class="stop-row">
+        <div class="stop-rank">${index + 1}</div>
+        <div class="grow">
+          <div><b>${t('stops.usually', { seconds: place.medianSeconds })}</b></div>
+          <div class="muted" style="font-size:12px;">
+            ${t('stops.visits', { visits: place.visits, total: Fmt.duration(place.totalSeconds), times: plural(place.visits, t('stops.time_one'), t('stops.time_few'), t('stops.time_many')) })}
+            ${showHour ? ' · ' + t('stops.worst_hour', { hour: worst.hour, seconds: worst.medianSeconds }) : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('') + `<div class="muted stops-note">${t('stops.note')}</div>`;
 }
 
 function setupCanvas(canvas) {

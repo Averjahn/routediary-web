@@ -168,6 +168,14 @@ export const STRINGS = {
     'ton.need_account': 'Сначала войдите в аккаунт: Про привязан к нему, а не к устройству',
     'ton.disabled': 'Оплата в TON пока не настроена',
     'ton.failed': 'Не удалось выставить счёт',
+    'stops.title': 'Где вы стоите',
+    'stops.loading': 'Считаем…',
+    'stops.time_one': 'раз', 'stops.time_few': 'раза', 'stops.time_many': 'раз',
+    'stops.empty': 'Пока мало данных. Место появляется здесь, когда вы постояли в нём хотя бы три раза.',
+    'stops.usually': 'Обычно стоите {seconds} с',
+    'stops.visits': '{visits} {times} · всего {total}',
+    'stops.worst_hour': 'в {hour} ч дольше — {seconds} с',
+    'stops.note': 'Это измерение ваших поездок, а не предсказание. Приложение не знает фаз светофоров: таких данных в открытом доступе нет, и телефон светофор не видит. Здесь показано, сколько вы на самом деле стояли в этих местах раньше — по светофорам, знакам, пробкам и очередям вместе.',
     'guide.open': 'Инструкция',
     'guide.none': 'Для этого узла руководства пока нет',
     'guide.level_diy': 'Своими руками',
@@ -428,6 +436,14 @@ export const STRINGS = {
     'ton.need_account': 'Sign in first: Pro belongs to the account, not the device',
     'ton.disabled': 'TON payments are not configured yet',
     'ton.failed': 'Could not create the invoice',
+    'stops.title': 'Where you wait',
+    'stops.loading': 'Calculating…',
+    'stops.time_one': 'time', 'stops.time_few': 'times', 'stops.time_many': 'times',
+    'stops.empty': 'Not enough data yet. A place appears here once you have waited there at least three times.',
+    'stops.usually': 'Usually {seconds} s here',
+    'stops.visits': '{visits} {times} · {total} in total',
+    'stops.worst_hour': 'longer at {hour}:00 — {seconds} s',
+    'stops.note': 'This measures your own trips; it is not a prediction. The app does not know traffic light phases: that data is not publicly available and a phone cannot see the light. What you see is how long you actually waited at these places before — traffic lights, signs, queues and jams all together.',
     'guide.open': 'Guide',
     'guide.none': 'No guide for this item yet',
     'guide.level_diy': 'Do it yourself',
@@ -536,4 +552,27 @@ export function t(key, params) {
     }
   }
   return str;
+}
+
+/**
+ * Множественное число.
+ *
+ * В русском три формы, и «4 раз» вместо «4 раза» выглядит как недоделка
+ * даже там, где всё остальное сделано аккуратно. В английском форм две,
+ * поэтому `few` там просто не используется.
+ *
+ *   plural(1, 'раз', 'раза', 'раз')  → 'раз'
+ *   plural(4, 'раз', 'раза', 'раз')  → 'раза'
+ *   plural(11, 'раз', 'раза', 'раз') → 'раз'   (одиннадцать — исключение)
+ */
+export function plural(n, one, few, many) {
+  const count = Math.abs(Math.trunc(n));
+  if (currentLang !== 'ru') return count === 1 ? one : (many || few || one);
+
+  const tens = count % 100;
+  const units = count % 10;
+  if (tens >= 11 && tens <= 14) return many;
+  if (units === 1) return one;
+  if (units >= 2 && units <= 4) return few;
+  return many;
 }
