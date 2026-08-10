@@ -4,6 +4,7 @@ import { addDays, dayKeyOf, Fmt, todayKey } from '../format.js';
 import { t, getLang } from '../i18n.js';
 import { applyI18nTree, icon, MODE_ICON, EXPENSE_ICON } from '../ui.js';
 import { calcCalories, calcFuel } from '../geo.js';
+import { THEMES } from '../theme.js';
 
 let containerRef = null;
 let period = 'week';

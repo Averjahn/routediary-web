@@ -502,6 +502,24 @@ export const STATUS = { OK: 'ok', SOON: 'soon', DUE: 'due', OVERDUE: 'overdue' }
  * Возвращает остаток по обоим измерениям и общий вердикт по тому,
  * которое закончится раньше.
  */
+/**
+ * Отметка времени к миллисекундам.
+ *
+ * Записи приезжают не только из этого приложения: синхронизация возит их
+ * между вебом, iOS и Android, а там даты сериализуются строкой ISO. Строка,
+ * попавшая в арифметику напрямую, давала NaN, и на экране появлялось
+ * «Состояние NaN%» — молча неверное вместо честно неизвестного.
+ *
+ * Возвращает null для всего, из чего не выходит осмысленной даты.
+ */
+export function toMillis(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function componentStatus(item, ctx = {}) {
   const odometerKm = ctx.odometerKm || 0;
   const now = ctx.now || Date.now();
@@ -515,15 +533,18 @@ export function componentStatus(item, ctx = {}) {
   }
 
   let daysLeft = null, timeFraction = null;
-  if (item.intervalMonths > 0 && item.lastServiceDate) {
+  const servicedAt = toMillis(item.lastServiceDate);
+  if (item.intervalMonths > 0 && servicedAt != null) {
     const totalMs = item.intervalMonths * MONTH_MS;
-    const usedMs = now - item.lastServiceDate;
+    const usedMs = now - servicedAt;
     daysLeft = Math.round((totalMs - usedMs) / DAY_MS);
     timeFraction = (totalMs - usedMs) / totalMs;
   }
 
   // Ресурс узла — то из двух измерений, которого осталось меньше.
-  const fractions = [kmFraction, timeFraction].filter(f => f != null);
+  // Number.isFinite отсекает и NaN: испорченное поле должно означать
+  // «про этот срок ничего не известно», а не отравлять всю оценку.
+  const fractions = [kmFraction, timeFraction].filter(f => Number.isFinite(f));
   const fraction = fractions.length ? Math.min(...fractions) : 1;
   const limitedBy = fractions.length === 0 ? null
     : (kmFraction != null && kmFraction === fraction ? 'km' : 'time');
