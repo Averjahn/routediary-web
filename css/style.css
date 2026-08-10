@@ -736,3 +736,22 @@ body.hud-open { overflow: hidden; }
 
 /* Звёзды Telegram — фирменный акцент, чтобы способ оплаты узнавался сразу. */
 .pay-plan.stars { border-color: #f5a623; }
+
+/* Две кнопки под записью — одной строкой и одинаковой ширины.
+   Раньше они были инлайновыми в центрированном блоке: переносились
+   на разные строки и получались разной длины, как рваный край. */
+.map-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.map-actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  /* Растягиваем по высоте: если одна подпись переносится на две строки,
+     вторая кнопка не должна оказаться ниже соседки. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

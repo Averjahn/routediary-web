@@ -41,7 +41,7 @@ export function render(container) {
         </div>
         <div class="day-summary-row" id="map-summary"></div>
         <button class="record-btn" id="map-record-btn"></button>
-        <div style="text-align:center;margin-top:10px;">
+        <div class="map-actions">
           <button class="btn sm" id="map-manual-btn" data-i18n="map.manual_add"></button>
           <button class="btn sm" id="map-hud-btn" data-i18n="hud.open"></button>
         </div>
