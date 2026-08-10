@@ -755,3 +755,112 @@ body.hud-open { overflow: hidden; }
   justify-content: center;
   text-align: center;
 }
+
+/* Кнопки под записью регламента — равной ширины, как и под кнопкой записи
+   на карте. Инлайновые кнопки разной длины дают рваный край, особенно когда
+   одна подпись переносится, а соседняя нет. */
+.item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.item-actions .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* --- Руководства по замене --- */
+
+.guide-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-bottom: 12px; }
+.guide-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+/* Уровень видно цветом до чтения: жёлтый — «подумай», красный — «не сам». */
+.guide-badge.assisted { background: var(--warning); }
+.guide-badge.service { background: var(--danger); }
+
+.guide-note {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-alt);
+  margin-bottom: 12px;
+}
+
+/* Предупреждения не прячем в общий текст: их читают до работы, а не по ходу. */
+.guide-warnings {
+  border-left: 3px solid var(--danger);
+  padding: 8px 0 8px 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  display: grid;
+  gap: 8px;
+}
+.guide-warnings-title { font-weight: 700; color: var(--danger); }
+
+.guide-diagram {
+  background: var(--surface-alt);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 6px;
+}
+.guide-svg { width: 100%; height: auto; display: block; }
+
+.guide-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.guide-chip {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.guide-progress { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 10px; }
+.guide-progress .progress-track { flex: 1; }
+
+.guide-steps { display: grid; gap: 2px; }
+.guide-step {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--separator);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.guide-step-num {
+  flex: 0 0 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+/* Сделанный шаг гасим, но не прячем: к нему возвращаются, чтобы свериться. */
+.guide-step.done .guide-step-body { opacity: 0.45; text-decoration: line-through; }
+.guide-step.done .guide-step-num { background: var(--accent); color: var(--on-accent); text-decoration: none; }
+
+.guide-warn { color: var(--danger); font-size: 13px; margin-top: 6px; }
+.guide-manual { color: var(--text-secondary); font-size: 12px; margin-top: 6px; }
+.guide-tap-hint { font-size: 12px; margin-top: 10px; }
+
+.guide-service {
+  border-left: 3px solid var(--danger);
+  padding: 10px 0 10px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.guide-service-why { font-weight: 700; margin-bottom: 6px; }
+
+.guide-disclaimer { font-size: 12px; color: var(--text-secondary); margin-top: 14px; line-height: 1.45; }

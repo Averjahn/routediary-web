@@ -7,6 +7,14 @@ import {
 } from '../state.js';
 import { openPaywall } from '../paywall.js';
 import { componentStatus, fleetHealth, STATUS } from '../maintenance.js';
+import { hasGuide } from '../guides.js';
+import { openGuide } from './guide.js';
+
+/** Название узла: ключ словаря, если он известен, иначе строка как есть.
+    Пользовательские записи регламента хранят название текстом. */
+function maintenanceTitle(item) {
+  return t(item.title) !== item.title ? t(item.title) : item.title;
+}
 import { Fmt, uuid, todayKey, addDays } from '../format.js';
 import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
@@ -376,7 +384,7 @@ function renderMaintenance(listEl, items, ctx, vehicle) {
   listEl.innerHTML = rows.map(({ item, st }) => {
     const pct = st.fraction * 100;
     const color = STATUS_COLOR[st.status];
-    const title = t(item.title) !== item.title ? t(item.title) : item.title;
+    const title = maintenanceTitle(item);
     // «Ориентировочно» для всего, что не подтверждено официальным регламентом:
     // выдавать медианную оценку из спорных источников за точный срок нельзя.
     const approx = item.confidence && item.confidence !== 'high' ? `${t('maint.approx')} ` : '';
@@ -394,8 +402,9 @@ function renderMaintenance(listEl, items, ctx, vehicle) {
         <div class="row between"><b>${escapeHtml(title)}</b><span class="muted" style="font-size:12px;">${remainingLabel(item, st)}</span></div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color};"></div></div>
         ${due}${confirm}
-        <div class="row" style="margin-top:8px;gap:8px;">
+        <div class="item-actions">
           <button class="btn sm" data-replace="${item.id}" data-i18n="car.replaced_now"></button>
+          ${hasGuide(item.componentId) ? `<button class="btn sm" data-guide="${item.id}" data-i18n="guide.open"></button>` : ''}
           <button class="btn sm" data-edit="${item.id}" data-i18n="common.edit"></button>
         </div>
       </div>`;
@@ -413,6 +422,22 @@ function renderMaintenance(listEl, items, ctx, vehicle) {
     item.serviced = true;
     await DB.put('maintenanceItems', item);
     refresh();
+  }));
+  listEl.querySelectorAll('[data-guide]').forEach(btn => btn.addEventListener('click', async () => {
+    const item = items.find(i => i.id === btn.dataset.guide);
+    // «Заменил» прямо из руководства: человек только что закончил работу,
+    // возвращать его в список ради ещё одного нажатия незачем.
+    await openGuide({
+      componentId: item.componentId,
+      title: maintenanceTitle(item),
+      vehicle,
+      onDone: () => {
+        item.lastServiceOdometerKm = odometer;
+        item.lastServiceDate = Date.now();
+        item.serviced = true;
+        DB.put('maintenanceItems', item).then(refresh);
+      },
+    });
   }));
   listEl.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => {
     const item = items.find(i => i.id === btn.dataset.edit);
