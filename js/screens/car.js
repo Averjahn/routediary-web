@@ -586,7 +586,7 @@ function openVehiclePicker({ add = false } = {}) {
 
       function renderMakes(query) {
         const makes = searchMakes(query);
-        listEl.innerHTML = makes.map(m => `<div class="list-item" data-make="${m.id}"><div class="grow">${escapeHtml(makeDisplayName(m, getLang()))}</div><span class="muted">${m.models.length}</span></div>`).join('')
+        listEl.innerHTML = makes.map(m => `<div class="list-item" data-make="${m.id}"><div class="grow">${escapeHtml(makeDisplayName(m))}</div><span class="muted">${m.models.length}</span></div>`).join('')
           + `<div class="list-item" data-other="1"><div class="grow" data-i18n="vehicle.other"></div></div>`;
         applyI18nTree(listEl);
         listEl.querySelectorAll('[data-make]').forEach(node => node.addEventListener('click', () => renderModels(node.dataset.make)));
@@ -595,7 +595,7 @@ function openVehiclePicker({ add = false } = {}) {
 
       function renderModels(makeId) {
         const make = getMake(makeId);
-        listEl.innerHTML = `<div class="list-item" data-back="1"><div class="grow">← ${escapeHtml(makeDisplayName(make, getLang()))}</div></div>` +
+        listEl.innerHTML = `<div class="list-item" data-back="1"><div class="grow">← ${escapeHtml(makeDisplayName(make))}</div></div>` +
           make.models.map(mo => `<div class="list-item" data-model="${mo.id}"><div class="grow">${escapeHtml(mo.name)}</div><span class="muted">${mo.trims.length}</span></div>`).join('');
         listEl.querySelector('[data-back]').addEventListener('click', () => renderMakes(''));
         listEl.querySelectorAll('[data-model]').forEach(node => node.addEventListener('click', () => renderTrims(make, node.dataset.model)));
@@ -663,7 +663,7 @@ async function saveVehicleFromTrim(make, model, trim, { add = false } = {}) {
   }
   const vehicle = {
     id: uuid(), addedAt: Date.now(), makeId: make.id, modelId: model.id, trimId: trim.id, customName: '',
-    displayName: `${makeDisplayName(make, getLang())} ${model.name}`,
+    displayName: `${makeDisplayName(make)} ${model.name}`,
     // trimName и years нужны движку регламента: по ним определяются тип КПП,
     // привод, наддув и карбюратор/инжектор. Без них класс машины не вычислить.
     trimName: trim.name, years: trim.years,
@@ -699,7 +699,7 @@ const TX_OPTIONS = ['mt', 'at', 'cvt', 'amt', 'dsg'];
 function openCustomVehicleForm(preset = null) {
   const addMode = !!(preset && preset.add);
   const presetName = preset
-    ? `${makeDisplayName(preset.make, getLang())} ${preset.model.name}`
+    ? `${makeDisplayName(preset.make)} ${preset.model.name}`
     : '';
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="vehicle.other"></h2><button class="modal-close">✕</button></div>

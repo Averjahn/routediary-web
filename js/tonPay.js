@@ -2,7 +2,7 @@ import { t } from './i18n.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { qrSvg } from './qr.js';
 import { getSetting } from './db.js';
-import { inTelegram, openLink, haptic } from './telegram.js';
+import { inTelegram, openLink, haptic, tg } from './telegram.js';
 
 /**
  * Оплата Про в TON.
@@ -44,9 +44,65 @@ async function api(method, path, body) {
   return { ok: res.ok, status: res.status, body: parsed };
 }
 
-export async function tonAvailable() {
-  const res = await api('GET', '/api/pay/ton/plans');
-  return res.ok && res.body?.enabled ? res.body : null;
+/** Что доступно для оплаты: тарифы и включённые способы. */
+export async function paymentOptions() {
+  const res = await api('GET', '/api/pay/plans');
+  if (!res.ok) return null;
+  const { ton, stars, plans } = res.body;
+  // Звёзды существуют только внутри Telegram: вне его окно оплаты открыть нечем.
+  return { plans, ton: !!ton?.enabled, stars: !!stars?.enabled && inTelegram() };
+}
+
+/**
+ * Оплата звёздами Telegram.
+ *
+ * Ответ окна оплаты («оплачено») приходит от устройства и ничего не
+ * доказывает. Поэтому после него мы спрашиваем сервер: Про откроется только
+ * когда до него дойдёт подтверждение от самого Telegram.
+ */
+export async function openStarsPayment(planId, onPaid) {
+  if (!(await getSetting('syncToken'))) {
+    toast(t('ton.need_account'));
+    return;
+  }
+
+  const created = await api('POST', '/api/pay/stars/invoice', { plan: planId });
+  if (!created.ok) {
+    toast(t(created.body?.error === 'payments_disabled' ? 'stars.disabled' : 'ton.failed'));
+    return;
+  }
+
+  const invoice = created.body;
+  const app = tg();
+  if (!app?.openInvoice) {
+    toast(t('stars.disabled'));
+    return;
+  }
+
+  app.openInvoice(invoice.link, async (status) => {
+    if (status !== 'paid') {
+      if (status === 'failed') toast(t('stars.failed'));
+      return;
+    }
+    haptic('medium');
+    toast(t('stars.confirming'));
+
+    // Подтверждение от Telegram доходит до сервера отдельным запросом и
+    // не мгновенно, поэтому спрашиваем несколько раз, а не один.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const state = await api('GET', `/api/pay/invoice/${invoice.id}`);
+      if (state.ok && state.body.status === 'paid') {
+        toast(t('ton.paid'));
+        const { Sync } = await import('./syncClient.js');
+        await Sync.refreshAccount().catch(() => {});
+        onPaid?.();
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    // Деньги списаны, но подтверждение до нас не дошло — не молчим об этом.
+    toast(t('stars.pending_long'));
+  });
 }
 
 /**

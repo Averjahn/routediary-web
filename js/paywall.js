@@ -15,7 +15,7 @@
 import { t } from './i18n.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
-import { tonAvailable, openTonPayment, formatTon } from './tonPay.js';
+import { paymentOptions, openTonPayment, openStarsPayment, formatTon } from './tonPay.js';
 
 /**
  * @param {object} opts
@@ -24,16 +24,23 @@ import { tonAvailable, openTonPayment, formatTon } from './tonPay.js';
  */
 export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}) {
   const tier = await currentTier();
-  // Оплата в TON показывается, только если сервер её включил: без кошелька
-  // в настройках сервера кнопка вела бы в тупик.
-  const ton = await tonAvailable().catch(() => null);
+  // Способы оплаты показываются только те, что сервер включил: иначе кнопка
+  // вела бы в тупик. Звёзды вдобавок существуют лишь внутри Telegram.
+  const pay = await paymentOptions().catch(() => null);
 
-  const tonCard = (plan) => `
-    <button class="pay-plan ton" data-ton="${plan.id}">
+  const planCardFor = (method, plan) => `
+    <button class="pay-plan ${method}" data-${method}="${plan.id}">
       <span class="pay-plan-title">${t('ton.plan.' + plan.id)}</span>
-      <span class="pay-plan-price">${formatTon(plan.amountNano)} TON</span>
+      <span class="pay-plan-price">${method === 'stars'
+        ? `${plan.stars} ★` : `${formatTon(plan.amountNano)} TON`}</span>
       <span class="pay-plan-note">${t('ton.for_days', { days: plan.days })}</span>
     </button>`;
+
+  const methodBlock = (method, titleKey) => `
+    <div class="pay-ton">
+      <div class="pay-ton-head">${t(titleKey)}</div>
+      <div class="pay-plans">${pay.plans.map(p => planCardFor(method, p)).join('')}</div>
+    </div>`;
 
   const featureRow = (f) => `
     <div class="pay-feature">
@@ -69,11 +76,8 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
         ${PLANS.map(planCard).join('')}
       </div>
 
-      ${ton ? `
-        <div class="pay-ton">
-          <div class="pay-ton-head">${t('ton.section')}</div>
-          <div class="pay-plans">${ton.plans.map(tonCard).join('')}</div>
-        </div>` : ''}
+      ${pay?.stars ? methodBlock('stars', 'stars.section') : ''}
+      ${pay?.ton ? methodBlock('ton', 'ton.section') : ''}
 
       <p class="pay-legal">${t('pay.legal')}</p>
 
@@ -107,6 +111,13 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
         btn.addEventListener('click', () => {
           closeModal();
           openTonPayment(btn.dataset.ton, onDone);
+        });
+      });
+
+      root.querySelectorAll('[data-stars]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeModal();
+          openStarsPayment(btn.dataset.stars, onDone);
         });
       });
 

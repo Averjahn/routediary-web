@@ -106,6 +106,15 @@ export function searchModels(make, query) {
   });
 }
 
-export function makeDisplayName(make, lang) {
-  return lang === 'ru' ? make.nameRu : make.nameEn;
+/**
+ * Название марки для показа — всегда как пишет сам производитель.
+ *
+ * Русские написания в справочнике есть («Абарт», «Акура», «Альфа Ромео»),
+ * но это транслитерация, а не перевод: на машине, в документах и в магазине
+ * запчастей марка написана латиницей, и показывать «Акура» там, где человек
+ * ищет Acura, — только сбивать. Русские написания остаются для ПОИСКА:
+ * набравший «тойота» должен найти Toyota.
+ */
+export function makeDisplayName(make) {
+  return make.nameEn || make.nameRu || '';
 }

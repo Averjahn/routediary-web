@@ -24,6 +24,9 @@ export function isStandalone() {
 
 export function initInstallBanner() {
   if (bannerEl) { bannerEl.remove(); bannerEl = null; }
+  // Внутри Telegram предлагать «установить на экран Домой» бессмысленно:
+  // приложение уже открыто внутри установленного мессенджера.
+  if (document.body.classList.contains('in-telegram')) return;
   if (!isIos() || !isSafari() || isStandalone()) return;
   if (localStorage.getItem(DISMISS_KEY)) return;
 

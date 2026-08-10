@@ -66,10 +66,6 @@ export async function setupTelegram() {
   applyTelegramChrome(app);
   app.onEvent?.('themeChanged', () => applyTelegramChrome(app));
 
-  // Предложение «установить приложение» внутри Telegram бессмысленно:
-  // оно уже установлено вместе с мессенджером.
-  document.body.classList.add('no-install-banner');
-
   return true;
 }
 

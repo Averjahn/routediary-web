@@ -734,5 +734,5 @@ body.hud-open { overflow: hidden; }
   min-height: 18px;
 }
 
-/* Внутри Telegram баннер установки бессмысленен — приложение уже открыто. */
-body.no-install-banner #install-banner { display: none !important; }
+/* Звёзды Telegram — фирменный акцент, чтобы способ оплаты узнавался сразу. */
+.pay-plan.stars { border-color: #f5a623; }
