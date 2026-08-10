@@ -15,6 +15,7 @@
 import { t } from './i18n.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
+import { tonAvailable, openTonPayment, formatTon } from './tonPay.js';
 
 /**
  * @param {object} opts
@@ -23,6 +24,16 @@ import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetP
  */
 export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}) {
   const tier = await currentTier();
+  // Оплата в TON показывается, только если сервер её включил: без кошелька
+  // в настройках сервера кнопка вела бы в тупик.
+  const ton = await tonAvailable().catch(() => null);
+
+  const tonCard = (plan) => `
+    <button class="pay-plan ton" data-ton="${plan.id}">
+      <span class="pay-plan-title">${t('ton.plan.' + plan.id)}</span>
+      <span class="pay-plan-price">${formatTon(plan.amountNano)} TON</span>
+      <span class="pay-plan-note">${t('ton.for_days', { days: plan.days })}</span>
+    </button>`;
 
   const featureRow = (f) => `
     <div class="pay-feature">
@@ -58,6 +69,12 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
         ${PLANS.map(planCard).join('')}
       </div>
 
+      ${ton ? `
+        <div class="pay-ton">
+          <div class="pay-ton-head">${t('ton.section')}</div>
+          <div class="pay-plans">${ton.plans.map(tonCard).join('')}</div>
+        </div>` : ''}
+
       <p class="pay-legal">${t('pay.legal')}</p>
 
       ${TEST_MODE ? `
@@ -83,6 +100,13 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
           closeModal();
           toast(t('pay.thanks', { plan: tierLabel(btn.dataset.plan) }));
           if (onDone) onDone();
+        });
+      });
+
+      root.querySelectorAll('[data-ton]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          closeModal();
+          openTonPayment(btn.dataset.ton, onDone);
         });
       });
 

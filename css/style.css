@@ -689,3 +689,50 @@ body.hud-open { overflow: hidden; }
   font-weight: 600;
   cursor: pointer;
 }
+
+/* --- Оплата в TON --- */
+
+.ton-amount {
+  text-align: center;
+  font-size: 34px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+.pay-ton { margin-top: 18px; }
+.pay-ton-head {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.pay-plan.ton { border-color: #0098ea; }
+
+.ton-details {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--separator);
+  font-size: 13px;
+}
+.ton-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+/* Адрес длинный: переносим по символам, иначе он растягивает окно. */
+.ton-row code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+  text-align: right;
+}
+.ton-status {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 14px 0 10px;
+  min-height: 18px;
+}
+
+/* Внутри Telegram баннер установки бессмысленен — приложение уже открыто. */
+body.no-install-banner #install-banner { display: none !important; }

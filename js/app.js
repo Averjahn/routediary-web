@@ -6,6 +6,7 @@ import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
 import { captureIncomingReferral } from './referral.js';
 import { startAutoSync } from './syncClient.js';
+import { setupTelegram } from './telegram.js';
 import * as MapScreen from './screens/map.js';
 import * as TripsScreen from './screens/trips.js';
 import * as CarScreen from './screens/car.js';
@@ -27,6 +28,9 @@ async function init() {
   // До первой отрисовки: код приглашения убирается из адресной строки,
   // чтобы не осесть в истории и закладках.
   await captureIncomingReferral().catch(() => {});
+  // Внутри Telegram окно ведёт себя как встроенное приложение. Вне его
+  // ничего не происходит и никаких запросов наружу не уходит.
+  await setupTelegram().catch(() => {});
   applyI18nTree(document.body);
 
   for (const key of Object.keys(SCREENS)) {

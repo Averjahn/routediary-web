@@ -13,7 +13,14 @@ import { createSync, SyncError } from './sync.js';
 // Со своего сервера запросы идут по тому же адресу, копия ходит к нему через
 // сеть — поэтому адрес выбирается по источнику страницы, а не жёстко.
 const REMOTE_ORIGIN = 'https://avtopuls.80-242-61-200.sslip.io';
-export const SYNC_ORIGIN = location.origin.includes('averjahn.github.io') ? REMOTE_ORIGIN : '';
+/**
+ * Адрес сервера вычисляется при обращении, а не при загрузке модуля:
+ * на уровне модуля обращение к location делало бы файл незагружаемым
+ * везде, кроме браузера, и утягивало бы за собой всех, кто его импортирует.
+ */
+export function syncOrigin() {
+  return location.origin.includes('averjahn.github.io') ? REMOTE_ORIGIN : '';
+}
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -21,7 +28,7 @@ async function request(method, path, body, token) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(SYNC_ORIGIN + path, {
+    const res = await fetch(syncOrigin() + path, {
       method,
       signal: controller.signal,
       headers: {
