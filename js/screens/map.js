@@ -2,7 +2,8 @@ import { DB } from '../db.js';
 import { AppState } from '../state.js';
 import { addDays, dayLabel, Fmt, uuid, dayKeyOf } from '../format.js';
 import { t } from '../i18n.js';
-import { el, applyI18nTree, openModal, closeModal, MODE_ICON, CATEGORY_ICON, icon } from '../ui.js';
+import { openHud } from '../hud.js';
+import { el, applyI18nTree, openModal, closeModal, MODE_ICON, CATEGORY_ICON, icon, toast } from '../ui.js';
 import { startRecording, stopRecording, isRecording, onLivePoint, addManualTrip, recomputeSegmentation } from '../tracking.js';
 import { THEMES } from '../theme.js';
 import { calcFuel, calcCalories } from '../geo.js';
@@ -42,6 +43,7 @@ export function render(container) {
         <button class="record-btn" id="map-record-btn"></button>
         <div style="text-align:center;margin-top:10px;">
           <button class="btn sm" id="map-manual-btn" data-i18n="map.manual_add"></button>
+          <button class="btn sm" id="map-hud-btn" data-i18n="hud.open"></button>
         </div>
       </div>
     </div>
@@ -76,6 +78,9 @@ export function render(container) {
   container.querySelector('#map-day-prev').addEventListener('click', () => changeDay(-1));
   container.querySelector('#map-day-next').addEventListener('click', () => changeDay(1));
   container.querySelector('#map-manual-btn').addEventListener('click', openManualTripForm);
+  container.querySelector('#map-hud-btn').addEventListener('click', async () => {
+    if (!await openHud()) toast(t('hud.unavailable'));
+  });
 
   initLeaflet(container);
   refreshDayLabel();
