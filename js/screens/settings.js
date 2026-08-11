@@ -13,6 +13,7 @@ import { openPaywall } from '../paywall.js';
 import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../referral.js';
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
+import { openSignals } from './signals.js';
 import { isEnabled as roadEnabled, setEnabled as setRoadEnabled, cachedTileCount, clearCache as clearRoadCache } from '../roadData.js';
 
 let containerRef = null;
@@ -131,6 +132,12 @@ export async function refresh() {
           <span class="muted">${roadTiles}</span></div>
         <div class="settings-row" style="cursor:pointer;" id="set-road-clear">
           <span data-i18n="settings.road_clear"></span></div>` : ''}
+      <div class="settings-row" style="cursor:pointer;" id="set-signals">
+        <span>
+          <span data-i18n="settings.signals"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.signals_hint"></span>
+        </span>
+      </div>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_privacy"></div>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_accuracy"></div>
     </div>
@@ -291,6 +298,8 @@ function bind(body) {
     toast(t('settings.road_cleared'));
     refreshKeepingScroll();
   });
+
+  body.querySelector('#set-signals').addEventListener('click', openSignals);
 
   bindSync(body);
 

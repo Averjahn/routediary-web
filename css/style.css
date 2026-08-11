@@ -933,3 +933,39 @@ body.hud-open { overflow: hidden; }
   font-weight: 600;
   opacity: 0.8;
 }
+
+/* --- Замер светофоров --- */
+
+.signal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--separator);
+}
+.signal-row:last-child { border-bottom: none; }
+
+/* Кнопки во весь экран: человек смотрит на светофор, а не на телефон,
+   и попасть должен не глядя. */
+.signal-buttons { display: grid; gap: 10px; margin: 6px 0 12px; }
+.signal-btn {
+  padding: 26px 16px;
+  border: none;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.signal-btn.green { background: #1E9E4A; }
+.signal-btn.red { background: #D8382B; }
+.signal-btn:active { opacity: 0.85; }
+
+.signal-estimate {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  min-height: 34px;
+}
+.signal-estimate.ok { color: var(--success); font-weight: 600; }
+.signal-estimate.bad { color: var(--danger); font-weight: 600; }
