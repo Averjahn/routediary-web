@@ -8,7 +8,8 @@ const DB_NAME = 'routediary';
 // Без отметки времени нечем разрешать расхождения между устройствами,
 // а без «надгробий» удаление на одном телефоне не доехало бы до другого:
 // исчезнувшую запись не отличить от ещё не полученной, и она бы вернулась.
-const DB_VERSION = 4;
+// v5: кэш дорожных данных OSM (ограничения скорости и светофоры) по квадратам.
+const DB_VERSION = 5;
 
 /**
  * Хранилища, попадающие в синхронизацию.
@@ -34,6 +35,9 @@ const STORES = {
   maintenanceItems: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId']] },
   plannedActivities: { keyPath: 'id', indexes: [['dayKey', 'dayKey']] },
   settings: { keyPath: 'key', indexes: [] },
+  // Кэш карты, а не данные человека: синхронизации не подлежит и стирается
+  // отдельной кнопкой в настройках.
+  roadTiles: { keyPath: 'key', indexes: [] },
 };
 
 let dbPromise = null;

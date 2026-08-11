@@ -1,6 +1,8 @@
 import { AppState } from './state.js';
 import { t } from './i18n.js';
 import { getSetting, setSetting } from './db.js';
+import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadData.js';
+import { overspeedState } from './roadRules.js';
 
 /**
  * Проекция скорости на лобовое стекло.
@@ -128,6 +130,7 @@ let overlay = null;
 let watchId = null;
 let wakeLock = null;
 let timer = null;
+let roadTimer = null;
 let hideControlsTimer = null;
 
 const MIRROR_KEY = 'hudMirror';
@@ -151,8 +154,13 @@ export async function openHud() {
   overlay.className = 'hud';
   overlay.innerHTML = `
     <div class="hud-plate${mirrored ? ' mirrored' : ''}" id="hud-plate">
+      <div class="hud-limit" id="hud-limit" hidden>
+        <div class="hud-limit-sign" id="hud-limit-value"></div>
+        <div class="hud-limit-note" id="hud-limit-note"></div>
+      </div>
       <div class="hud-value" id="hud-value">– –</div>
       <div class="hud-unit" id="hud-unit"></div>
+      <div class="hud-signal" id="hud-signal" hidden></div>
     </div>
     <div class="hud-controls" id="hud-controls">
       <button class="hud-btn" id="hud-mirror" aria-pressed="${mirrored}"></button>
@@ -166,6 +174,10 @@ export async function openHud() {
   const plate = overlay.querySelector('#hud-plate');
   const valueEl = overlay.querySelector('#hud-value');
   const unitEl = overlay.querySelector('#hud-unit');
+  const limitBox = overlay.querySelector('#hud-limit');
+  const limitValue = overlay.querySelector('#hud-limit-value');
+  const limitNote = overlay.querySelector('#hud-limit-note');
+  const signalEl = overlay.querySelector('#hud-signal');
   const controls = overlay.querySelector('#hud-controls');
   const hint = overlay.querySelector('#hud-hint');
 
@@ -173,14 +185,54 @@ export async function openHud() {
   overlay.querySelector('#hud-close').textContent = t('common.close');
   hint.textContent = t('hud.hint');
 
+  // Последнее известное положение и курс — для подсказок по дороге.
+  let position = null;
+  let heading = NaN;
+  let road = { limit: null, signal: null };
+
   function render() {
-    const { value, unit } = displaySpeed(meter.read(Date.now()), AppState.units);
+    const kmh = meter.read(Date.now());
+    const { value, unit } = displaySpeed(kmh, AppState.units);
     valueEl.textContent = value;
     unitEl.textContent = unit;
+
+    // Цифра краснеет при превышении: на стекле это единственное, что водитель
+    // успевает заметить боковым зрением, не отводя глаз от дороги.
+    const state = road.limit ? overspeedState(kmh, road.limit.kmh) : 'ok';
+    plate.classList.toggle('over', state === 'over');
+    plate.classList.toggle('near', state === 'near');
+
+    if (road.limit) {
+      limitBox.hidden = false;
+      limitValue.textContent = road.limit.kmh;
+      // Общее ограничение и знак выглядят одинаково в данных, но по-разному
+      // для водителя: под знаком он его увидит, под общим — искать нечего.
+      limitNote.textContent = t(road.limit.source === 'sign' ? 'road.from_sign' : 'road.from_default');
+    } else {
+      limitBox.hidden = true;
+    }
+
+    if (road.signal) {
+      signalEl.hidden = false;
+      signalEl.textContent = t('road.signal_ahead', { meters: road.signal.distance });
+    } else {
+      signalEl.hidden = true;
+    }
   }
   render();
 
   timer = setInterval(render, 250);
+
+  // Дорожные данные подтягиваются редко: раз в несколько секунд, и только
+  // когда человек включил их сам. Внутри проверяется, не загружен ли квадрат
+  // уже — по привычному маршруту сеть не тревожится вовсе.
+  if (await roadDataEnabled()) {
+    roadTimer = setInterval(() => {
+      if (position) ensureAround(position.lat, position.lon).then(() => {
+        road = roadContext(position, heading);
+      }).catch(() => {});
+    }, 5000);
+  }
 
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
@@ -191,6 +243,10 @@ export async function openHud() {
         speed: pos.coords.speed,
         accuracy: pos.coords.accuracy,
       });
+
+      position = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      if (Number.isFinite(pos.coords.heading)) heading = pos.coords.heading;
+      road = roadContext(position, heading);
       render();
     },
     () => { /* отказ в доступе — на экране останутся прочерки */ },
@@ -235,8 +291,9 @@ export async function openHud() {
 export function closeHud() {
   if (!overlay) return;
   clearInterval(timer);
+  clearInterval(roadTimer);
   clearTimeout(hideControlsTimer);
-  timer = hideControlsTimer = null;
+  timer = roadTimer = hideControlsTimer = null;
 
   if (watchId != null) {
     navigator.geolocation.clearWatch(watchId);

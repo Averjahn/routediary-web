@@ -13,6 +13,7 @@ import { openPaywall } from '../paywall.js';
 import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../referral.js';
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
+import { isEnabled as roadEnabled, setEnabled as setRoadEnabled, cachedTileCount, clearCache as clearRoadCache } from '../roadData.js';
 
 let containerRef = null;
 
@@ -44,11 +45,13 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
     Sync.status(),
+    roadEnabled(),
+    cachedTileCount(),
   ]);
   const provider = getMapProvider();
 
@@ -112,6 +115,24 @@ export async function refresh() {
         </span>
         <input type="checkbox" id="set-severe" style="width:auto;"${severe ? ' checked' : ''}>
       </label>
+    </div>
+
+    <div class="section-title" data-i18n="settings.section_road"></div>
+    <div class="card">
+      <label class="settings-row" style="cursor:pointer;">
+        <span>
+          <span data-i18n="settings.road_enable"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.road_hint"></span>
+        </span>
+        <input type="checkbox" id="set-road" style="width:auto;"${road ? ' checked' : ''}>
+      </label>
+      ${road ? `
+        <div class="settings-row"><span data-i18n="settings.road_cached"></span>
+          <span class="muted">${roadTiles}</span></div>
+        <div class="settings-row" style="cursor:pointer;" id="set-road-clear">
+          <span data-i18n="settings.road_clear"></span></div>` : ''}
+      <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_privacy"></div>
+      <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_accuracy"></div>
     </div>
 
     <div class="section-title" data-i18n="settings.section_sync"></div>
@@ -259,6 +280,16 @@ function bind(body) {
     const vehicle = await getPrimaryVehicle();
     if (vehicle) await recalcIntervals(vehicle, e.target.checked);
     toast(t('settings.severe_saved'));
+  });
+
+  body.querySelector('#set-road').addEventListener('change', async (e) => {
+    await setRoadEnabled(e.target.checked);
+    refreshKeepingScroll();
+  });
+  body.querySelector('#set-road-clear')?.addEventListener('click', async () => {
+    await clearRoadCache();
+    toast(t('settings.road_cleared'));
+    refreshKeepingScroll();
   });
 
   bindSync(body);

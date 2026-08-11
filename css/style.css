@@ -895,3 +895,41 @@ body.hud-open { overflow: hidden; }
   margin-top: 6px;
   border-top: 1px solid var(--separator);
 }
+
+/* --- Подсказки по дороге на экране скорости --- */
+
+.hud-limit { margin-bottom: 0.15em; }
+/* Круг с числом — как выглядит сам знак; узнаётся мгновенно и без чтения. */
+.hud-limit-sign {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2em;
+  height: 2.2em;
+  padding: 0 0.25em;
+  border-radius: 50%;
+  border: 0.18em solid #E23B2E;
+  background: #fff;
+  color: #12141A;
+  font-size: min(9vw, 11vh);
+  font-weight: 800;
+  line-height: 1;
+}
+.hud-limit-note {
+  margin-top: 0.35em;
+  font-size: min(3.4vw, 4vh);
+  opacity: 0.6;
+}
+
+/* Превышение красит саму цифру: на стекле это единственное, что водитель
+   успевает заметить боковым зрением, не отводя глаз от дороги. */
+.hud-plate.near .hud-value { color: #FFD24A; }
+.hud-plate.over .hud-value { color: #FF4D3D; }
+.hud-plate.over .hud-unit { color: rgba(255, 77, 61, 0.75); }
+
+.hud-signal {
+  margin-top: 0.5em;
+  font-size: min(4.2vw, 5vh);
+  font-weight: 600;
+  opacity: 0.8;
+}
