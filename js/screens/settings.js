@@ -14,6 +14,7 @@ import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../ref
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
 import { openSignals } from './signals.js';
+import { isEnabled as poolEnabled, setEnabled as setPoolEnabled } from '../signalPoolClient.js';
 import { isEnabled as roadEnabled, setEnabled as setRoadEnabled, cachedTileCount, clearCache as clearRoadCache } from '../roadData.js';
 
 let containerRef = null;
@@ -46,13 +47,14 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync, road, roadTiles] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles, pool] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
     Sync.status(),
     roadEnabled(),
     cachedTileCount(),
+    poolEnabled(),
   ]);
   const provider = getMapProvider();
 
@@ -132,6 +134,17 @@ export async function refresh() {
           <span class="muted">${roadTiles}</span></div>
         <div class="settings-row" style="cursor:pointer;" id="set-road-clear">
           <span data-i18n="settings.road_clear"></span></div>` : ''}
+      <label class="settings-row" style="cursor:pointer;">
+        <span>
+          <span data-i18n="settings.pool"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.pool_hint"></span>
+          ${road ? '' : '<span class="muted" style="display:block;font-size:12px;color:var(--danger);" data-i18n="settings.pool_needs_road"></span>'}
+        </span>
+        <input type="checkbox" id="set-pool" style="width:auto;"${pool ? ' checked' : ''}${road ? '' : ' disabled'}>
+      </label>
+      <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.pool_what"></div>
+      <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.pool_honest"></div>
+
       <div class="settings-row" style="cursor:pointer;" id="set-signals">
         <span>
           <span data-i18n="settings.signals"></span>
@@ -299,6 +312,10 @@ function bind(body) {
     refreshKeepingScroll();
   });
 
+  body.querySelector('#set-pool').addEventListener('change', async (e) => {
+    await setPoolEnabled(e.target.checked);
+    refreshKeepingScroll();
+  });
   body.querySelector('#set-signals').addEventListener('click', openSignals);
 
   bindSync(body);
