@@ -6,6 +6,9 @@ import { applyI18nTree, openModal, closeModal, toast, escapeHtml } from '../ui.j
 import {
   applyMeasurement, predict, programAt, estimateCycle, PROGRAMS,
 } from '../signalTiming.js';
+import { loadedAround, ensureAround, isEnabled as roadEnabled } from '../roadData.js';
+import { distanceMeters } from '../roadRules.js';
+import { fetchEstimates } from '../signalPoolClient.js';
 
 /**
  * Замер фаз светофоров вручную.
@@ -50,6 +53,14 @@ async function renderList(root) {
   const list = root.querySelector('#signal-list');
   const signals = await DB.getAll('signals');
 
+  // Общие оценки подтягиваются только для светофоров, у которых есть номер
+  // узла на карте: без него сопоставить наблюдения не с чем.
+  const osmIds = signals.map(s => s.osmId).filter(Boolean);
+  const shared = new Map();
+  for (const estimate of await fetchEstimates(osmIds).catch(() => [])) {
+    shared.set(`${estimate.signalKey}|${estimate.program}`, estimate);
+  }
+
   if (signals.length === 0) {
     list.innerHTML = `<div class="muted">${t('signal.empty')}</div>`;
     return;
@@ -59,11 +70,13 @@ async function renderList(root) {
   list.innerHTML = signals.map(signal => {
     const measured = Object.entries(signal.programs || {}).filter(([, p]) => p.ok);
     const state = predict(signal, now);
+    const pooled = signal.osmId ? shared.get(`${signal.osmId}|${programAt(now)}`) : null;
     return `
       <div class="signal-row" data-signal="${signal.id}">
         <div class="grow">
           <div><b>${escapeHtml(signal.name || t('signal.unnamed'))}</b></div>
           <div class="muted" style="font-size:12px;">${statusLine(signal, state, measured)}</div>
+          ${pooled ? `<div class="muted" style="font-size:12px;">${t('signal.pooled', { cycle: Math.round(pooled.cycleSec), days: pooled.days })}</div>` : ''}
         </div>
         <button class="btn sm" data-measure="${signal.id}">${t('signal.measure')}</button>
       </div>`;
@@ -99,11 +112,30 @@ async function addHere(root) {
   if (!('geolocation' in navigator)) return toast(t('hud.unavailable'));
 
   navigator.geolocation.getCurrentPosition(async (pos) => {
+    const here = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+
+    // Привязываем к узлу светофора на карте, если он рядом: только по этому
+    // номеру можно потом сопоставить общие наблюдения. Без дорожных данных
+    // светофор остаётся личным — это рабочий вариант, просто без копилки.
+    let osmId = null;
+    if (await roadEnabled()) {
+      await ensureAround(here.lat, here.lon).catch(() => {});
+      const { signals } = loadedAround(here.lat, here.lon);
+      let nearest = null;
+      for (const candidate of signals) {
+        const distance = distanceMeters(here, candidate);
+        if (distance <= 40 && (!nearest || distance < nearest.distance)) {
+          nearest = { id: candidate.id, distance };
+        }
+      }
+      osmId = nearest ? String(nearest.id) : null;
+    }
+
     const signal = {
       id: uuid(),
       name: '',
-      lat: pos.coords.latitude,
-      lon: pos.coords.longitude,
+      ...here,
+      osmId,
       addedAt: Date.now(),
       programs: {},
     };
