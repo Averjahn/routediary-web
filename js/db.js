@@ -10,7 +10,7 @@ const DB_NAME = 'routediary';
 // исчезнувшую запись не отличить от ещё не полученной, и она бы вернулась.
 // v5: кэш дорожных данных OSM (ограничения скорости и светофоры) по квадратам.
 // v6: замеренные светофоры — фазы, которые человек измерил сам.
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 /**
  * Хранилища, попадающие в синхронизацию.
@@ -23,7 +23,7 @@ const DB_VERSION = 6;
  * а не человеку: странно, если выбор тёмной темы на телефоне перекрасил бы
  * ноутбук. Там же лежит код приглашения, привязанный к устройству.
  */
-export const SYNCED_STORES = ['trips', 'vehicles', 'refuels', 'expenses', 'expenseTemplates', 'maintenanceItems'];
+export const SYNCED_STORES = ['trips', 'vehicles', 'refuels', 'expenses', 'expenseTemplates', 'maintenanceItems', 'incomes'];
 const isSynced = (storeName) => SYNCED_STORES.includes(storeName);
 
 const STORES = {
@@ -32,6 +32,9 @@ const STORES = {
   vehicles: { keyPath: 'id', indexes: [] },
   refuels: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
   expenses: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
+  // Доходы отдельным хранилищем, а не флагом на расходе: всё, что суммирует
+  // расходы (диаграммы, итоги), продолжает работать не зная о доходах.
+  incomes: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId'], ['date', 'date']] },
   expenseTemplates: { keyPath: 'id', indexes: [] },
   maintenanceItems: { keyPath: 'id', indexes: [['vehicleId', 'vehicleId']] },
   plannedActivities: { keyPath: 'id', indexes: [['dayKey', 'dayKey']] },

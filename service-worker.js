@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v28';
+const CACHE_NAME = 'avtopuls-v32';
 const APP_SHELL = [
   './',
   './index.html',
@@ -33,10 +33,12 @@ const APP_SHELL = [
   './js/signalTiming.js',
   './js/signalPoolClient.js',
   './js/screens/signals.js',
+  './js/documents.js',
   './js/guides.js',
   './js/guideArt.js',
   './js/screens/guide.js',
   './js/telegram.js',
+  './js/usage.js',
   './js/tonPay.js',
   './js/screens/map.js',
   './js/screens/trips.js',

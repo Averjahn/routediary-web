@@ -7,6 +7,7 @@ import {
 } from '../state.js';
 import { openPaywall } from '../paywall.js';
 import { componentStatus, fleetHealth, STATUS } from '../maintenance.js';
+import { documentStatus, DOC_TYPES } from '../documents.js';
 import { hasGuide } from '../guides.js';
 import { openGuide } from './guide.js';
 
@@ -53,10 +54,11 @@ export async function refresh() {
   if (vehicle.isPrimary) await adoptOrphanTrips(vehicle.id);
 
   const odometer = await currentOdometerKm(vehicle);
-  const [vehicles, refuels, expenses, maintenance, avgKmPerDay, severe] = await Promise.all([
+  const [vehicles, refuels, expenses, incomes, maintenance, avgKmPerDay, severe] = await Promise.all([
     getVehicles(),
     DB.getAllByIndex('refuels', 'vehicleId', vehicle.id),
     DB.getAllByIndex('expenses', 'vehicleId', vehicle.id),
+    DB.getAllByIndex('incomes', 'vehicleId', vehicle.id),
     // Регламент строится под класс машины при первом заходе и дальше живёт своей жизнью.
     ensureServicePlan(vehicle, odometer),
     currentAvgKmPerDay(vehicle),
@@ -78,7 +80,11 @@ export async function refresh() {
   const templates = await DB.getAll('expenseTemplates');
   templates.sort((a, b) => b.useCount - a.useCount || a.sortOrder - b.sortOrder);
 
-  const records = [...refuels.map(r => ({ ...r, kind: 'refuel' })), ...expenses.map(e => ({ ...e, kind: 'expense' }))]
+  const records = [
+    ...refuels.map(r => ({ ...r, kind: 'refuel' })),
+    ...expenses.map(e => ({ ...e, kind: 'expense' })),
+    ...incomes.map(i => ({ ...i, kind: 'income' })),
+  ]
     .sort((a, b) => b.date - a.date)
     .slice(0, 20);
 
@@ -127,11 +133,15 @@ export async function refresh() {
     </label>
     <div style="text-align:center;margin:0 0 4px;"><button class="btn sm" id="maint-add">+ <span data-i18n="maint.name"></span></button></div>
 
+    <div class="section-title" data-i18n="docs.section"></div>
+    <div class="card" id="docs-list" style="padding:6px 14px;cursor:pointer;"></div>
+
     <div class="section-title" data-i18n="records.title"></div>
     <div class="card" style="padding:0 14px;" id="records-list"></div>
     <div style="text-align:center;margin:12px 0 20px;">
       <button class="btn sm" id="add-refuel">${icon('plus',{size:14})} ${EXPENSE_ICON.fuel} <span data-i18n="refuel.section"></span></button>
       <button class="btn sm" id="add-expense">${icon('plus',{size:14})} ${EXPENSE_ICON.other} <span data-i18n="expense.section"></span></button>
+      <button class="btn sm" id="add-income">${icon('plus',{size:14})} 💰 <span data-i18n="income.section"></span></button>
     </div>
   `;
   applyI18nTree(body);
@@ -168,9 +178,11 @@ export async function refresh() {
   });
   body.querySelector('#add-refuel').addEventListener('click', () => openRefuelForm(vehicle, odometer));
   body.querySelector('#add-expense').addEventListener('click', () => openExpenseForm(vehicle, odometer));
+  body.querySelector('#add-income').addEventListener('click', () => openIncomeForm(vehicle, odometer));
 
   renderQuickGrid(body.querySelector('#quick-grid'), templates, vehicle, odometer);
   renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
+  renderDocuments(body.querySelector('#docs-list'), vehicle);
   renderRecords(body.querySelector('#records-list'), records);
 }
 
@@ -507,8 +519,78 @@ function renderRecords(listEl, records) {
     if (r.kind === 'refuel') {
       return `<div class="list-item"><div class="icon-badge">${EXPENSE_ICON.fuel}</div><div class="grow"><div style="font-weight:600;">${Fmt.liters(r.liters)}${r.isFullTank ? ' · ' + t('refuel.full_tank') : ''}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.totalCost, AppState.currency)}</b></div>`;
     }
+    if (r.kind === 'income') {
+      return `<div class="list-item"><div class="icon-badge">💰</div><div class="grow"><div style="font-weight:600;">${t('income.'+r.category)}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b style="color:var(--success);">+${Fmt.money(r.amount, AppState.currency)}</b></div>`;
+    }
     return `<div class="list-item"><div class="icon-badge">${EXPENSE_ICON[r.category]||EXPENSE_ICON.other}</div><div class="grow"><div style="font-weight:600;">${t('expense.'+r.category)}</div><div class="muted">${new Date(r.date).toLocaleDateString()}</div></div><b>${Fmt.money(r.amount, AppState.currency)}</b></div>`;
   }).join('');
+}
+
+// --- Документы: ОСАГО и техосмотр -------------------------------------
+
+const DOC_STATE_COLOR = {
+  ok: 'var(--success)', soon: 'var(--warning)',
+  urgent: 'var(--danger)', expired: 'var(--danger)',
+};
+
+function docStatusText(status) {
+  if (status.state === 'none') return t('docs.not_set');
+  if (status.state === 'expired') return t('docs.expired');
+  if (status.daysLeft === 0) return t('docs.today');
+  if (status.state === 'ok') return '';
+  return t('docs.days_left', { n: status.daysLeft });
+}
+
+// «ГГГГ-ММ-ДД» → местная дата. Через new Date(строка) нельзя: браузер
+// считает такую строку UTC-полуночью, и западнее Гринвича дата уезжает
+// на день назад.
+function formatDocDate(dateStr) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  if (!y || !m || !d) return '—';
+  return new Date(y, m - 1, d).toLocaleDateString();
+}
+
+function renderDocuments(listEl, vehicle) {
+  const docs = vehicle.documents || {};
+  listEl.innerHTML = DOC_TYPES.map((type) => {
+    const status = documentStatus(docs[type]);
+    const suffix = docStatusText(status);
+    return `<div class="row between" style="padding:8px 0;">
+      <span class="muted">${t('docs.' + type)}</span>
+      <b style="${status.state in DOC_STATE_COLOR && suffix ? `color:${DOC_STATE_COLOR[status.state]};` : ''}">
+        ${docs[type] ? formatDocDate(docs[type]) : '—'}${suffix ? ' · ' + suffix : ''}
+      </b>
+    </div>`;
+  }).join('');
+  listEl.onclick = () => openDocumentsForm(vehicle);
+}
+
+function openDocumentsForm(vehicle) {
+  const docs = vehicle.documents || {};
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="docs.edit_title"></h2><button class="modal-close">✕</button></div>
+    <label class="field"><span class="field-label" data-i18n="docs.osago"></span>
+      <input id="doc-osago" type="date" value="${docs.osago || ''}"></label>
+    <label class="field"><span class="field-label" data-i18n="docs.inspection"></span>
+      <input id="doc-inspection" type="date" value="${docs.inspection || ''}"></label>
+    <div class="muted" style="font-size:12px;margin-bottom:12px;" data-i18n="docs.inspection_hint"></div>
+    <button class="btn primary block" id="doc-save" data-i18n="common.save"></button>
+  `, {
+    onMount: (overlay) => {
+      overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      overlay.querySelector('#doc-save').addEventListener('click', async () => {
+        // Пустое поле сохраняется как отсутствие даты, а не как дата-мусор:
+        // для техосмотра «не задано» — нормальное состояние, о нём молчим.
+        vehicle.documents = {
+          osago: overlay.querySelector('#doc-osago').value || null,
+          inspection: overlay.querySelector('#doc-inspection').value || null,
+        };
+        await DB.put('vehicles', vehicle);
+        closeModal(); refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
 }
 
 // --- Odometer adjust ---
@@ -590,6 +672,36 @@ function openExpenseForm(vehicle, odometer) {
           amount: parseFloat(overlay.querySelector('#ex-amount').value) || 0, odometerKm: odometer, note: '',
         };
         await DB.put('expenses', record);
+        closeModal(); refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function openIncomeForm(vehicle, odometer) {
+  let category = 'taxi';
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="income.new_title"></h2><button class="modal-close">✕</button></div>
+    <div class="field"><span class="field-label" data-i18n="expense.category"></span>
+      <div class="chip-row" id="in-cat">${['taxi','delivery','other'].map((c,i) => `<button class="chip ${i===0?'active':''}" data-cat="${c}">${t('income.'+c)}</button>`).join('')}</div>
+    </div>
+    <label class="field"><span class="field-label" data-i18n="expense.amount"></span><input id="in-amount" type="number" step="1" value="1000"></label>
+    <button class="btn primary block" id="in-save" data-i18n="common.save"></button>
+  `, {
+    onMount: (overlay) => {
+      overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      overlay.querySelector('#in-cat').addEventListener('click', e => {
+        const btn = e.target.closest('.chip'); if (!btn) return;
+        overlay.querySelectorAll('#in-cat .chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active'); category = btn.dataset.cat;
+      });
+      overlay.querySelector('#in-save').addEventListener('click', async () => {
+        const record = {
+          id: uuid(), vehicleId: vehicle.id, date: Date.now(), category,
+          amount: parseFloat(overlay.querySelector('#in-amount').value) || 0, odometerKm: odometer, note: '',
+        };
+        await DB.put('incomes', record);
         closeModal(); refresh();
       });
     }

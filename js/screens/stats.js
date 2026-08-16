@@ -40,9 +40,19 @@ export async function refresh() {
 
   const trips = await DB.getAll('trips');
   const vehicle = await getPrimaryVehicle();
-  const [refuels, expenses] = vehicle
-    ? await Promise.all([DB.getAllByIndex('refuels', 'vehicleId', vehicle.id), DB.getAllByIndex('expenses', 'vehicleId', vehicle.id)])
-    : [[], []];
+  const [refuels, expenses, incomes] = vehicle
+    ? await Promise.all([
+      DB.getAllByIndex('refuels', 'vehicleId', vehicle.id),
+      DB.getAllByIndex('expenses', 'vehicleId', vehicle.id),
+      DB.getAllByIndex('incomes', 'vehicleId', vehicle.id),
+    ])
+    : [[], [], []];
+
+  // Доход и «чистыми» показываются только тем, у кого доходы вообще есть:
+  // обычному владельцу строка «доход 0 ₽» ничего не говорит и только шумит.
+  const incomeSum = incomes.reduce((s, r) => s + r.amount, 0);
+  const spentSum = expenses.reduce((s, r) => s + r.amount, 0)
+    + refuels.reduce((s, r) => s + r.totalCost, 0);
 
   const byDay = dayKeys.map(dk => {
     const dayTrips = trips.filter(tr => tr.dayKey === dk);
@@ -77,6 +87,11 @@ export async function refresh() {
         <div class="day-summary-chip">${icon('flame',{size:16})} <span data-i18n="stats.total_kcal"></span><b>${Fmt.kcal(totals.kcal)}</b></div>
         <div class="day-summary-chip">${EXPENSE_ICON.fuel} <span data-i18n="stats.total_fuel"></span><b>${Fmt.money(totals.fuelCost, AppState.currency)}</b></div>
       </div>
+      ${incomeSum > 0 ? `
+      <div class="day-summary-row">
+        <div class="day-summary-chip">💰 <span data-i18n="stats.income"></span><b style="color:var(--success);">+${Fmt.money(incomeSum, AppState.currency)}</b></div>
+        <div class="day-summary-chip">Σ <span data-i18n="stats.net"></span><b style="color:${incomeSum - spentSum >= 0 ? 'var(--success)' : 'var(--danger)'};">${Fmt.money(incomeSum - spentSum, AppState.currency)}</b></div>
+      </div>` : ''}
     </div>
 
     ${hasData ? `
