@@ -452,7 +452,18 @@ export function confidenceFor(component, profile) {
  * opts.odometerKm — текущий пробег; от него отсчитывается первый интервал,
  * иначе у машины с пробегом 200 000 всё оказалось бы просрочено в день установки.
  */
+// Виды техники сверх легковой. Пробег и топливо у мотоцикла и грузовика
+// устроены иначе, а данных под их регламент у нас нет ни у кого в справочнике —
+// подставлять туда легковые интервалы значит выдавать угадывание за расчёт.
+// Поэтому регламент строится только для 'car' (и для старых записей без
+// поля kind — обратная совместимость), а остальные виды получают пустой
+// план и работают через ручные пункты обслуживания, которые были всегда.
+export const VEHICLE_KIND = { CAR: 'car', MOTO: 'moto', TRUCK: 'truck', EQUIPMENT: 'equipment' };
+
 export function buildServicePlan(vehicle, opts = {}) {
+  if (vehicle.kind && vehicle.kind !== VEHICLE_KIND.CAR) {
+    return { profile: null, items: [] };
+  }
   const profile = vehicleProfile(vehicle);
   const severe = !!opts.severe;
   const odometerKm = opts.odometerKm || 0;

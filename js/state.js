@@ -284,6 +284,11 @@ export async function currentAvgKmPerDay(vehicle = null) {
  */
 export async function currentOdometerKm(vehicle) {
   if (!vehicle) return 0;
+  // Моточасы GPS не измеряет — трек даёт пройденное расстояние, а не то,
+  // сколько работал двигатель на месте (прогрев, стационарная работа
+  // техники). Для техники на моточасах счётчик остаётся ручным, а не
+  // молча копится из поездок, как для обычного пробега.
+  if (vehicle.trackingUnit === 'hours') return vehicle.odometerBaseKm;
   const all = await DB.getAll('trips');
   const base = new Date(vehicle.odometerBaseDate).getTime();
   const carDistanceM = all

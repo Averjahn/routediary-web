@@ -6,8 +6,10 @@ import {
   getVehicles, setPrimaryVehicle, removeVehicle, adoptOrphanTrips,
 } from '../state.js';
 import { openPaywall } from '../paywall.js';
-import { componentStatus, fleetHealth, STATUS } from '../maintenance.js';
+import { componentStatus, fleetHealth, STATUS, VEHICLE_KIND } from '../maintenance.js';
 import { documentStatus, DOC_TYPES } from '../documents.js';
+import { installPart, removePart, partWear, activeParts, removedParts, CATEGORY as PART_CATEGORY } from '../parts.js';
+import { acceptablePhoto, drawScaled } from '../photos.js';
 import { hasGuide } from '../guides.js';
 import { openGuide } from './guide.js';
 
@@ -95,7 +97,7 @@ export async function refresh() {
     <div class="card garage-card">
       <div class="garage-name">${escapeHtml(vehicle.displayName || t('car.default_name'))}</div>
       ${healthBlock(health)}
-      <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${t('unit.km')}</span></div>
+      <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${vehicle.trackingUnit === 'hours' ? t('unit.hours') : t('unit.km')}</span></div>
       <div class="muted" data-i18n="car.odometer_caption"></div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:10px;">
         <button class="btn sm" id="car-adjust" data-i18n="car.adjust_odometer"></button>
@@ -135,6 +137,10 @@ export async function refresh() {
 
     <div class="section-title" data-i18n="docs.section"></div>
     <div class="card" id="docs-list" style="padding:6px 14px;cursor:pointer;"></div>
+
+    <div class="section-title" data-i18n="parts.section"></div>
+    <div class="card" id="parts-list"></div>
+    <div style="text-align:center;margin:0 0 4px;"><button class="btn sm" id="parts-add">+ <span data-i18n="parts.add"></span></button></div>
 
     <div class="section-title" data-i18n="records.title"></div>
     <div class="card" style="padding:0 14px;" id="records-list"></div>
@@ -180,10 +186,15 @@ export async function refresh() {
   body.querySelector('#add-expense').addEventListener('click', () => openExpenseForm(vehicle, odometer));
   body.querySelector('#add-income').addEventListener('click', () => openIncomeForm(vehicle, odometer));
 
+
   renderQuickGrid(body.querySelector('#quick-grid'), templates, vehicle, odometer);
   renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
   renderDocuments(body.querySelector('#docs-list'), vehicle);
+  const parts = await DB.getAllByIndex('parts', 'vehicleId', vehicle.id);
+  renderParts(body.querySelector('#parts-list'), parts, odometer);
+  body.querySelector('#parts-add').addEventListener('click', () => openPartForm(vehicle, odometer));
   renderRecords(body.querySelector('#records-list'), records);
+  attachPhotoBadges(body.querySelector('#records-list'), records);
 }
 
 /**
@@ -593,6 +604,125 @@ function openDocumentsForm(vehicle) {
   applyI18nTree(overlay);
 }
 
+// --- Склад запчастей и шин ------------------------------------------------
+
+function partWearLine(part, odometer) {
+  const wear = partWear(part, odometer);
+  const base = `${part.name} · ${Math.round(wear.usedKm)} ${t('unit.km')}`;
+  if (wear.wornPct == null) return base;
+  return `${base} · ${wear.wornPct}%${wear.remainingKm != null ? ` (${t('parts.remaining', { km: Math.round(wear.remainingKm) })})` : ''}`;
+}
+
+function renderParts(listEl, parts, odometer) {
+  const active = activeParts(parts);
+  if (active.length === 0) {
+    listEl.innerHTML = `<div class="empty-state" data-i18n="parts.empty"></div>`;
+    applyI18nTree(listEl);
+    return;
+  }
+  listEl.innerHTML = active.map(p => {
+    const wear = partWear(p, odometer);
+    const color = wear.wornPct != null && wear.wornPct >= 90 ? 'var(--danger)'
+      : wear.wornPct != null && wear.wornPct >= 70 ? 'var(--warning)' : 'var(--text)';
+    return `<div class="list-item" data-part="${p.id}" style="cursor:pointer;">
+      <div class="icon-badge">${p.category === 'tire' ? '🛞' : '🔧'}</div>
+      <div class="grow">
+        <div style="font-weight:600;">${escapeHtml(p.name)}</div>
+        <div class="muted" style="font-size:12px;">${t('parts.installed_at', { km: Math.round(p.installedAtKm) })}</div>
+      </div>
+      <b style="color:${color};">${wear.wornPct != null ? wear.wornPct + '%' : Math.round(wear.usedKm) + ' ' + t('unit.km')}</b>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('[data-part]').forEach(row => row.addEventListener('click', () => {
+    const part = active.find(p => p.id === row.dataset.part);
+    openPartDetail(part, odometer);
+  }));
+}
+
+function openPartDetail(part, odometer) {
+  const wear = partWear(part, odometer);
+  const overlay = openModal(`
+    <div class="modal-header"><h2>${escapeHtml(part.name)}</h2><button class="modal-close">✕</button></div>
+    <div class="muted" style="margin-bottom:14px;">${partWearLine(part, odometer)}</div>
+    <button class="btn primary block" id="part-remove" data-i18n="parts.remove"></button>
+    <div class="settings-row" style="cursor:pointer;margin-top:8px;" id="part-delete">
+      <span style="color:var(--danger);" data-i18n="parts.delete"></span></div>
+  `, {
+    onMount: (overlay) => {
+      overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      overlay.querySelector('#part-remove').addEventListener('click', async () => {
+        await DB.put('parts', removePart(part, odometer));
+        closeModal(); refresh();
+      });
+      overlay.querySelector('#part-delete').addEventListener('click', async () => {
+        await DB.delete('parts', part.id);
+        closeModal(); refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function openPartForm(vehicle, odometer) {
+  let category = PART_CATEGORY.PART;
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="parts.new_title"></h2><button class="modal-close">✕</button></div>
+    <div class="field"><span class="field-label" data-i18n="parts.category"></span>
+      <div class="chip-row" id="pt-cat">
+        <button class="chip active" data-cat="${PART_CATEGORY.PART}" data-i18n="parts.category_part"></button>
+        <button class="chip" data-cat="${PART_CATEGORY.TIRE}" data-i18n="parts.category_tire"></button>
+      </div>
+    </div>
+    <label class="field"><span class="field-label" data-i18n="parts.name"></span><input id="pt-name" placeholder="${t('parts.name_hint')}"></label>
+    <label class="field"><span class="field-label" data-i18n="parts.resource"></span><input id="pt-resource" type="number" placeholder="${t('parts.resource_hint')}"></label>
+    <div class="muted" style="font-size:12px;margin:-6px 0 12px;" data-i18n="parts.resource_note"></div>
+    <button class="btn primary block" id="pt-save" data-i18n="common.save"></button>
+  `, {
+    onMount: (overlay) => {
+      overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      overlay.querySelector('#pt-cat').addEventListener('click', e => {
+        const btn = e.target.closest('.chip'); if (!btn) return;
+        overlay.querySelectorAll('#pt-cat .chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active'); category = btn.dataset.cat;
+      });
+      overlay.querySelector('#pt-save').addEventListener('click', async () => {
+        const name = overlay.querySelector('#pt-name').value.trim();
+        if (!name) { toast(t('parts.name_required')); return; }
+        const resourceKm = parseFloat(overlay.querySelector('#pt-resource').value) || null;
+        const part = { id: uuid(), vehicleId: vehicle.id, ...installPart({ name, category, resourceKm }, odometer) };
+        await DB.put('parts', part);
+        closeModal(); refresh();
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+/** Значок камеры на записях, к которым приложено фото — отдельным проходом
+    поверх уже отрисованного списка, чтобы не усложнять renderRecords. */
+async function attachPhotoBadges(listEl, records) {
+  const items = listEl.querySelectorAll('.list-item');
+  await Promise.all([...items].map(async (row, i) => {
+    const record = records[i];
+    if (!record || record.kind === 'income') return;
+    const photos = await DB.getAllByIndex('receiptPhotos', 'recordId', record.id);
+    if (photos.length === 0) return;
+    const badge = document.createElement('span');
+    badge.textContent = '📷';
+    badge.style.cssText = 'margin-left:6px;cursor:pointer;';
+    badge.addEventListener('click', (e) => { e.stopPropagation(); openPhotoView(photos[0].dataUrl); });
+    row.querySelector('.grow > div')?.appendChild(badge);
+  }));
+}
+
+function openPhotoView(dataUrl) {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="photo.view_title"></h2><button class="modal-close">✕</button></div>
+    <img src="${dataUrl}" style="max-width:100%;border-radius:8px;">
+  `, { onMount: (overlay) => overlay.querySelector('.modal-close').addEventListener('click', closeModal) });
+  applyI18nTree(overlay);
+}
+
 // --- Odometer adjust ---
 function openOdometerAdjust(vehicle) {
   const overlay = openModal(`
@@ -620,6 +750,47 @@ function openOdometerAdjust(vehicle) {
 }
 
 // --- Refuel / Expense forms ---
+// --- Фото чека: вложение, не распознавание — см. photos.js ---------------
+
+const PHOTO_FIELD_HTML = `
+  <label class="field"><span class="field-label" data-i18n="photo.field"></span>
+    <input id="ph-file" type="file" accept="image/*" capture="environment">
+  </label>
+  <img id="ph-preview" style="display:none;max-width:100%;border-radius:8px;margin:-6px 0 12px;">
+`;
+
+/** @returns {() => string|null} читает текущее выбранное фото при сохранении формы */
+function bindPhotoField(overlay) {
+  let dataUrl = null;
+  overlay.querySelector('#ph-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    const check = acceptablePhoto(file);
+    if (!check.ok) {
+      toast(t('photo.err.' + check.reason));
+      e.target.value = '';
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      drawScaled(img, canvas);
+      dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+      const preview = overlay.querySelector('#ph-preview');
+      preview.src = dataUrl;
+      preview.style.display = 'block';
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+  return () => dataUrl;
+}
+
+/** Фото — только на этом устройстве, не через общую синхронизацию. */
+async function savePhotoIfAny(recordId, recordKind, dataUrl) {
+  if (!dataUrl) return;
+  await DB.put('receiptPhotos', { id: uuid(), recordId, recordKind, dataUrl, addedAt: Date.now() });
+}
+
 function openRefuelForm(vehicle, odometer) {
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="refuel.new_title"></h2><button class="modal-close">✕</button></div>
@@ -627,10 +798,12 @@ function openRefuelForm(vehicle, odometer) {
     <label class="field"><span class="field-label" data-i18n="refuel.price_per_liter"></span><input id="rf-price" type="number" step="0.1" value="${vehicle.fuelPriceRub}"></label>
     <label class="field"><span class="field-label" data-i18n="record.odometer"></span><input id="rf-odo" type="number" value="${Math.round(odometer)}"></label>
     <label class="row" style="gap:8px;margin-bottom:14px;"><input type="checkbox" id="rf-full" style="width:auto;" checked><span data-i18n="refuel.full_tank"></span></label>
+    ${PHOTO_FIELD_HTML}
     <button class="btn primary block" id="rf-save" data-i18n="common.save"></button>
   `, {
     onMount: (overlay) => {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      const getPhoto = bindPhotoField(overlay);
       overlay.querySelector('#rf-save').addEventListener('click', async () => {
         const liters = parseFloat(overlay.querySelector('#rf-liters').value) || 0;
         const price = parseFloat(overlay.querySelector('#rf-price').value) || 0;
@@ -640,6 +813,7 @@ function openRefuelForm(vehicle, odometer) {
           isFullTank: overlay.querySelector('#rf-full').checked, fuelType: vehicle.fuelType, stationName: '', note: '',
         };
         await DB.put('refuels', record);
+        await savePhotoIfAny(record.id, 'refuel', getPhoto());
         vehicle.fuelPriceRub = price;
         await DB.put('vehicles', vehicle);
         closeModal(); refresh();
@@ -657,10 +831,12 @@ function openExpenseForm(vehicle, odometer) {
       <div class="chip-row" id="ex-cat">${['wash','service','repairs','tires','insurance','tax','parking','fine','other'].map((c,i) => `<button class="chip ${i===0?'active':''}" data-cat="${c}">${EXPENSE_ICON[c]} ${t('expense.'+c)}</button>`).join('')}</div>
     </div>
     <label class="field"><span class="field-label" data-i18n="expense.amount"></span><input id="ex-amount" type="number" step="1" value="500"></label>
+    ${PHOTO_FIELD_HTML}
     <button class="btn primary block" id="ex-save" data-i18n="common.save"></button>
   `, {
     onMount: (overlay) => {
       overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+      const getPhoto = bindPhotoField(overlay);
       overlay.querySelector('#ex-cat').addEventListener('click', e => {
         const btn = e.target.closest('.chip'); if (!btn) return;
         overlay.querySelectorAll('#ex-cat .chip').forEach(c => c.classList.remove('active'));
@@ -672,6 +848,7 @@ function openExpenseForm(vehicle, odometer) {
           amount: parseFloat(overlay.querySelector('#ex-amount').value) || 0, odometerKm: odometer, note: '',
         };
         await DB.put('expenses', record);
+        await savePhotoIfAny(record.id, 'expense', getPhoto());
         closeModal(); refresh();
       });
     }
@@ -820,6 +997,7 @@ async function saveVehicleFromTrim(make, model, trim, { add = false } = {}) {
 
 const FUEL_OPTIONS = ['petrol', 'diesel', 'hybrid', 'electric', 'gas'];
 const TX_OPTIONS = ['mt', 'at', 'cvt', 'amt', 'dsg'];
+const KIND_OPTIONS = [VEHICLE_KIND.CAR, VEHICLE_KIND.MOTO, VEHICLE_KIND.TRUCK, VEHICLE_KIND.EQUIPMENT];
 
 /**
  * Ручной ввод автомобиля.
@@ -842,6 +1020,14 @@ function openCustomVehicleForm(preset = null) {
     <div class="modal-header"><h2 data-i18n="vehicle.other"></h2><button class="modal-close">✕</button></div>
     <div class="muted" style="margin-bottom:12px;" data-i18n="${preset ? 'vehicle.preset_footer' : 'vehicle.other_footer'}"></div>
     <label class="field"><span class="field-label" data-i18n="vehicle.custom_name"></span><input id="cv-name" placeholder="Toyota Camry" value="${escapeHtml(presetName)}"></label>
+    ${preset ? '' : `
+    <label class="field"><span class="field-label" data-i18n="vehicle.kind"></span>
+      <select id="cv-kind">${KIND_OPTIONS.map(k => `<option value="${k}">${t('vehicle.kind.' + k)}</option>`).join('')}</select>
+    </label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.tracking_unit"></span>
+      <select id="cv-track"><option value="km">${t('vehicle.tracking_km')}</option><option value="hours">${t('vehicle.tracking_hours')}</option></select>
+    </label>
+    <div class="muted" style="font-size:12px;margin:-6px 0 12px;" data-i18n="vehicle.kind_hint"></div>`}
     <label class="field"><span class="field-label" data-i18n="vehicle.fuel_type"></span>
       <select id="cv-fuel">${FUEL_OPTIONS.map(f => `<option value="${f}">${t('fuel.' + f)}</option>`).join('')}</select>
     </label>
@@ -860,6 +1046,8 @@ function openCustomVehicleForm(preset = null) {
       overlay.querySelector('#cv-save').addEventListener('click', async () => {
         const name = overlay.querySelector('#cv-name').value.trim() || presetName || t('car.default_name');
         const tx = overlay.querySelector('#cv-tx').value;
+        const kind = overlay.querySelector('#cv-kind')?.value || VEHICLE_KIND.CAR;
+        const trackingUnit = overlay.querySelector('#cv-track')?.value || 'km';
         if (!addMode) {
           const existing = await getVehicles();
           for (const v of existing) await removeVehicle(v.id);
@@ -881,6 +1069,7 @@ function openCustomVehicleForm(preset = null) {
           consumptionL100: parseFloat(overlay.querySelector('#cv-cons').value) || 8,
           curbWeightKg: parseFloat(overlay.querySelector('#cv-weight').value) || 1300,
           odometerBaseKm: 0, odometerBaseDate: Date.now(), isPrimary: true, fuelPriceRub: 60,
+          kind, trackingUnit,
         };
         vehicle.rangeKm = vehicle.consumptionL100 > 0
           ? vehicle.tankLiters / vehicle.consumptionL100 * 100 : 0;

@@ -18,7 +18,7 @@ import {
  * одинаково на всех устройствах, иначе они разошлись бы навсегда.
  */
 
-const SYNCED_STORES = ['trips', 'vehicles', 'refuels', 'expenses', 'expenseTemplates', 'maintenanceItems', 'incomes'];
+const SYNCED_STORES = ['trips', 'vehicles', 'refuels', 'expenses', 'expenseTemplates', 'maintenanceItems', 'incomes', 'parts'];
 
 // Поля учёта синхронизации. В шифротекст не попадают: они говорят о состоянии
 // обмена на конкретном устройстве, а не о данных.
