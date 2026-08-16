@@ -44,6 +44,7 @@ export const FEATURES = [
   { id: 'multi_vehicle', tier: TIER.PRO, titleKey: 'pay.f.multi_vehicle', descKey: 'pay.f.multi_vehicle_d' },
   { id: 'sync', tier: TIER.PRO, titleKey: 'pay.f.sync', descKey: 'pay.f.sync_d' },
   { id: 'backup', tier: TIER.PRO, titleKey: 'pay.f.backup', descKey: 'pay.f.backup_d' },
+  { id: 'export', tier: TIER.PRO, titleKey: 'pay.f.export', descKey: 'pay.f.export_d' },
 ];
 
 /** Единственный тариф. Цены — ориентир для российского рынка. */

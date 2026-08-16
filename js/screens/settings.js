@@ -4,7 +4,7 @@ import {
   getPrimaryVehicle, getVehicles, getSevereConditions, setSevereConditions, recalcIntervals,
 } from '../state.js';
 import { CURRENCY_SYMBOLS } from '../format.js';
-import { t } from '../i18n.js';
+import { t, getLang } from '../i18n.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER } from '../theme.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
@@ -153,6 +153,16 @@ export async function refresh() {
       </div>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_privacy"></div>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_accuracy"></div>
+    </div>
+
+    <div class="section-title" data-i18n="settings.section_export"></div>
+    <div class="card">
+      <div class="settings-row" style="cursor:pointer;" id="set-export">
+        <span>
+          <span data-i18n="settings.export"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.export_hint"></span>
+        </span>
+      </div>
     </div>
 
     <div class="section-title" data-i18n="settings.section_sync"></div>
@@ -317,6 +327,15 @@ function bind(body) {
     refreshKeepingScroll();
   });
   body.querySelector('#set-signals').addEventListener('click', openSignals);
+  body.querySelector('#set-export').addEventListener('click', async () => {
+    // Экспорт — платная возможность: это главный премиум-крючок всей ниши.
+    // В тестовом режиме открыт всем, чтобы его можно было пощупать.
+    if (!(await hasFeature('export'))) {
+      openPaywall({ reason: 'pay.reason_export', onDone: refresh });
+      return;
+    }
+    openExportDialog();
+  });
 
   bindSync(body);
 
@@ -327,6 +346,102 @@ function bind(body) {
   });
 
   body.querySelector('#set-wipe').addEventListener('click', confirmWipe);
+}
+
+// --- Экспорт данных ------------------------------------------------------
+
+/** Название категории: расходной, доходной или как есть. */
+function categoryName(code) {
+  for (const key of ['expense.' + code, 'income.' + code]) {
+    if (t(key) !== key) return t(key);
+  }
+  return code;
+}
+
+function downloadFile(name, text, type) {
+  // BOM — только у CSV и только тут: без него Excel читает UTF-8 «кракозябрами».
+  const blob = new Blob([type === 'text/csv' ? '\ufeff' + text : text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function openExportDialog() {
+  const vehicle = await getPrimaryVehicle();
+  if (!vehicle) { toast(t('export.no_vehicle')); return; }
+
+  let period = 'all';   // 'all' | 'year' | 'month'
+  const fromOf = () => period === 'all' ? 0
+    : Date.now() - (period === 'year' ? 365 : 30) * 864e5;
+
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="export.title"></h2><button class="modal-close">✕</button></div>
+    <div class="field"><span class="field-label" data-i18n="export.period"></span>
+      <div class="chip-row" id="exp-period">
+        <button class="chip active" data-p="all" data-i18n="export.period_all"></button>
+        <button class="chip" data-p="year" data-i18n="export.period_year"></button>
+        <button class="chip" data-p="month" data-i18n="export.period_month"></button>
+      </div>
+    </div>
+    <button class="btn primary block" id="exp-csv" data-i18n="export.csv"></button>
+    <button class="btn block" id="exp-print" style="margin-top:8px;" data-i18n="export.print"></button>
+    <div class="muted" style="font-size:12px;margin-top:10px;" data-i18n="export.print_hint"></div>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+      root.querySelector('#exp-period').addEventListener('click', (e) => {
+        const btn = e.target.closest('.chip'); if (!btn) return;
+        root.querySelectorAll('#exp-period .chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active'); period = btn.dataset.p;
+      });
+
+      const loadData = async () => {
+        const [refuels, expenses, incomes, trips, maintenance] = await Promise.all([
+          DB.getAllByIndex('refuels', 'vehicleId', vehicle.id),
+          DB.getAllByIndex('expenses', 'vehicleId', vehicle.id),
+          DB.getAllByIndex('incomes', 'vehicleId', vehicle.id),
+          DB.getAllByIndex('trips', 'vehicleId', vehicle.id),
+          DB.getAllByIndex('maintenanceItems', 'vehicleId', vehicle.id),
+        ]);
+        return { refuels, expenses, incomes, trips, maintenance };
+      };
+
+      root.querySelector('#exp-csv').addEventListener('click', async () => {
+        const { buildCsvBundle } = await import('../exportData.js');
+        const data = await loadData();
+        const files = buildCsvBundle(data, {
+          lang: getLang(), fromMs: fromOf(),
+          categoryName, modeName: (m) => t('mode.' + m) !== 'mode.' + m ? t('mode.' + m) : m,
+        });
+        if (files.length === 0) { toast(t('export.empty')); return; }
+        // Пауза между скачиваниями: браузер молча роняет мгновенную очередь.
+        for (const file of files) {
+          downloadFile(file.name, file.csv, 'text/csv');
+          await new Promise(r => setTimeout(r, 300));
+        }
+        toast(t('export.done', { n: files.length }));
+      });
+
+      root.querySelector('#exp-print').addEventListener('click', async () => {
+        const { reportHtml } = await import('../exportData.js');
+        const data = await loadData();
+        const html = reportHtml({
+          vehicleName: vehicle.displayName || vehicle.name || '',
+          ...data, fromMs: fromOf(), lang: getLang(),
+          categoryName, currency: AppState.currency === 'USD' ? '$' : '₽',
+        });
+        const win = window.open('', '_blank');
+        if (!win) { toast(t('export.popup_blocked')); return; }
+        win.document.write(html);
+        win.document.close();
+        // Печать после отрисовки: сразу вызванный print застаёт пустую страницу.
+        setTimeout(() => win.print(), 400);
+      });
+    }
+  });
+  applyI18nTree(overlay);
 }
 
 // --- Синхронизация ---
