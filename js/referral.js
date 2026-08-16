@@ -19,9 +19,9 @@ const CODE_KEY = 'referralCode';
 const INVITED_BY_KEY = 'invitedBy';
 const PARAM = 'ref';
 
-// Запасной адрес — копия на GitHub Pages. Нужен, когда приложение открыто
-// с localhost или из файла: делиться такой ссылкой бессмысленно.
-const FALLBACK_URL = 'https://averjahn.github.io/routediary-web/';
+// Запасной адрес — основной домен приложения. Нужен, когда приложение
+// открыто с localhost или из файла: делиться такой ссылкой бессмысленно.
+const FALLBACK_URL = 'https://autocoyc.com/';
 
 /**
  * Адрес, которым делятся.

@@ -1,5 +1,4 @@
 import { DB } from '../db.js';
-import { AppState } from '../state.js';
 import { uuid } from '../format.js';
 import { t, plural } from '../i18n.js';
 import { applyI18nTree, openModal, closeModal, toast, escapeHtml } from '../ui.js';
@@ -8,19 +7,25 @@ import {
 } from '../signalTiming.js';
 import { loadedAround, ensureAround, isEnabled as roadEnabled } from '../roadData.js';
 import { distanceMeters } from '../roadRules.js';
-import { fetchEstimates } from '../signalPoolClient.js';
+import { fetchEstimates, isEnabled as poolEnabled } from '../signalPoolClient.js';
 
 /**
- * Замер фаз светофоров вручную.
+ * Светофоры вокруг.
  *
- * Готовых данных о фазах не существует, но измерить светофор можно самому:
- * стоя на перекрёстке, отмечать нажатием момент переключения. Тогда число
- * на экране не выдумано, а измерено — и приложение обязано показывать,
- * насколько ему можно верить.
+ * Расставлять их вручную не нужно: перекрёстки со светофорами уже размечены
+ * в открытой карте OpenStreetMap, и мы берём их оттуда по номеру узла. К
+ * этому же номеру привязаны наблюдения — поэтому данные разных людей об
+ * одном перекрёстке складываются.
  *
- * Экран устроен под реальную обстановку: человек стоит в машине и смотрит
- * на светофор, а не на телефон. Поэтому кнопок ровно две, они во весь экран,
- * и промахнуться мимо них нельзя.
+ * Откуда берутся длительности: приложение само замечает, что машина стояла
+ * у светофора, и запоминает момент старта. Моменты стартов, собранные за
+ * несколько дней, укладываются в один период — это и есть цикл. Время
+ * стояния даёт длину красного: подъезжают в случайный момент красного, так
+ * что самые долгие ожидания и есть почти весь красный.
+ *
+ * Чего здесь принципиально нет — правдоподобных чисел на малых данных. Пока
+ * наблюдений мало, экран показывает счётчик «собрано столько-то», а не
+ * отсчёт. Ошибочный отсчёт на перекрёстке опаснее его отсутствия.
  */
 
 const PROGRAM_KEY = {
@@ -31,17 +36,23 @@ const PROGRAM_KEY = {
   late: 'signal.program_late',
 };
 
+// Сколько светофоров показывать: список — чтобы понять обстановку вокруг,
+// а не чтобы пролистывать весь город.
+const NEARBY_LIMIT = 12;
+// Свой замер привязывается к узлу карты, если он в этих пределах.
+const SNAP_M = 40;
+
 export async function openSignals() {
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="signal.title"></h2><button class="modal-close">✕</button></div>
     <div class="muted" style="font-size:13px;" data-i18n="signal.intro"></div>
-    <div id="signal-list" style="margin-top:14px;"></div>
-    <button class="btn primary block" id="signal-add" style="margin-top:14px;" data-i18n="signal.add"></button>
+    <div id="signal-list" style="margin-top:14px;">
+      <div class="muted" data-i18n="signal.searching"></div>
+    </div>
     <div class="muted guide-disclaimer" data-i18n="signal.note"></div>
   `, {
     onMount: (root) => {
       root.querySelector('.modal-close').addEventListener('click', closeModal);
-      root.querySelector('#signal-add').addEventListener('click', () => addHere(root));
       renderList(root);
     },
   });
@@ -49,48 +60,147 @@ export async function openSignals() {
   return overlay;
 }
 
-async function renderList(root) {
-  const list = root.querySelector('#signal-list');
-  const signals = await DB.getAll('signals');
+/** Светофоры из карты вокруг точки, ближние первыми. */
+async function nearbySignals(here) {
+  await ensureAround(here.lat, here.lon).catch(() => {});
+  const { signals } = loadedAround(here.lat, here.lon);
 
-  // Общие оценки подтягиваются только для светофоров, у которых есть номер
-  // узла на карте: без него сопоставить наблюдения не с чем.
-  const osmIds = signals.map(s => s.osmId).filter(Boolean);
-  const shared = new Map();
-  for (const estimate of await fetchEstimates(osmIds).catch(() => [])) {
-    shared.set(`${estimate.signalKey}|${estimate.program}`, estimate);
+  // Один и тот же перекрёсток приходит из нескольких соседних квадратов
+  // карты. Без склейки по номеру узла список забивается повторами, а
+  // светофоры подальше в него уже не помещаются.
+  const unique = new Map();
+  for (const signal of signals || []) {
+    if (!unique.has(String(signal.id))) unique.set(String(signal.id), signal);
   }
 
-  if (signals.length === 0) {
-    list.innerHTML = `<div class="muted">${t('signal.empty')}</div>`;
+  return [...unique.values()]
+    .map(signal => ({ ...signal, distance: distanceMeters(here, signal) }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, NEARBY_LIMIT);
+}
+
+function currentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) return reject(new Error('no geolocation'));
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      reject,
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  });
+}
+
+async function renderList(root) {
+  const list = root.querySelector('#signal-list');
+  if (!list) return;
+
+  if (!(await roadEnabled())) {
+    list.innerHTML = `<div class="muted">${t('signal.pool_off')}</div>`;
     return;
   }
 
+  let here;
+  try {
+    here = await currentPosition();
+  } catch {
+    list.innerHTML = `<div class="muted">${t('map.permission_denied')}</div>`;
+    return;
+  }
+
+  const signals = await nearbySignals(here);
+  if (signals.length === 0) {
+    list.innerHTML = `<div class="muted">${t('signal.none_nearby')}</div>`;
+    return;
+  }
+
+  // Свои ручные замеры лежат отдельно и привязаны к тому же номеру узла.
+  const mine = new Map();
+  for (const own of await DB.getAll('signals')) {
+    if (own.osmId) mine.set(String(own.osmId), own);
+  }
+
+  const pool = await fetchEstimates(signals.map(s => s.id)).catch(() => null);
+  const program = programAt(Date.now());
+  const shared = new Map();
+  for (const estimate of pool?.estimates || []) {
+    shared.set(`${estimate.signalKey}|${estimate.program}`, estimate);
+  }
+  const progress = new Map();
+  for (const item of pool?.progress || []) {
+    progress.set(`${item.signalKey}|${item.program}`, item);
+  }
+  const needed = pool?.needed || { samples: 20, days: 4 };
+  const collecting = await poolEnabled();
+
   const now = Date.now();
-  list.innerHTML = signals.map(signal => {
-    const measured = Object.entries(signal.programs || {}).filter(([, p]) => p.ok);
-    const state = predict(signal, now);
-    const pooled = signal.osmId ? shared.get(`${signal.osmId}|${programAt(now)}`) : null;
+  list.innerHTML = signals.map((signal) => {
+    const key = `${signal.id}|${program}`;
+    const own = mine.get(String(signal.id));
     return `
       <div class="signal-row" data-signal="${signal.id}">
         <div class="grow">
-          <div><b>${escapeHtml(signal.name || t('signal.unnamed'))}</b></div>
-          <div class="muted" style="font-size:12px;">${statusLine(signal, state, measured)}</div>
-          ${pooled ? `<div class="muted" style="font-size:12px;">${t('signal.pooled', { cycle: Math.round(pooled.cycleSec), days: pooled.days })}</div>` : ''}
+          <div><b>${escapeHtml(own?.name || t('signal.meters', { meters: Math.round(signal.distance) }))}</b></div>
+          ${describe({
+            estimate: shared.get(key), progress: progress.get(key), needed, collecting, own, now,
+          })}
         </div>
         <button class="btn sm" data-measure="${signal.id}">${t('signal.measure')}</button>
       </div>`;
-  }).join('');
+  }).join('') + `<div class="muted" style="font-size:12px;margin-top:10px;">${t('signal.why_wait')}</div>`;
 
   list.querySelectorAll('[data-measure]').forEach(btn => btn.addEventListener('click', async () => {
-    const signal = (await DB.getAll('signals')).find(s => s.id === btn.dataset.measure);
+    const osmId = btn.dataset.measure;
+    const signal = mine.get(osmId) || {
+      id: uuid(),
+      name: '',
+      osmId,
+      ...signals.find(s => String(s.id) === osmId),
+      addedAt: Date.now(),
+      programs: {},
+    };
     openMeasure(signal, () => renderList(root));
   }));
 }
 
-function statusLine(signal, state, measured) {
-  if (measured.length === 0) return t('signal.not_measured');
+/**
+ * Что известно про светофор — одной-двумя строками.
+ *
+ * Порядок важен: сначала то, что измерено самим человеком (он этому верит
+ * обоснованно), затем общий расчёт, затем честный счётчик сбора.
+ */
+function describe({ estimate, progress, needed, collecting, own, now }) {
+  const lines = [];
 
+  if (own) {
+    const measured = Object.entries(own.programs || {}).filter(([, p]) => p.ok);
+    if (measured.length > 0) lines.push(ownLine(own, measured, now));
+  }
+
+  if (estimate) {
+    lines.push(estimate.redSec && estimate.greenSec
+      ? t('signal.phases', {
+        cycle: Math.round(estimate.cycleSec),
+        red: Math.round(estimate.redSec),
+        green: Math.round(estimate.greenSec),
+      })
+      : t('signal.phases_cycle_only', { cycle: Math.round(estimate.cycleSec) }));
+    lines.push(t('signal.based_on', { samples: estimate.samples, days: estimate.days }));
+  } else if (!collecting) {
+    lines.push(t('signal.pool_off'));
+  } else if (progress) {
+    lines.push(t('signal.collecting', {
+      samples: progress.samples, samples_needed: needed.samples,
+      days: progress.days, days_needed: needed.days,
+    }));
+  } else {
+    lines.push(t('signal.collecting_none'));
+  }
+
+  return lines.map(line => `<div class="muted" style="font-size:12px;">${line}</div>`).join('');
+}
+
+function ownLine(signal, measured, now) {
+  const state = predict(signal, now);
   const programs = measured
     .map(([id, p]) => `${t(PROGRAM_KEY[id])} ${p.cycleSec} ${t('signal.sec')}`)
     .join(' · ');
@@ -107,50 +217,12 @@ function statusLine(signal, state, measured) {
   return `${programs} · ${t(state.state === 'green' ? 'signal.now_green' : 'signal.now_red', { seconds: state.remainingSec })}`;
 }
 
-/** Новый светофор в текущей точке. */
-async function addHere(root) {
-  if (!('geolocation' in navigator)) return toast(t('hud.unavailable'));
-
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    const here = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-
-    // Привязываем к узлу светофора на карте, если он рядом: только по этому
-    // номеру можно потом сопоставить общие наблюдения. Без дорожных данных
-    // светофор остаётся личным — это рабочий вариант, просто без копилки.
-    let osmId = null;
-    if (await roadEnabled()) {
-      await ensureAround(here.lat, here.lon).catch(() => {});
-      const { signals } = loadedAround(here.lat, here.lon);
-      let nearest = null;
-      for (const candidate of signals) {
-        const distance = distanceMeters(here, candidate);
-        if (distance <= 40 && (!nearest || distance < nearest.distance)) {
-          nearest = { id: candidate.id, distance };
-        }
-      }
-      osmId = nearest ? String(nearest.id) : null;
-    }
-
-    const signal = {
-      id: uuid(),
-      name: '',
-      ...here,
-      osmId,
-      addedAt: Date.now(),
-      programs: {},
-    };
-    await DB.put('signals', signal);
-    renderList(root);
-    openMeasure(signal, () => renderList(root));
-  }, () => toast(t('map.permission_denied')), { enableHighAccuracy: true, timeout: 15000 });
-}
-
 /**
- * Замер.
+ * Ручной замер.
  *
- * Две кнопки во весь экран: человек смотрит на светофор, а не на телефон,
- * и попасть должен не глядя. Оценка обновляется на ходу, чтобы было видно,
- * хватило ли циклов и сходятся ли замеры.
+ * Остаётся как быстрый путь: общий расчёт набирается неделями, а замерить
+ * конкретный перекрёсток можно за пять минут. Две кнопки во весь экран —
+ * человек стоит в машине и смотрит на светофор, а не на телефон.
  */
 function openMeasure(signal, onSaved) {
   if (!signal) return;
@@ -242,4 +314,4 @@ function openMeasure(signal, onSaved) {
   applyI18nTree(overlay);
 }
 
-export { PROGRAMS };
+export { PROGRAMS, SNAP_M };

@@ -72,6 +72,10 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').catch(() => {});
   }
+
+  // Отметка «сегодня пользовались» — раз в сутки, без ожидания: счётчик
+  // установок не повод задерживать открытие приложения.
+  import('./usage.js').then(({ ping }) => ping()).catch(() => {});
 }
 
 /** Название приложения в боковом меню (широкий экран) — через атрибут: см. CSS. */

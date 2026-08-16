@@ -22,7 +22,12 @@ import { programAt } from './signalTiming.js';
  */
 
 const ENABLED_KEY = 'signalPoolEnabled';
-const SENT_KEY = 'signalPoolSentUpTo';
+// Отправленные поездки: без этого одни и те же наблюдения уезжали бы
+// при каждом пересчёте сегментации и раздували чужую статистику.
+const SENT_KEY = 'signalPoolSentTrips';
+// Держим ограниченный хвост: список нужен, чтобы не слать повторно,
+// а не чтобы хранить всю историю.
+const SENT_MEMORY = 500;
 
 // Насколько близко к светофору должна быть остановка, чтобы считаться его.
 // Очередь на перекрёстке растягивается, но дальше это уже другой стоп.
@@ -77,20 +82,48 @@ async function post(path, body) {
 }
 
 /**
- * Отправить наблюдения из недавних поездок.
+ * Отправить наблюдения по поездкам, которые ещё не отправляли.
  * Молча ничего не делает, если участие выключено.
+ *
+ * @param {Array} trips [{id, points}]
  */
-export async function contribute(tracks) {
+// Одновременные отправки: сегментация запускает свою в фоне, и второй
+// вызов успевал прочитать ещё не обновлённый список отправленного — на
+// сервер уходил дубль. Сервер его теперь отвергает, но и слать незачем.
+let inFlight = null;
+
+export async function contribute(trips) {
+  if (inFlight) await inFlight.catch(() => {});
+  inFlight = contributeInner(trips);
+  try {
+    return await inFlight;
+  } finally {
+    inFlight = null;
+  }
+}
+
+async function contributeInner(trips) {
   if (!(await isEnabled())) return 0;
 
+  const sentIds = new Set((await getSetting(SENT_KEY)) || []);
+  const fresh = (trips || []).filter(trip => trip?.id && !sentIds.has(trip.id));
+  if (fresh.length === 0) return 0;
+
   const observations = [];
-  for (const points of tracks || []) {
-    if (!points.length) continue;
+  for (const trip of fresh) {
+    const points = trip.points || [];
+    if (points.length === 0) continue;
     const middle = points[Math.floor(points.length / 2)];
     await ensureAround(middle.lat, middle.lon).catch(() => {});
     const { signals } = loadedAround(middle.lat, middle.lon);
     observations.push(...observationsFromTrack(points, signals));
   }
+
+  // Поездку помечаем отправленной, даже если наблюдений в ней не нашлось:
+  // иначе мы будем перебирать её заново после каждой пересегментации.
+  const updated = [...sentIds, ...fresh.map(t => t.id)].slice(-SENT_MEMORY);
+  await setSetting(SENT_KEY, updated);
+
   if (observations.length === 0) return 0;
 
   // Отправляем пачками: сервер принимает не больше полусотни за раз.
@@ -99,20 +132,45 @@ export async function contribute(tracks) {
     const result = await post('/api/signals/observe', { observations: observations.slice(i, i + 50) });
     sent += result?.accepted || 0;
   }
-  await setSetting(SENT_KEY, Date.now());
   return sent;
 }
 
-/** Готовые оценки по светофорам поблизости. */
+/**
+ * Собрать треки поездок за день и отправить.
+ * Вызывается после пересчёта сегментации — тогда поездки уже нарезаны.
+ */
+export async function contributeDay(dayKey) {
+  if (!(await isEnabled())) return 0;
+
+  const { DB } = await import('./db.js');
+  const trips = (await DB.getAllByIndex('trips', 'dayKey', dayKey))
+    .filter(trip => trip.mode === 'car');
+
+  const withPoints = [];
+  for (const trip of trips) {
+    withPoints.push({ id: trip.id, points: await DB.getAllByIndex('trackPoints', 'tripId', trip.id) });
+  }
+  return contribute(withPoints);
+}
+
+/**
+ * Что известно по светофорам поблизости.
+ *
+ * Возвращает и готовые оценки, и счётчики по тем, где данных ещё не хватает:
+ * «копится» и «ничего нет» — разные вещи, и человек должен видеть, какая
+ * из них его случай.
+ */
 export async function fetchEstimates(keys) {
-  if (!keys?.length) return [];
+  const empty = { estimates: [], progress: [], needed: null };
+  if (!keys?.length) return empty;
   const { syncOrigin } = await import('./syncClient.js');
   try {
     const res = await fetch(`${syncOrigin()}/api/signals/estimates?keys=${keys.join(',')}`);
-    if (!res.ok) return [];
-    return (await res.json()).estimates || [];
+    if (!res.ok) return empty;
+    const body = await res.json();
+    return { estimates: body.estimates || [], progress: body.progress || [], needed: body.needed || null };
   } catch {
-    return [];
+    return empty;
   }
 }
 

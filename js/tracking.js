@@ -84,6 +84,23 @@ function onPositionError(err) {
 }
 
 // Пересчёт сегментации дня: превратить сырые точки в Trip-записи.
+/**
+ * Отправка наблюдений в общую копилку после нарезки поездок.
+ *
+ * Именно здесь, а не в момент остановки: пока поездка не сегментирована,
+ * неизвестно, где она началась и кончилась, и стоянка у дома попала бы
+ * в копилку наравне с перекрёстком.
+ *
+ * Выключено, пока человек сам не включил. Ошибки глушим: приложение
+ * офлайновое, и отсутствие сети не должно ломать запись поездок.
+ */
+async function contributeSignalObservations(dayKey) {
+  try {
+    const { contributeDay } = await import('./signalPoolClient.js');
+    await contributeDay(dayKey);
+  } catch { /* участие выключено или нет сети */ }
+}
+
 export async function recomputeSegmentation(dayKey) {
   const points = await DB.getAllByIndex('trackPoints', 'dayKey', dayKey);
   if (points.length === 0) return [];
@@ -134,6 +151,11 @@ export async function recomputeSegmentation(dayKey) {
     for (const p of seg) { p.tripId = trip.id; await DB.put('trackPoints', p); }
     newTrips.push(trip);
   }
+
+  // Поездки нарезаны — можно отдать наблюдения в общую копилку.
+  // Не ждём: отправка не должна задерживать показ поездок на экране.
+  contributeSignalObservations(dayKey);
+
   return newTrips;
 }
 
