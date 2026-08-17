@@ -81,6 +81,10 @@ async function init() {
   // закончилась оплата, а не забудет об этом до следующего похода в настройки.
   import('./cardPay.js').then(({ resumeCardPayment }) =>
     resumeCardPayment(() => switchTab(currentTab, true))).catch(() => {});
+
+  // Аккаунт устройства заводится сам, в фоне: к моменту покупки он уже
+  // должен существовать. Ошибки и офлайн — молча, попытка повторится.
+  import('./quickAccount.js').then(({ ensureAccount }) => ensureAccount()).catch(() => {});
 }
 
 /** Название приложения в боковом меню (широкий экран) — через атрибут: см. CSS. */

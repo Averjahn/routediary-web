@@ -88,3 +88,29 @@ export function rememberSecret(code) {
 export function forgetSecret() {
   return setSetting(SECRET_KEY, null);
 }
+
+/**
+ * Тихое создание аккаунта при старте приложения.
+ *
+ * Пользователь не жмёт ничего: устройство само становится аккаунтом, чтобы
+ * к моменту покупки уже было, к чему её привязать. Без сети просто молчим —
+ * попытка повторится при следующем запуске; приложение офлайновое, и
+ * отсутствие аккаунта ничего в нём не ломает.
+ *
+ * Ошибки глотаются намеренно: фоновое удобство не имеет права показывать
+ * человеку ошибки того, о чём он не просил.
+ */
+export async function ensureAccount() {
+  try {
+    if (await getSetting('syncToken')) return false;   // уже есть
+    const { Sync, deviceLabel } = await import('./syncClient.js');
+    const { getLocalCode, getInvitedBy } = await import('./referral.js');
+    const code = generateSecret();
+    await Sync.register(await loginFor(code), normalizeSecret(code), deviceLabel(),
+      { referralCode: await getLocalCode(), invitedBy: await getInvitedBy() });
+    await rememberSecret(code);
+    return true;
+  } catch {
+    return false;
+  }
+}

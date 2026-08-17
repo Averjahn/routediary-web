@@ -374,6 +374,26 @@ export function createSync({ db, request, getSetting, setSetting }) {
     if (!res.ok) throw new SyncError(res.body?.error || 'password_change_failed');
   }
 
+  /**
+   * Привязка почты к кодовому аккаунту: логин становится почтой, пароль —
+   * источником ключа. Мастер-ключ не меняется — данные не перешифровываются.
+   * Прежний код устройства после этого для входа не годится.
+   */
+  async function attachEmail(email, password) {
+    const master = await getSetting('syncMasterKey');
+    if (!master) throw new SyncError('not_signed_in');
+
+    const kdfSalt = newKdfSalt();
+    const { authHash, kek } = await deriveFromPassword(password, kdfSalt);
+    const wrappedKey = await wrapMasterKey(kek, Uint8Array.from(master));
+
+    const res = await api('POST', '/api/account/attach-login',
+      { login: email, authHash, kdfSalt, wrappedKey });
+    if (!res.ok) throw new SyncError(res.body?.error || 'attach_failed');
+    await setSetting('syncLogin', res.body.login);
+    return res.body;
+  }
+
   async function deleteAccount() {
     const res = await api('DELETE', '/api/account');
     if (!res.ok) throw new SyncError(res.body?.error || 'delete_failed');
@@ -382,7 +402,7 @@ export function createSync({ db, request, getSetting, setSetting }) {
 
   return {
     register, login, logout, status, syncNow, pull, push,
-    changePassword, deleteAccount, collectDirty, refreshAccount,
+    changePassword, attachEmail, deleteAccount, collectDirty, refreshAccount,
   };
 }
 

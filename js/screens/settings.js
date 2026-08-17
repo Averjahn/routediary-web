@@ -224,9 +224,19 @@ function syncCard(sync) {
     ? new Date(sync.lastAt).toLocaleString(AppState.lang === 'en' ? 'en-GB' : 'ru-RU')
     : t('sync.never');
 
+  // Остаток Pro считается от серверной даты: местные часы её не двигают.
+  const proUntil = sync.proUntil ? new Date(sync.proUntil) : null;
+  const proDaysLeft = proUntil && proUntil > new Date()
+    ? Math.ceil((proUntil - Date.now()) / 864e5) : 0;
+  const isCodeLogin = (sync.login || '').endsWith('@code.invalid');
+
   return `
     <div class="settings-row"><span data-i18n="sync.account"></span>
-      <span class="muted">${escapeHtml(sync.login || '')}</span></div>
+      <span class="muted">${isCodeLogin ? t('quick.device_account') : escapeHtml(sync.login || '')}</span></div>
+    ${proDaysLeft > 0 ? `
+    <div class="settings-row"><span data-i18n="pro.status"></span>
+      <b style="color:var(--success);">${t('pro.until', {
+        date: proUntil.toLocaleDateString(), days: proDaysLeft })}</b></div>` : ''}
     <div class="settings-row"><span data-i18n="sync.last"></span>
       <span class="muted" id="sync-last">${escapeHtml(last)}</span></div>
     ${sync.pending ? `<div class="settings-row"><span data-i18n="sync.pending"></span>
@@ -236,6 +246,13 @@ function syncCard(sync) {
     </div>
     <div class="settings-row" style="cursor:pointer;margin-top:6px;" id="sync-show-code">
       <span data-i18n="quick.show_code"></span></div>
+    ${isCodeLogin ? `
+    <div class="settings-row" style="cursor:pointer;" id="sync-attach-email">
+      <span>
+        <span data-i18n="quick.attach_email"></span>
+        <span class="muted" style="display:block;font-size:12px;" data-i18n="quick.attach_email_hint"></span>
+      </span>
+    </div>` : ''}
     <div class="settings-row" style="cursor:pointer;" id="sync-password">
       <span data-i18n="sync.change_password"></span></div>
     <div class="settings-row" style="cursor:pointer;" id="sync-signout">
@@ -559,6 +576,67 @@ function openRestoreForm() {
   applyI18nTree(overlay);
 }
 
+/**
+ * Привязка почты к кодовому аккаунту.
+ *
+ * Почта вводится дважды: подтверждения письмом нет (осознанно — писем мы не
+ * шлём вовсе), и опечатка иначе всплывёт только при попытке входа с другого
+ * устройства, когда исправить её будет уже нечем.
+ */
+function openAttachEmailForm() {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="quick.attach_email"></h2><button class="modal-close">✕</button></div>
+    <div class="muted" style="font-size:13px;margin-bottom:12px;" data-i18n="quick.attach_why"></div>
+    <label class="field"><span class="field-label" data-i18n="sync.login"></span>
+      <input id="ae-email" type="email" autocomplete="email" autocapitalize="none" spellcheck="false"></label>
+    <label class="field"><span class="field-label" data-i18n="quick.email_repeat"></span>
+      <input id="ae-email2" type="email" autocapitalize="none" spellcheck="false"></label>
+    <label class="field"><span class="field-label" data-i18n="sync.password"></span>
+      <input id="ae-pass" type="password" autocomplete="new-password"></label>
+    <label class="field"><span class="field-label" data-i18n="sync.password_repeat"></span>
+      <input id="ae-pass2" type="password" autocomplete="new-password"></label>
+    <div class="muted" style="font-size:12px;margin:6px 0;" data-i18n="quick.attach_code_note"></div>
+    <div class="muted" id="ae-error" style="color:var(--danger);font-size:13px;min-height:18px;"></div>
+    <button class="btn primary block" id="ae-go" data-i18n="quick.attach_submit"></button>
+  `, {
+    onMount: (root) => {
+      const error = root.querySelector('#ae-error');
+      const button = root.querySelector('#ae-go');
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+
+      button.addEventListener('click', async () => {
+        const email = root.querySelector('#ae-email').value.trim().toLowerCase();
+        const email2 = root.querySelector('#ae-email2').value.trim().toLowerCase();
+        const pass = root.querySelector('#ae-pass').value;
+        const pass2 = root.querySelector('#ae-pass2').value;
+
+        if (!email.includes('@') || email.length < 5) return (error.textContent = t('sync.login_short'));
+        if (email !== email2) return (error.textContent = t('quick.email_mismatch'));
+        if (pass.length < 8) return (error.textContent = t('sync.password_short'));
+        if (pass !== pass2) return (error.textContent = t('sync.password_mismatch'));
+
+        error.textContent = '';
+        button.disabled = true;
+        button.textContent = t('sync.working');
+        try {
+          await Sync.attachEmail(email, pass);
+          // Код с этого момента для входа не годится: логин сменился.
+          await forgetSecret();
+          closeModal();
+          toast(t('quick.attach_done'));
+          refresh();
+        } catch (err) {
+          error.textContent = syncErrorText(err?.code);
+        } finally {
+          button.disabled = false;
+          button.textContent = t('quick.attach_submit');
+        }
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
 // --- Синхронизация ---
 
 function syncErrorText(code) {
@@ -572,6 +650,7 @@ function bindSync(body) {
     createQuickAccount(e.currentTarget);
   });
   body.querySelector('#sync-restore')?.addEventListener('click', openRestoreForm);
+  body.querySelector('#sync-attach-email')?.addEventListener('click', openAttachEmailForm);
   body.querySelector('#sync-show-code')?.addEventListener('click', async () => {
     const code = await savedSecret();
     if (code) showRecoveryCode(code, { firstTime: false });
