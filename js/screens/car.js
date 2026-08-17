@@ -23,6 +23,7 @@ import { t } from '../i18n.js';
 import { el, applyI18nTree, openModal, closeModal, toast, EXPENSE_ICON, icon } from '../ui.js';
 import { VEHICLE_MAKES, searchMakes, searchModels, getMake, makeDisplayName } from '../vehicleCatalog.js';
 import { bodyTypeFor } from '../carArt.js';
+import { defaultsForClass, hasClassDefaults } from '../vehicleClass.js';
 import { getLang } from '../i18n.js';
 
 let containerRef = null;
@@ -1016,6 +1017,11 @@ function openCustomVehicleForm(preset = null) {
   const presetName = preset
     ? `${makeDisplayName(preset.make)} ${preset.model.name}`
     : '';
+  // Класс модели известен из справочника — значит поля можно заполнить
+  // правдоподобно, а не одинаково для «Оки» и Land Cruiser. Это прикидка,
+  // и человеку об этом прямо говорится подписью под формой.
+  const cls = preset?.model?.cls || '';
+  const guess = defaultsForClass(cls);
   const overlay = openModal(`
     <div class="modal-header"><h2 data-i18n="vehicle.other"></h2><button class="modal-close">✕</button></div>
     <div class="muted" style="margin-bottom:12px;" data-i18n="${preset ? 'vehicle.preset_footer' : 'vehicle.other_footer'}"></div>
@@ -1034,11 +1040,12 @@ function openCustomVehicleForm(preset = null) {
     <label class="field"><span class="field-label" data-i18n="vehicle.transmission"></span>
       <select id="cv-tx"><option value="">${t('vehicle.tx_unknown')}</option>${TX_OPTIONS.map(x => `<option value="${x}">${t('vehicle.tx.' + x)}</option>`).join('')}</select>
     </label>
-    <label class="field"><span class="field-label" data-i18n="vehicle.engine"></span><input id="cv-engine" type="number" step="0.1" value="1.6"></label>
-    <label class="field"><span class="field-label" data-i18n="vehicle.power"></span><input id="cv-power" type="number" value="110"></label>
-    <label class="field"><span class="field-label" data-i18n="vehicle.tank"></span><input id="cv-tank" type="number" value="50"></label>
-    <label class="field"><span class="field-label" data-i18n="vehicle.consumption"></span><input id="cv-cons" type="number" step="0.1" value="8"></label>
-    <label class="field"><span class="field-label" data-i18n="vehicle.weight"></span><input id="cv-weight" type="number" value="1300"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.engine"></span><input id="cv-engine" type="number" step="0.1" value="${guess.engineVolumeL}"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.power"></span><input id="cv-power" type="number" value="${guess.powerHp}"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.tank"></span><input id="cv-tank" type="number" value="${guess.tankLiters}"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.consumption"></span><input id="cv-cons" type="number" step="0.1" value="${guess.consumptionL100}"></label>
+    <label class="field"><span class="field-label" data-i18n="vehicle.weight"></span><input id="cv-weight" type="number" value="${guess.curbWeightKg}"></label>
+    ${hasClassDefaults(cls) ? `<div class="muted" style="font-size:12px;margin:-4px 0 12px;" data-i18n="vehicle.class_guess"></div>` : ''}
     <button class="btn primary block" id="cv-save" data-i18n="common.save"></button>
   `, {
     onMount: (overlay) => {
@@ -1060,14 +1067,17 @@ function openCustomVehicleForm(preset = null) {
           // Движок регламента читает тип коробки из названия комплектации —
           // подставляем выбранное, чтобы вариатор не считался автоматом.
           trimName: tx ? tx.toUpperCase() : '',
-          years: '',
+          // Годы выпуска модели известны из справочника. Движок регламента
+          // по ним отличает карбюраторную машину от инжекторной — без них
+          // ВАЗ 1985 года получил бы регламент современной Granta.
+          years: preset?.model?.years || '',
           customName: name, displayName: name,
           engineVolumeL: parseFloat(overlay.querySelector('#cv-engine').value) || 0,
           fuelType: overlay.querySelector('#cv-fuel').value || 'petrol',
           powerHp: parseInt(overlay.querySelector('#cv-power').value) || 0,
-          tankLiters: parseFloat(overlay.querySelector('#cv-tank').value) || 50,
-          consumptionL100: parseFloat(overlay.querySelector('#cv-cons').value) || 8,
-          curbWeightKg: parseFloat(overlay.querySelector('#cv-weight').value) || 1300,
+          tankLiters: parseFloat(overlay.querySelector('#cv-tank').value) || guess.tankLiters,
+          consumptionL100: parseFloat(overlay.querySelector('#cv-cons').value) || guess.consumptionL100,
+          curbWeightKg: parseFloat(overlay.querySelector('#cv-weight').value) || guess.curbWeightKg,
           odometerBaseKm: 0, odometerBaseDate: Date.now(), isPrimary: true, fuelPriceRub: 60,
           kind, trackingUnit,
         };

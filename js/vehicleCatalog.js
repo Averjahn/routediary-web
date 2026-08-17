@@ -27,11 +27,26 @@ function parseCatalog(raw) {
     if (marker === '#') {
       flushMake();
       if (parts.length < 3) continue;
-      make = { id: parts[0], nameEn: parts[1], nameRu: parts[2], aliases: parts[3] ? splitAliases(parts[3]) : [], models: [] };
+      make = {
+        id: parts[0], nameEn: parts[1], nameRu: parts[2],
+        aliases: parts[3] ? splitAliases(parts[3]) : [],
+        // Пометка источника: марки, которые реально ездят по России.
+        popular: parts[4] === '1',
+        models: [],
+      };
     } else if (marker === '>') {
       flushModel();
       if (parts.length < 2) continue;
-      model = { id: parts[0], makeId: make.id, name: parts[1], aliases: parts[2] ? splitAliases(parts[2]) : [], trims: [] };
+      model = {
+        id: parts[0], makeId: make.id, name: parts[1],
+        aliases: parts[2] ? splitAliases(parts[2]) : [],
+        // Годы выпуска и европейский класс — из справочника, не выдуманы.
+        // Годы нужны движку регламента (карбюратор или инжектор решается
+        // по году), класс — чтобы не предлагать «Оке» бак на 50 литров.
+        years: parts[3] || '',
+        cls: parts[4] || '',
+        trims: [],
+      };
     } else if (marker === '-') {
       if (parts.length < 8 || !model) continue;
       const trimIndex = model.trims.length;
@@ -50,7 +65,13 @@ function parseCatalog(raw) {
     }
   }
   flushMake();
-  makes.sort((a, b) => a.nameEn.localeCompare(b.nameEn));
+  // Сначала популярные марки, дальше по алфавиту. Список открывается на том,
+  // что человек ищет: без этого до Lada нужно пролистать «212», «Abarth»,
+  // «AC», «Acura» и ещё три сотни марок, которых в России почти нет.
+  makes.sort((a, b) => {
+    if (a.popular !== b.popular) return a.popular ? -1 : 1;
+    return a.nameEn.localeCompare(b.nameEn);
+  });
   return makes;
 }
 
