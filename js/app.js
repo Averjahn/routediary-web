@@ -8,18 +8,30 @@ import { captureIncomingReferral } from './referral.js';
 import { startAutoSync } from './syncClient.js';
 import { setupTelegram } from './telegram.js';
 import * as MapScreen from './screens/map.js';
-import * as TripsScreen from './screens/trips.js';
-import * as CarScreen from './screens/car.js';
-import * as SettingsScreen from './screens/settings.js';
-import * as StatsScreen from './screens/stats.js';
 
+/**
+ * Экраны, кроме карты, загружаются при первом открытии вкладки, а не при
+ * старте. До этого статические импорты тянули на запуск ВСЁ разом — включая
+ * 230-килобайтный справочник машин, который нужен только на вкладке «Авто».
+ * Карта — статически: она первый экран, откладывать её нечем.
+ *
+ * Динамический import() возвращает один и тот же экземпляр модуля, что и
+ * статический, поэтому все внутренние связи экранов работают как раньше.
+ */
 const SCREENS = {
-  map: { module: MapScreen, el: null, rendered: false },
-  trips: { module: TripsScreen, el: null, rendered: false },
-  car: { module: CarScreen, el: null, rendered: false },
-  settings: { module: SettingsScreen, el: null, rendered: false },
-  stats: { module: StatsScreen, el: null, rendered: false },
+  map: { load: null, module: MapScreen, el: null, rendered: false },
+  trips: { load: () => import('./screens/trips.js'), module: null, el: null, rendered: false },
+  car: { load: () => import('./screens/car.js'), module: null, el: null, rendered: false },
+  settings: { load: () => import('./screens/settings.js'), module: null, el: null, rendered: false },
+  stats: { load: () => import('./screens/stats.js'), module: null, el: null, rendered: false },
 };
+
+/** Модуль экрана: уже загруженный или загружаемый сейчас. */
+async function screenModule(key) {
+  const screen = SCREENS[key];
+  if (!screen.module) screen.module = await screen.load();
+  return screen.module;
+}
 
 let currentTab = null;
 
@@ -54,7 +66,7 @@ async function init() {
       applyI18nTree(document.body);
       applyBrand();
       for (const key of Object.keys(SCREENS)) SCREENS[key].rendered = false;
-      switchTab(currentTab, true);
+      switchTab(currentTab, true);   // незагруженные вкладки перерисуются при первом открытии
     });
     initInstallBanner();
   });
@@ -92,7 +104,7 @@ function applyBrand() {
   document.getElementById('tabbar')?.setAttribute('data-brand', t('app.name'));
 }
 
-function switchTab(tab, force) {
+async function switchTab(tab, force) {
   if (tab === currentTab && !force) return;
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
@@ -100,11 +112,15 @@ function switchTab(tab, force) {
     SCREENS[key].el.classList.toggle('active', key === tab);
   }
   const screen = SCREENS[tab];
+  const module = await screenModule(tab);
+  // Пока модуль грузился, человек мог успеть переключиться дальше —
+  // тогда рисовать нечего, его вкладка уже другая.
+  if (currentTab !== tab) return;
   if (!screen.rendered) {
-    screen.module.render(screen.el);
+    module.render(screen.el);
     screen.rendered = true;
-  } else if (screen.module.refresh) {
-    screen.module.refresh();
+  } else if (module.refresh) {
+    module.refresh();
   }
 }
 
