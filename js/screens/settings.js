@@ -61,6 +61,8 @@ export async function refresh() {
     roadEnabled(),
     cachedTileCount(),
     poolEnabled(),
+    // Стиль проекции нужен здесь же: под чипами показывается живой образец
+    // с этими цифрами, шрифтом и цветом — тот же, что окажется на стекле.
     getHudStyle(),
   ]);
   const provider = getMapProvider();
@@ -83,6 +85,11 @@ export async function refresh() {
 
       <div class="settings-row" style="margin-top:8px;">
         <span data-i18n="hud.style_title"></span>
+      </div>
+      <div class="hud-preview hud-font-${hudStyle.font}" id="hud-preview"
+           style="--hud-color:${HUD_COLORS[hudStyle.color].hex}">
+        <div class="hud-preview-value" id="hud-preview-value">88</div>
+        <div class="hud-preview-unit" data-i18n="unit.kmh"></div>
       </div>
       <div class="chip-row">
         ${Object.keys(HUD_COLORS).map(id => `
@@ -339,21 +346,34 @@ function bind(body) {
     refreshKeepingScroll();
   }));
 
+  const preview = body.querySelector('#hud-preview');
+
   body.querySelectorAll('[data-hud-color]').forEach(btn => btn.addEventListener('click', async () => {
-    if (btn.dataset.hudColor !== 'amber' && !(await hasFeature('hud_style'))) {
+    const id = btn.dataset.hudColor;
+    if (id !== 'amber' && !(await hasFeature('hud_style'))) {
       openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
       return;
     }
-    await setHudStyle({ color: btn.dataset.hudColor });
-    refreshKeepingScroll();
+    // Образец и отметка выбора меняются сразу, запись в базу — следом.
+    // Перерисовывать весь экран настроек ради двух свойств незачем: это
+    // и медленнее, и сбивает прокрутку.
+    preview?.style.setProperty('--hud-color', HUD_COLORS[id].hex);
+    body.querySelectorAll('[data-hud-color]').forEach(c => c.classList.toggle('active', c === btn));
+    await setHudStyle({ color: id });
   }));
+
   body.querySelectorAll('[data-hud-font]').forEach(btn => btn.addEventListener('click', async () => {
-    if (btn.dataset.hudFont !== 'mono' && !(await hasFeature('hud_style'))) {
+    const id = btn.dataset.hudFont;
+    if (id !== 'mono' && !(await hasFeature('hud_style'))) {
       openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
       return;
     }
-    await setHudStyle({ font: btn.dataset.hudFont });
-    refreshKeepingScroll();
+    if (preview) {
+      Object.keys(HUD_FONTS).forEach(f => preview.classList.remove('hud-font-' + f));
+      preview.classList.add('hud-font-' + id);
+    }
+    body.querySelectorAll('[data-hud-font]').forEach(c => c.classList.toggle('active', c === btn));
+    await setHudStyle({ font: id });
   }));
 
   body.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', async () => {

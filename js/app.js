@@ -104,12 +104,33 @@ function applyBrand() {
   document.getElementById('tabbar')?.setAttribute('data-brand', t('app.name'));
 }
 
+// Порядок вкладок в ленте — из него берётся направление анимации.
+const TAB_ORDER = ['map', 'trips', 'car', 'settings', 'stats'];
+
 async function switchTab(tab, force) {
   if (tab === currentTab && !force) return;
+  // Направление: вкладка правее — экран въезжает справа. Так движение
+  // подсказывает, куда переместился человек, а не просто украшает.
+  const from = TAB_ORDER.indexOf(currentTab);
+  const to = TAB_ORDER.indexOf(tab);
+  const enterClass = from === -1 || from === to ? null
+    : (to > from ? 'enter-right' : 'enter-left');
+
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
   for (const key of Object.keys(SCREENS)) {
-    SCREENS[key].el.classList.toggle('active', key === tab);
+    const el = SCREENS[key].el;
+    el.classList.toggle('active', key === tab);
+    // Классы анимации снимаем со всех: иначе при быстром переключении
+    // на экране остаётся вчерашняя анимация и она не проигрывается заново.
+    el.classList.remove('enter-right', 'enter-left');
+  }
+  if (enterClass) {
+    const el = SCREENS[tab].el;
+    // Перезапуск анимации: без чтения offsetWidth браузер склеит снятие и
+    // добавление класса в один кадр, и анимация не начнётся.
+    void el.offsetWidth;
+    el.classList.add(enterClass);
   }
   const screen = SCREENS[tab];
   const module = await screenModule(tab);
