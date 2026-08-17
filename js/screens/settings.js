@@ -14,6 +14,11 @@ import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../ref
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
 import { openSignals } from './signals.js';
+import { SIGNALS_ENABLED } from '../features.js';
+import {
+  generateSecret, normalizeSecret, formatSecret, isValidSecret,
+  loginFor, savedSecret, rememberSecret, forgetSecret,
+} from '../quickAccount.js';
 import { isEnabled as poolEnabled, setEnabled as setPoolEnabled } from '../signalPoolClient.js';
 import { isEnabled as roadEnabled, setEnabled as setRoadEnabled, cachedTileCount, clearCache as clearRoadCache } from '../roadData.js';
 
@@ -134,6 +139,7 @@ export async function refresh() {
           <span class="muted">${roadTiles}</span></div>
         <div class="settings-row" style="cursor:pointer;" id="set-road-clear">
           <span data-i18n="settings.road_clear"></span></div>` : ''}
+      ${SIGNALS_ENABLED ? `
       <label class="settings-row" style="cursor:pointer;">
         <span>
           <span data-i18n="settings.pool"></span>
@@ -150,7 +156,7 @@ export async function refresh() {
           <span data-i18n="settings.signals"></span>
           <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.signals_hint"></span>
         </span>
-      </div>
+      </div>` : ''}
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_privacy"></div>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_accuracy"></div>
     </div>
@@ -204,11 +210,14 @@ export async function refresh() {
 function syncCard(sync) {
   if (!sync.signedIn) {
     return `
+      <button class="btn primary block" id="sync-quick" data-i18n="quick.create"></button>
+      <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="quick.create_hint"></div>
+      <div class="settings-row" style="cursor:pointer;margin-top:6px;" id="sync-restore">
+        <span data-i18n="quick.restore"></span></div>
       <div class="settings-row" style="cursor:pointer;" id="sync-signin">
         <span data-i18n="sync.sign_in"></span>
         <span class="muted" data-i18n="sync.off"></span>
-      </div>
-      <div class="muted" style="font-size:12px;" data-i18n="sync.hint_off"></div>`;
+      </div>`;
   }
 
   const last = sync.lastAt
@@ -225,7 +234,9 @@ function syncCard(sync) {
     <div class="row" style="gap:10px;margin-top:12px;">
       <button class="btn primary block" id="sync-now" data-i18n="sync.now"></button>
     </div>
-    <div class="settings-row" style="cursor:pointer;margin-top:6px;" id="sync-password">
+    <div class="settings-row" style="cursor:pointer;margin-top:6px;" id="sync-show-code">
+      <span data-i18n="quick.show_code"></span></div>
+    <div class="settings-row" style="cursor:pointer;" id="sync-password">
       <span data-i18n="sync.change_password"></span></div>
     <div class="settings-row" style="cursor:pointer;" id="sync-signout">
       <span data-i18n="sync.sign_out"></span></div>
@@ -322,11 +333,11 @@ function bind(body) {
     refreshKeepingScroll();
   });
 
-  body.querySelector('#set-pool').addEventListener('change', async (e) => {
+  body.querySelector('#set-pool')?.addEventListener('change', async (e) => {
     await setPoolEnabled(e.target.checked);
     refreshKeepingScroll();
   });
-  body.querySelector('#set-signals').addEventListener('click', openSignals);
+  body.querySelector('#set-signals')?.addEventListener('click', openSignals);
   body.querySelector('#set-export').addEventListener('click', async () => {
     // Экспорт — платная возможность: это главный премиум-крючок всей ниши.
     // В тестовом режиме открыт всем, чтобы его можно было пощупать.
@@ -444,6 +455,110 @@ async function openExportDialog() {
   applyI18nTree(overlay);
 }
 
+// --- Аккаунт в один клик -------------------------------------------------
+
+/**
+ * Завести аккаунт: код придумывается здесь, на устройстве, и он же служит
+ * и логином (через производную), и паролем. Человеку не нужно вводить
+ * ничего — но код обязан быть показан сразу: восстановить его нам нечем.
+ */
+async function createQuickAccount(button) {
+  const code = generateSecret();
+  if (button) {
+    button.disabled = true;
+    // Растяжение ключа занимает около секунды — без подписи кажется,
+    // что кнопка не сработала.
+    button.textContent = t('sync.working');
+  }
+  try {
+    await Sync.register(await loginFor(code), normalizeSecret(code), deviceLabel(),
+      { referralCode: await getLocalCode(), invitedBy: await getInvitedBy() });
+    await rememberSecret(code);
+    refresh();
+    showRecoveryCode(code, { firstTime: true });
+    return true;
+  } catch (err) {
+    toast(syncErrorText(err?.code));
+    return false;
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = t('quick.create');
+    }
+  }
+}
+
+function showRecoveryCode(code, { firstTime }) {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="${firstTime ? 'quick.created_title' : 'quick.code_title'}"></h2>
+      <button class="modal-close">✕</button></div>
+    <div class="muted" style="font-size:13px;margin-bottom:12px;" data-i18n="quick.code_why"></div>
+    <div class="quick-code" id="quick-code">${escapeHtml(formatSecret(code))}</div>
+    <button class="btn primary block" id="quick-copy" data-i18n="quick.copy"></button>
+    <div class="muted" style="font-size:12px;margin-top:10px;" data-i18n="quick.code_warning"></div>
+  `, {
+    onMount: (root) => {
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+      root.querySelector('#quick-copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(formatSecret(code));
+          toast(t('quick.copied'));
+        } catch {
+          // Буфер обмена доступен не везде (старый Safari, небезопасный
+          // контекст) — тогда просто выделяем код, чтобы скопировать вручную.
+          const node = root.querySelector('#quick-code');
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          toast(t('quick.copy_manual'));
+        }
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
+function openRestoreForm() {
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="quick.restore_title"></h2><button class="modal-close">✕</button></div>
+    <label class="field"><span class="field-label" data-i18n="quick.code_field"></span>
+      <input id="quick-in" autocapitalize="characters" autocomplete="off" spellcheck="false"
+             placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></label>
+    <div class="muted" id="quick-error" style="color:var(--danger);font-size:13px;min-height:18px;"></div>
+    <button class="btn primary block" id="quick-go" data-i18n="quick.restore_submit"></button>
+  `, {
+    onMount: (root) => {
+      const error = root.querySelector('#quick-error');
+      const button = root.querySelector('#quick-go');
+      root.querySelector('.modal-close').addEventListener('click', closeModal);
+
+      button.addEventListener('click', async () => {
+        const code = root.querySelector('#quick-in').value;
+        if (!isValidSecret(code)) return (error.textContent = t('quick.bad_code'));
+
+        error.textContent = '';
+        button.disabled = true;
+        button.textContent = t('sync.working');
+        try {
+          await Sync.login(await loginFor(code), normalizeSecret(code), deviceLabel());
+          await rememberSecret(code);
+          closeModal();
+          toast(t('sync.running'));
+          refresh();
+        } catch (err) {
+          error.textContent = syncErrorText(err?.code);
+        } finally {
+          button.disabled = false;
+          button.textContent = t('quick.restore_submit');
+        }
+      });
+    }
+  });
+  applyI18nTree(overlay);
+}
+
 // --- Синхронизация ---
 
 function syncErrorText(code) {
@@ -453,6 +568,16 @@ function syncErrorText(code) {
 }
 
 function bindSync(body) {
+  body.querySelector('#sync-quick')?.addEventListener('click', (e) => {
+    createQuickAccount(e.currentTarget);
+  });
+  body.querySelector('#sync-restore')?.addEventListener('click', openRestoreForm);
+  body.querySelector('#sync-show-code')?.addEventListener('click', async () => {
+    const code = await savedSecret();
+    if (code) showRecoveryCode(code, { firstTime: false });
+    else toast(t('quick.no_code'));
+  });
+
   body.querySelector('#sync-signin')?.addEventListener('click', async () => {
     // Синхронизация — платная возможность. В тестовом режиме доступ открыт
     // всем, чтобы её можно было пощупать до появления настоящих покупок.

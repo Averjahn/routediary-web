@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v35';
+const CACHE_NAME = 'avtopuls-v36';
 const APP_SHELL = [
   './',
   './index.html',
@@ -44,6 +44,8 @@ const APP_SHELL = [
   './js/usage.js',
   './js/tonPay.js',
   './js/cardPay.js',
+  './js/quickAccount.js',
+  './js/features.js',
   './js/screens/map.js',
   './js/screens/trips.js',
   './js/screens/car.js',

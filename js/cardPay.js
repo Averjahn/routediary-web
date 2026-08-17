@@ -41,9 +41,13 @@ function fmtRub(rub) {
  * само досмотрит, чем всё закончилось, а не забудет об этом.
  */
 export async function openCardPayment(planId, onPaid) {
+  // Аккаунт нужен не ради формальности: без него покупку не к чему привязать,
+  // и на другом устройстве она пропадёт. Но требовать ради этого почту и
+  // пароль — заставлять человека работать за нас, поэтому предлагаем завести
+  // аккаунт здесь же, одной кнопкой.
   if (!(await getSetting('syncToken'))) {
-    toast(t('ton.need_account'));
-    return;
+    const created = await offerQuickAccount();
+    if (!created) return;
   }
 
   const returnUrl = `${location.origin}${location.pathname}`;
@@ -82,6 +86,50 @@ export async function resumeCardPayment(onPaid) {
     // Мог не успеть подтвердиться к моменту возврата — не молчим об этом.
     openCardPendingScreen(invoiceId, onPaid);
   }
+}
+
+/**
+ * Предложить завести аккаунт перед покупкой.
+ * @returns {Promise<boolean>} создан ли аккаунт (иначе покупку не продолжаем)
+ */
+function offerQuickAccount() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok) => { if (!settled) { settled = true; resolve(ok); } };
+
+    openModal(`
+      <div class="modal-header"><h2 data-i18n="quick.need_account"></h2><button class="modal-close">✕</button></div>
+      <div class="muted" style="font-size:13px;margin-bottom:14px;" data-i18n="quick.need_account_hint"></div>
+      <button class="btn primary block" id="qa-go" data-i18n="quick.create_and_pay"></button>
+    `, {
+      onMount: (root) => {
+        root.querySelector('.modal-close').addEventListener('click', () => { closeModal(); finish(false); });
+        root.querySelector('#qa-go').addEventListener('click', async (e) => {
+          const button = e.currentTarget;
+          button.disabled = true;
+          button.textContent = t('sync.working');
+          try {
+            const { generateSecret, normalizeSecret, loginFor, rememberSecret } = await import('./quickAccount.js');
+            const { Sync, deviceLabel } = await import('./syncClient.js');
+            const { getLocalCode, getInvitedBy } = await import('./referral.js');
+
+            const code = generateSecret();
+            await Sync.register(await loginFor(code), normalizeSecret(code), deviceLabel(),
+              { referralCode: await getLocalCode(), invitedBy: await getInvitedBy() });
+            await rememberSecret(code);
+            closeModal();
+            finish(true);
+          } catch {
+            toast(t('card.failed'));
+            button.disabled = false;
+            button.textContent = t('quick.create_and_pay');
+          }
+        });
+      },
+      // Закрытие мимо кнопки — тоже отказ, покупка не должна продолжиться молча.
+      onClose: () => finish(false),
+    });
+  });
 }
 
 function openCardPendingScreen(invoiceId, onPaid) {

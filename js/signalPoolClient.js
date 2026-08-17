@@ -3,6 +3,7 @@ import { findStops } from './stops.js';
 import { distanceMeters } from './roadRules.js';
 import { loadedAround, ensureAround, isEnabled as roadEnabled } from './roadData.js';
 import { programAt } from './signalTiming.js';
+import { SIGNALS_ENABLED } from './features.js';
 
 /**
  * Участие в общей копилке наблюдений за светофорами.
@@ -34,6 +35,10 @@ const SENT_MEMORY = 500;
 const NEAR_SIGNAL_M = 40;
 
 export async function isEnabled() {
+  // Флаг сборки решает первым: пока светофоры выключены в MVP, копилка молчит
+  // даже у тех, кто успел включить её раньше, — иначе наблюдения продолжали
+  // бы уходить с экрана, которого в приложении уже нет.
+  if (!SIGNALS_ENABLED) return false;
   return (await roadEnabled()) && (await getSetting(ENABLED_KEY, false)) === true;
 }
 

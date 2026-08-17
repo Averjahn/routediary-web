@@ -19,12 +19,17 @@ export function applyI18nTree(root) {
 
 let modalStack = [];
 
-export function openModal(contentHtml, { onMount } = {}) {
+export function openModal(contentHtml, { onMount, onClose } = {}) {
   const root = document.getElementById('modal-root');
   const overlay = el(`<div class="modal-overlay"><div class="modal-sheet">${contentHtml}</div></div>`);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
   root.appendChild(overlay);
   modalStack.push(overlay);
+  // Обработчик закрытия живёт на самом окне: closeModal() снимает верхнее
+  // окно стопки и не знает, чьё оно. Без этого тот, кто ждёт ответа от окна
+  // (например, «создать аккаунт и продолжить покупку»), не узнаёт о закрытии
+  // мимо кнопки — щелчок по фону — и ждёт вечно.
+  if (onClose) overlay._onClose = onClose;
   applyI18nTree(overlay);
   if (onMount) onMount(overlay);
   return overlay;
@@ -32,7 +37,9 @@ export function openModal(contentHtml, { onMount } = {}) {
 
 export function closeModal() {
   const overlay = modalStack.pop();
-  if (overlay) overlay.remove();
+  if (!overlay) return;
+  overlay.remove();
+  try { overlay._onClose?.(); } catch { /* закрытие не должно ломать вызвавшего */ }
 }
 
 export function toast(message, { actionLabel, onAction, duration = 5000 } = {}) {
