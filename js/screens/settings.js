@@ -6,7 +6,8 @@ import {
 import { CURRENCY_SYMBOLS } from '../format.js';
 import { t, getLang } from '../i18n.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
-import { THEMES, THEME_ORDER } from '../theme.js';
+import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
+import { HUD_COLORS, HUD_FONTS, getHudStyle, setHudStyle } from '../hud.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
 import { openPaywall } from '../paywall.js';
@@ -52,7 +53,7 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync, road, roadTiles, pool] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
@@ -60,8 +61,12 @@ export async function refresh() {
     roadEnabled(),
     cachedTileCount(),
     poolEnabled(),
+    getHudStyle(),
   ]);
   const provider = getMapProvider();
+  // Замочки видны только тем, кому функция реально закрыта: у Про (и в
+  // тестовом режиме) их нет — рисовать замок на доступном значит врать.
+  const styleLocked = !TEST_MODE && tier !== TIER.PRO;
 
   body.innerHTML = `
     ${subscriptionCard(tier)}
@@ -72,8 +77,26 @@ export async function refresh() {
         <span data-i18n="settings.theme"></span>
       </div>
       <div class="theme-row" id="set-themes">
-        ${THEME_ORDER.map(themeSwatch).join('')}
+        ${THEME_ORDER.map(id => themeSwatch(id, styleLocked)).join('')}
       </div>
+      <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="theme.pro_hint"></div>
+
+      <div class="settings-row" style="margin-top:8px;">
+        <span data-i18n="hud.style_title"></span>
+      </div>
+      <div class="chip-row">
+        ${Object.keys(HUD_COLORS).map(id => `
+          <button class="chip hud-color-chip ${hudStyle.color === id ? 'active' : ''}" data-hud-color="${id}">
+            <span class="hud-dot" style="background:${HUD_COLORS[id].hex}"></span>${t('hud.color.' + id)}${styleLocked && id !== 'amber' ? ' 🔒' : ''}
+          </button>`).join('')}
+      </div>
+      <div class="chip-row" style="margin-top:6px;">
+        ${Object.keys(HUD_FONTS).map(id => `
+          <button class="chip ${hudStyle.font === id ? 'active' : ''}" data-hud-font="${id}">
+            ${t('hud.font.' + id)}${styleLocked && id !== 'mono' ? ' 🔒' : ''}
+          </button>`).join('')}
+      </div>
+      <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="hud.style_hint"></div>
     </div>
 
     <div class="section-title" data-i18n="settings.section_regional"></div>
@@ -282,13 +305,16 @@ function subscriptionCard(tier) {
     </div>`;
 }
 
-function themeSwatch(id) {
+function themeSwatch(id, styleLocked) {
   const theme = THEMES[id];
+  // Замочек на платных темах — честное предупреждение до нажатия,
+  // а не сюрприз после. У Про замочков нет.
+  const locked = styleLocked && !isFreeTheme(id);
   return `
     <button class="theme-swatch ${AppState.theme === id ? 'active' : ''}"
             data-theme="${id}"
             style="background:${theme.background};color:${theme.accent};border-color:${AppState.theme === id ? theme.accent : 'transparent'}"
-            aria-label="${t('theme.' + id)}">●</button>`;
+            aria-label="${t('theme.' + id)}">${locked ? '<span class="swatch-lock">🔒</span>' : '●'}</button>`;
 }
 
 function bind(body) {
@@ -303,8 +329,30 @@ function bind(body) {
   });
 
   body.querySelectorAll('[data-theme]').forEach(btn => btn.addEventListener('click', async () => {
+    // Платная тема без Про открывает экран покупки, а не применяется молча.
+    if (!isFreeTheme(btn.dataset.theme) && !(await hasFeature('themes'))) {
+      openPaywall({ reason: 'pay.reason_themes', onDone: refresh });
+      return;
+    }
     await setThemeId(btn.dataset.theme);
     document.dispatchEvent(new CustomEvent('theme-changed'));
+    refreshKeepingScroll();
+  }));
+
+  body.querySelectorAll('[data-hud-color]').forEach(btn => btn.addEventListener('click', async () => {
+    if (btn.dataset.hudColor !== 'amber' && !(await hasFeature('hud_style'))) {
+      openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
+      return;
+    }
+    await setHudStyle({ color: btn.dataset.hudColor });
+    refreshKeepingScroll();
+  }));
+  body.querySelectorAll('[data-hud-font]').forEach(btn => btn.addEventListener('click', async () => {
+    if (btn.dataset.hudFont !== 'mono' && !(await hasFeature('hud_style'))) {
+      openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
+      return;
+    }
+    await setHudStyle({ font: btn.dataset.hudFont });
     refreshKeepingScroll();
   }));
 

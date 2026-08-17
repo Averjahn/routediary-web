@@ -46,6 +46,8 @@ export const FEATURES = [
   { id: 'sync', tier: TIER.PRO, titleKey: 'pay.f.sync', descKey: 'pay.f.sync_d' },
   { id: 'backup', tier: TIER.PRO, titleKey: 'pay.f.backup', descKey: 'pay.f.backup_d' },
   { id: 'export', tier: TIER.PRO, titleKey: 'pay.f.export', descKey: 'pay.f.export_d' },
+  { id: 'themes', tier: TIER.PRO, titleKey: 'pay.f.themes', descKey: 'pay.f.themes_d' },
+  { id: 'hud_style', tier: TIER.PRO, titleKey: 'pay.f.hud', descKey: 'pay.f.hud_d' },
 ];
 
 /** Единственный тариф. Цены — ориентир для российского рынка. */

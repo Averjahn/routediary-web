@@ -24,6 +24,52 @@ import { overspeedState } from './roadRules.js';
  * несколько секунд без свежих данных вместо числа появляются прочерки.
  */
 
+/**
+ * Стили проекции — проверенный набор, а не произвольный выбор цвета.
+ *
+ * Почему не колесо RGB: это экран, который отражается в лобовом стекле
+ * ночью. Белый и голубой на полной яркости слепят и накладываются на
+ * дорогу; произвольный выбор позволил бы человеку невольно сделать себе
+ * хуже. Поэтому цветов три, и каждый существует в настоящих автомобильных
+ * и авиационных приборах:
+ *   amber — классика приборных панелей, минимально слепит (по умолчанию);
+ *   green — цвет авиационных HUD, максимальная различимость;
+ *   red   — тускло-красный, лучше всех сохраняет ночную адаптацию глаза
+ *           (им светят в кабинах и обсерваториях).
+ */
+export const HUD_COLORS = {
+  amber: { id: 'amber', hex: '#ffb000' },
+  green: { id: 'green', hex: '#39d27a' },
+  red:   { id: 'red',   hex: '#e8544a' },
+};
+
+/** Начертания цифры. Все — системные шрифты: грузить веб-шрифт ради HUD
+    значило бы задержать открытие ровно того экрана, что нужен на ходу. */
+export const HUD_FONTS = {
+  mono:    { id: 'mono' },     // моноширинный жирный — по умолчанию
+  rounded: { id: 'rounded' },  // скруглённый — мягче в отражении
+  thin:    { id: 'thin' },     // тонкий — меньше света в тёмной машине
+};
+
+export const HUD_DEFAULT_COLOR = 'amber';
+export const HUD_DEFAULT_FONT = 'mono';
+const HUD_COLOR_KEY = 'hudColor';
+const HUD_FONT_KEY = 'hudFont';
+
+export async function getHudStyle() {
+  const color = await getSetting(HUD_COLOR_KEY, HUD_DEFAULT_COLOR);
+  const font = await getSetting(HUD_FONT_KEY, HUD_DEFAULT_FONT);
+  return {
+    color: HUD_COLORS[color] ? color : HUD_DEFAULT_COLOR,
+    font: HUD_FONTS[font] ? font : HUD_DEFAULT_FONT,
+  };
+}
+
+export async function setHudStyle({ color, font }) {
+  if (color && HUD_COLORS[color]) await setSetting(HUD_COLOR_KEY, color);
+  if (font && HUD_FONTS[font]) await setSetting(HUD_FONT_KEY, font);
+}
+
 // Точность хуже 50 м — то же ограничение, что и в записи маршрута:
 // по таким данным скорость получается фантастической.
 const ACCURACY_LIMIT_M = 50;
@@ -150,8 +196,10 @@ export async function openHud() {
   const mirrored = (await getSetting(MIRROR_KEY, true)) !== false;
   const meter = createSpeedMeter();
 
+  const style = await getHudStyle();
   overlay = document.createElement('div');
-  overlay.className = 'hud';
+  overlay.className = `hud hud-font-${style.font}`;
+  overlay.style.setProperty('--hud-color', HUD_COLORS[style.color].hex);
   overlay.innerHTML = `
     <div class="hud-plate${mirrored ? ' mirrored' : ''}" id="hud-plate">
       <div class="hud-limit" id="hud-limit" hidden>

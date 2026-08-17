@@ -656,12 +656,20 @@ body.hud-open { overflow: hidden; }
 
 /* Отражение переворачивает изображение — значит, на экране оно должно быть
    зеркальным. Переворачивается вся плашка целиком, вместе с подписью. */
+.hud { --hud-color: #ffb000; } /* янтарный по умолчанию; Про меняет переменную */
 .hud-plate {
   text-align: center;
   line-height: 1;
-  /* Янтарный вместо белого: заметно меньше слепит в темноте. */
-  color: #ffb000;
+  /* Цвет из проверенного набора: белый и голубой на стекле слепят ночью. */
+  color: var(--hud-color);
 }
+
+/* Начертания цифры. Все системные — веб-шрифт задержал бы экран, нужный на ходу. */
+.hud-font-rounded .hud-value {
+  font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.hud-font-thin .hud-value { font-weight: 200; letter-spacing: 0.02em; }
 .hud-plate.mirrored { transform: scaleX(-1); }
 
 .hud-value {
@@ -695,7 +703,7 @@ body.hud-open { overflow: hidden; }
   left: 0; right: 0;
   text-align: center;
   font-size: 13px;
-  color: #7a6a45;
+  color: color-mix(in srgb, var(--hud-color) 55%, #333);
   padding: 0 24px;
   transition: opacity 0.4s;
 }
@@ -703,9 +711,9 @@ body.hud-open { overflow: hidden; }
 .hud-controls.faded, .hud-hint.faded { opacity: 0; pointer-events: none; }
 
 .hud-btn {
-  background: rgba(255, 176, 0, 0.12);
-  color: #ffb000;
-  border: 1px solid rgba(255, 176, 0, 0.35);
+  background: color-mix(in srgb, var(--hud-color) 12%, transparent);
+  color: var(--hud-color);
+  border: 1px solid color-mix(in srgb, var(--hud-color) 35%, transparent);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 14px;
@@ -947,8 +955,21 @@ body.hud-open { overflow: hidden; }
 /* Превышение красит саму цифру: на стекле это единственное, что водитель
    успевает заметить боковым зрением, не отводя глаз от дороги. */
 .hud-plate.near .hud-value { color: #FFD24A; }
-.hud-plate.over .hud-value { color: #FF4D3D; }
+.hud-plate.over .hud-value {
+  color: #FF4D3D;
+  /* Пульс, а не только цвет: если человек выбрал красный стиль проекции,
+     красное предупреждение иначе слилось бы с обычной цифрой. Движение
+     заметно боковым зрением при любом базовом цвете. */
+  animation: hud-over-pulse 1s ease-in-out infinite;
+}
 .hud-plate.over .hud-unit { color: rgba(255, 77, 61, 0.75); }
+@keyframes hud-over-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-plate.over .hud-value { animation: none; text-decoration: underline; }
+}
 
 .hud-signal {
   margin-top: 0.5em;
@@ -1011,3 +1032,9 @@ body.hud-open { overflow: hidden; }
   word-break: break-all;
   user-select: all;
 }
+
+
+/* Чипы стиля проекции: точка показывает сам цвет, замочек — что это Про. */
+.hud-color-chip { display: inline-flex; align-items: center; gap: 6px; }
+.hud-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.swatch-lock { font-size: 12px; filter: grayscale(0.3); }

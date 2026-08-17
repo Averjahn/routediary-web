@@ -36,9 +36,57 @@ export const THEMES = {
     success: '#41D19B', warning: '#FFD166', danger: '#FF8085',
     walk: '#41D19B', run: '#FFB067', bike: '#9AA9FF', car: '#3EC8DC',
   },
+  forest: {
+    id: 'forest', isDark: false,
+    nameKey: 'theme.forest', subtitleKey: 'theme.forest.subtitle',
+    accent: '#1F6E43', onAccent: '#FFFFFF',
+    background: '#F0F5EE', surface: '#FFFFFF', surfaceAlt: '#E1EBDD',
+    textPrimary: '#15211A', textSecondary: '#4E6455', separator: '#CDDCC9',
+    success: '#1F6E43', warning: '#8A5A00', danger: '#B3261E',
+    walk: '#1F6E43', run: '#B24700', bike: '#6A3FC0', car: '#20655F',
+  },
+  graphite: {
+    id: 'graphite', isDark: true,
+    nameKey: 'theme.graphite', subtitleKey: 'theme.graphite.subtitle',
+    accent: '#FF9F45', onAccent: '#1A1A1C',
+    background: '#151517', surface: '#1F1F23', surfaceAlt: '#2A2A30',
+    textPrimary: '#F0F0F2', textSecondary: '#A3A3AD', separator: '#333339',
+    success: '#4CC97A', warning: '#F2C14E', danger: '#FF7A70',
+    walk: '#4CC97A', run: '#FF9F45', bike: '#B98CFF', car: '#6FB1FF',
+  },
+  lavender: {
+    id: 'lavender', isDark: false,
+    nameKey: 'theme.lavender', subtitleKey: 'theme.lavender.subtitle',
+    accent: '#6D4FC2', onAccent: '#FFFFFF',
+    background: '#F4F2FA', surface: '#FFFFFF', surfaceAlt: '#E8E3F5',
+    textPrimary: '#1C1726', textSecondary: '#5C5470', separator: '#D8D0EA',
+    success: '#1E7F3C', warning: '#8A5A00', danger: '#B3261E',
+    walk: '#1E7F3C', run: '#B24700', bike: '#6D4FC2', car: '#4356C0',
+  },
+  mocha: {
+    id: 'mocha', isDark: true,
+    nameKey: 'theme.mocha', subtitleKey: 'theme.mocha.subtitle',
+    accent: '#E8B04B', onAccent: '#241A10',
+    background: '#1E1610', surface: '#2A211A', surfaceAlt: '#382C22',
+    textPrimary: '#F4EDE4', textSecondary: '#B3A493', separator: '#443729',
+    success: '#5CC97A', warning: '#E8B04B', danger: '#FF7A70',
+    walk: '#5CC97A', run: '#E8804B', bike: '#C89CFF', car: '#E8B04B',
+  },
 };
 
-export const THEME_ORDER = ['classic', 'midnight', 'sunset', 'ocean'];
+/**
+ * Порядок показа. Первые две темы бесплатные — по одной светлой и тёмной,
+ * этого достаточно, чтобы приложением было комфортно пользоваться в любое
+ * время суток. Остальные шесть — оформление сверх необходимого, то есть
+ * ровно то, за что честно просить деньги: Про не отбирает удобство, а
+ * добавляет вкус.
+ */
+export const THEME_ORDER = ['classic', 'midnight', 'sunset', 'ocean', 'forest', 'graphite', 'lavender', 'mocha'];
+export const FREE_THEMES = ['classic', 'midnight'];
+
+export function isFreeTheme(id) {
+  return FREE_THEMES.includes(id);
+}
 
 export function applyTheme(id) {
   const theme = THEMES[id] || THEMES.classic;
