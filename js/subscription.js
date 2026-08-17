@@ -26,11 +26,12 @@ export const TIER = {
 };
 
 /**
- * Тестовый режим. Пока true — платные функции работают у всех.
- * Перед публикацией меняется на false, и дальше доступ определяется
- * реальной покупкой в магазине.
+ * Тестовый режим выключен: оплата картой подключена, и доступ к платным
+ * возможностям определяется реальной покупкой (pro_until на аккаунте)
+ * либо наградой за приглашённых. Включать обратно — только на время
+ * отладки платных функций.
  */
-export const TEST_MODE = true;
+export const TEST_MODE = false;
 
 /**
  * Что входит в Про. Порядок = порядок показа на экране покупки:
@@ -83,7 +84,11 @@ export async function rewardActive() {
  */
 export async function currentTier() {
   if (await rewardActive()) return TIER.PRO;
-  return (await getSetting(KEY, TIER.FREE)) || TIER.FREE;
+  // Локальная отметка «куплено» — только для тестового режима: это память
+  // об имитации покупки, а не о настоящей. Настоящая живёт на сервере
+  // (pro_until) и приезжает через syncProUntil, который выше.
+  if (TEST_MODE) return (await getSetting(KEY, TIER.FREE)) || TIER.FREE;
+  return TIER.FREE;
 }
 
 /**

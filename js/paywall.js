@@ -16,6 +16,7 @@ import { t } from './i18n.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
 import { paymentOptions, openTonPayment, openStarsPayment, formatTon } from './tonPay.js';
+import { openCardPayment } from './cardPay.js';
 
 /**
  * @param {object} opts
@@ -40,6 +41,19 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
     <div class="pay-ton">
       <div class="pay-ton-head">${t(titleKey)}</div>
       <div class="pay-plans">${pay.plans.map(p => planCardFor(method, p)).join('')}</div>
+    </div>`;
+
+  const cardPlanCard = (plan) => `
+    <button class="pay-plan card" data-card="${plan.id}">
+      <span class="pay-plan-title">${t('ton.plan.' + plan.id)}</span>
+      <span class="pay-plan-price">${plan.rub.toLocaleString('ru-RU')} ₽</span>
+      <span class="pay-plan-note">${plan.days >= 36500 ? t('card.one_time') : t('ton.for_days', { days: plan.days })}</span>
+    </button>`;
+
+  const cardBlock = () => `
+    <div class="pay-ton">
+      <div class="pay-ton-head">${t('card.section')}</div>
+      <div class="pay-plans">${pay.cardPlans.map(cardPlanCard).join('')}</div>
     </div>`;
 
   const featureRow = (f) => `
@@ -72,10 +86,9 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
         ${FEATURES.map(featureRow).join('')}
       </div>
 
-      <div class="pay-plans">
-        ${PLANS.map(planCard).join('')}
-      </div>
+      ${TEST_MODE ? `<div class="pay-plans">${PLANS.map(planCard).join('')}</div>` : ''}
 
+      ${pay?.card ? cardBlock() : ''}
       ${pay?.stars ? methodBlock('stars', 'stars.section') : ''}
       ${pay?.ton ? methodBlock('ton', 'ton.section') : ''}
 
@@ -104,6 +117,14 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
           closeModal();
           toast(t('pay.thanks', { plan: tierLabel(btn.dataset.plan) }));
           if (onDone) onDone();
+        });
+      });
+
+      root.querySelectorAll('[data-card]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Оплата уходит на страницу ЮKassa — модалку саму закрывать не
+          // нужно, страница сейчас сменится целиком.
+          openCardPayment(btn.dataset.card, onDone);
         });
       });
 

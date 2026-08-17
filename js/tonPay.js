@@ -48,9 +48,12 @@ async function api(method, path, body) {
 export async function paymentOptions() {
   const res = await api('GET', '/api/pay/plans');
   if (!res.ok) return null;
-  const { ton, stars, plans } = res.body;
+  const { ton, stars, card, plans, cardPlans } = res.body;
   // Звёзды существуют только внутри Telegram: вне его окно оплаты открыть нечем.
-  return { plans, ton: !!ton?.enabled, stars: !!stars?.enabled && inTelegram() };
+  return {
+    plans, ton: !!ton?.enabled, stars: !!stars?.enabled && inTelegram(),
+    card: !!card?.enabled, cardPlans: cardPlans || [],
+  };
 }
 
 /**
