@@ -7,7 +7,7 @@ import { CURRENCY_SYMBOLS } from '../format.js';
 import { t, getLang } from '../i18n.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
-import { HUD_COLORS, HUD_FONTS, getHudStyle, setHudStyle } from '../hud.js';
+import { HUD_COLORS, HUD_FONTS, HUD_DEFAULT_COLOR, HUD_DEFAULT_FONT, getHudStyle, setHudStyle } from '../hud.js';
 import { applyDigits } from '../segmentDigits.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
@@ -84,7 +84,7 @@ export async function refresh() {
       </div>
       <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="theme.pro_hint"></div>
 
-      <div class="settings-row" style="margin-top:8px;">
+      <div class="settings-row" style="margin-top:18px;">
         <span data-i18n="hud.style_title"></span>
       </div>
       <div class="hud-preview hud-font-${hudStyle.font}" id="hud-preview"
@@ -93,17 +93,11 @@ export async function refresh() {
         <div class="hud-preview-value hud-digits" id="hud-preview-value"></div>
         <div class="hud-preview-unit" data-i18n="unit.kmh"></div>
       </div>
-      <div class="chip-row">
-        ${Object.keys(HUD_COLORS).map(id => `
-          <button class="chip hud-color-chip ${hudStyle.color === id ? 'active' : ''}" data-hud-color="${id}">
-            <span class="hud-dot" style="background:${HUD_COLORS[id].hex}"></span>${t('hud.color.' + id)}${styleLocked && id !== 'amber' ? ' 🔒' : ''}
-          </button>`).join('')}
+      <div class="theme-row">
+        ${Object.keys(HUD_COLORS).map(id => hudColorSwatch(id, hudStyle.color === id, styleLocked)).join('')}
       </div>
-      <div class="chip-row" style="margin-top:6px;">
-        ${Object.keys(HUD_FONTS).map(id => `
-          <button class="chip ${hudStyle.font === id ? 'active' : ''}" data-hud-font="${id}">
-            ${t('hud.font.' + id)}${styleLocked && id !== 'mono' ? ' 🔒' : ''}
-          </button>`).join('')}
+      <div class="theme-row" style="margin-top:2px;">
+        ${Object.keys(HUD_FONTS).map(id => hudFontSwatch(id, hudStyle.font === id, styleLocked)).join('')}
       </div>
       <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="hud.style_hint"></div>
     </div>
@@ -326,6 +320,34 @@ function themeSwatch(id, styleLocked) {
             aria-label="${t('theme.' + id)}">${locked ? '<span class="swatch-lock">🔒</span>' : '●'}</button>`;
 }
 
+/**
+ * Сэмпл цвета проекции: сплошной кружок самого цвета, без подписи под ним.
+ * Название остаётся аудио-названием кнопки (aria-label) — его не видно
+ * глазами, но экранный диктор его произнесёт.
+ */
+function hudColorSwatch(id, active, styleLocked) {
+  const locked = styleLocked && id !== HUD_DEFAULT_COLOR;
+  return `
+    <button class="theme-swatch ${active ? 'active' : ''}"
+            data-hud-color="${id}"
+            style="background:${HUD_COLORS[id].hex}"
+            aria-label="${t('hud.color.' + id)}">${locked ? '<span class="swatch-lock">🔒</span>' : ''}</button>`;
+}
+
+/**
+ * Сэмпл начертания: кнопка сама показывает цифру этим шрифтом — форму видно
+ * сразу, а не после чтения названия, которое всё равно ничего не объясняет
+ * про то, как это будет выглядеть на стекле.
+ */
+function hudFontSwatch(id, active, styleLocked) {
+  const locked = styleLocked && id !== HUD_DEFAULT_FONT;
+  const inner = locked ? '<span class="swatch-lock">🔒</span>' : '<span class="hud-digits" data-font-sample></span>';
+  return `
+    <button class="hud-font-swatch hud-font-${id} ${active ? 'active' : ''}"
+            data-hud-font="${id}"
+            aria-label="${t('hud.font.' + id)}">${inner}</button>`;
+}
+
 function bind(body) {
   body.querySelector('#set-upgrade').addEventListener('click', () => {
     openPaywall({ reason: 'pay.reason_default', onDone: refresh });
@@ -354,9 +376,17 @@ function bind(body) {
   const previewValue = body.querySelector('#hud-preview-value');
   applyDigits(previewValue, '88', preview?.dataset.font);
 
+  // Сэмплы шрифтов — живые образцы, а не подписи: цифру собирает тот же
+  // код, что рисует её на самом стекле, иначе можно было бы описать шрифт
+  // словами и забыть отрисовать его здесь по-настоящему.
+  body.querySelectorAll('[data-hud-font] [data-font-sample]').forEach(span => {
+    const id = span.closest('[data-hud-font]').dataset.hudFont;
+    applyDigits(span, '8', id);
+  });
+
   body.querySelectorAll('[data-hud-color]').forEach(btn => btn.addEventListener('click', async () => {
     const id = btn.dataset.hudColor;
-    if (id !== 'amber' && !(await hasFeature('hud_style'))) {
+    if (id !== HUD_DEFAULT_COLOR && !(await hasFeature('hud_style'))) {
       openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
       return;
     }
@@ -370,7 +400,7 @@ function bind(body) {
 
   body.querySelectorAll('[data-hud-font]').forEach(btn => btn.addEventListener('click', async () => {
     const id = btn.dataset.hudFont;
-    if (id !== 'mono' && !(await hasFeature('hud_style'))) {
+    if (id !== HUD_DEFAULT_FONT && !(await hasFeature('hud_style'))) {
       openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
       return;
     }

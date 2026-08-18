@@ -392,7 +392,7 @@ canvas.chart { width: 100%; display: block; }
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn:hover, .list-item:hover, .quick-tile:hover, .chip:not(.active):hover, .tab-btn:hover, .theme-swatch:hover {
+  .btn:hover, .list-item:hover, .quick-tile:hover, .chip:not(.active):hover, .tab-btn:hover, .theme-swatch:hover, .hud-font-swatch:hover {
     filter: brightness(0.96);
   }
   .list-item:hover, .quick-tile:hover { background: var(--surface-alt); border-radius: 10px; }
@@ -587,7 +587,9 @@ canvas.chart { width: 100%; display: block; }
 .settings-row > span:first-child { flex: 1; min-width: 0; }
 .settings-row select, .settings-row input[type="number"] { flex-shrink: 0; }
 
-.theme-row { display: flex; gap: 10px; padding: 4px 0 2px; }
+/* flex-wrap: восемь сэмплов в ряд не помещаются на узком экране (iPhone SE),
+   а обрезанный кружок с краю выглядит как поломка вёрстки. */
+.theme-row { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0 4px; }
 .theme-swatch.locked { opacity: 0.75; }
 
 /* Карточка уровня доступа — первое, что видно на экране. */
@@ -1080,10 +1082,23 @@ body.hud-open { overflow: hidden; }
 }
 
 
-/* Чипы стиля проекции: точка показывает сам цвет, замочек — что это Про. */
-.hud-color-chip { display: inline-flex; align-items: center; gap: 6px; }
-.hud-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .swatch-lock { font-size: 12px; filter: grayscale(0.3); }
+
+/* Сэмпл шрифта проекции: сама кнопка — живой образец начертания, а не
+   подпись под ним. Так видно форму цифры, а не название, которое всё равно
+   ничего не говорит о том, как это выглядит на стекле. */
+.hud-font-swatch {
+  width: 48px; height: 48px; border-radius: 12px; border: 2px solid transparent;
+  background: var(--surface-alt); color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 23px;
+}
+.hud-font-swatch.active { border-color: var(--accent); }
+.hud-font-swatch .hud-digits { line-height: 1; }
+/* Одна цифра из палочек и так узкая (так выглядят настоящие электронные
+   часы), а мельче соседних текстовых глифов она станет совсем нечитаемой —
+   1.15em даёт ей чуть больше места, чем формальная высота строки. */
+.hud-font-swatch .seg-digits { height: 1.15em; }
 
 
 /* ======================================================================
@@ -1109,21 +1124,21 @@ body.hud-open { overflow: hidden; }
    Кнопка слегка проседает под пальцем — это тот же язык, что у физической
    клавиши. cubic-bezier с лёгким «выбросом» на возврате: палец отпущен,
    кнопка возвращается чуть живее, чем ушла. */
-.btn, .chip, .quick-tile, .theme-swatch, .list-item, .hud-btn, .pay-plan, .settings-row {
+.btn, .chip, .quick-tile, .theme-swatch, .hud-font-swatch, .list-item, .hud-btn, .pay-plan, .settings-row {
   transition: transform 120ms cubic-bezier(0.2, 0, 0.2, 1),
               opacity 120ms ease,
               background-color 160ms ease,
               border-color 160ms ease;
 }
 .btn:active, .hud-btn:active, .pay-plan:active { transform: scale(0.96); }
-.chip:active, .theme-swatch:active, .quick-tile:active { transform: scale(0.93); }
+.chip:active, .theme-swatch:active, .hud-font-swatch:active, .quick-tile:active { transform: scale(0.93); }
 /* Строки списка широкие: одинаковый масштаб на всю ширину выглядит как
    рывок, поэтому им — едва заметное проседание. */
 .list-item:active, .settings-row:active { transform: scale(0.99); opacity: 0.7; }
 
 /* Выбранная тема и активный чип чуть выступают — состояние читается не
    только цветом рамки, но и объёмом. */
-.theme-swatch.active { transform: scale(1.08); }
+.theme-swatch.active, .hud-font-swatch.active { transform: scale(1.08); }
 .chip.active { transform: scale(1.02); }
 
 /* --- Смена экрана -----------------------------------------------------
@@ -1174,13 +1189,13 @@ body.hud-open { overflow: hidden; }
    головокружение и тошноту. Система об этом знает — мы обязаны слушать.
    Оставляем мгновенную смену цвета: обратная связь на нажатие нужна всем. */
 @media (prefers-reduced-motion: reduce) {
-  .btn, .chip, .quick-tile, .theme-swatch, .list-item, .hud-btn, .pay-plan, .settings-row {
+  .btn, .chip, .quick-tile, .theme-swatch, .hud-font-swatch, .list-item, .hud-btn, .pay-plan, .settings-row {
     transition: background-color 100ms ease, opacity 100ms ease;
   }
   .btn:active, .hud-btn:active, .pay-plan:active,
-  .chip:active, .theme-swatch:active, .quick-tile:active,
+  .chip:active, .theme-swatch:active, .hud-font-swatch:active, .quick-tile:active,
   .list-item:active, .settings-row:active { transform: none; }
-  .theme-swatch.active, .chip.active { transform: none; }
+  .theme-swatch.active, .hud-font-swatch.active, .chip.active { transform: none; }
   .screen.enter-right, .screen.enter-left,
   .tab-btn.active .tab-icon,
   .modal-overlay, .modal-sheet, .toast { animation: none; }
@@ -1193,7 +1208,7 @@ body.hud-open { overflow: hidden; }
    так, как в машине. Образец должен показывать правду. */
 .hud-preview {
   --hud-color: #ffb000;
-  margin: 8px 0 10px;
+  margin: 16px 0 14px;
   padding: 14px 12px 10px;
   border-radius: 14px;
   background: #0b0b0d;
@@ -1204,7 +1219,20 @@ body.hud-open { overflow: hidden; }
      сам цвет: элемент один и крошечный, пересчёта раскладки не будет. */
   transition: color 200ms ease;
 }
-.hud-preview-value { font-size: 46px; }
+/* Высота задана числом, а не строкой текста: у сегментного рисунка и у
+   текстовых начертаний разная собственная высота (SVG — 0.78em, шрифт —
+   полный кегль), и без фиксированной высоты образец подрастал бы или
+   проседал при каждом переключении начертания, сдвигая всё под ним. */
+.hud-preview-value {
+  font-size: 46px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Внутри образца палочки растягиваются на всю эту высоту, а не на свои
+   обычные 0.78em — иначе именно сегментное начертание проседало бы. */
+.hud-preview-value .seg-digits { height: 100%; }
 .hud-preview-unit {
   font-size: 12px;
   font-weight: 600;
