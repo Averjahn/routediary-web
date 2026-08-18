@@ -3,6 +3,7 @@ import { t } from './i18n.js';
 import { getSetting, setSetting } from './db.js';
 import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadData.js';
 import { overspeedState } from './roadRules.js';
+import { applyDigits } from './segmentDigits.js';
 
 /**
  * Проекция скорости на лобовое стекло.
@@ -25,30 +26,46 @@ import { overspeedState } from './roadRules.js';
  */
 
 /**
- * Стили проекции — проверенный набор, а не произвольный выбор цвета.
+ * Стили проекции — набор проверенный, а не колесо RGB.
  *
- * Почему не колесо RGB: это экран, который отражается в лобовом стекле
- * ночью. Белый и голубой на полной яркости слепят и накладываются на
- * дорогу; произвольный выбор позволил бы человеку невольно сделать себе
- * хуже. Поэтому цветов три, и каждый существует в настоящих автомобильных
- * и авиационных приборах:
- *   amber — классика приборных панелей, минимально слепит (по умолчанию);
- *   green — цвет авиационных HUD, максимальная различимость;
- *   red   — тускло-красный, лучше всех сохраняет ночную адаптацию глаза
- *           (им светят в кабинах и обсерваториях).
+ * Это экран, который отражается в лобовом стекле. Цвет здесь не украшение:
+ * он решает, различима ли цифра днём и не слепит ли ночью. Поэтому каждый
+ * вариант существует в настоящих приборах, а не подобран на глаз.
+ *
+ * Свойство, о котором стоит знать заранее: чем краснее свет, тем он темнее
+ * при той же насыщенности — так устроен глаз, у него пик чувствительности
+ * лежит в жёлто-зелёном. Отсюда и порядок: лаймовый и ледяной видно лучше
+ * всего днём, красный — хуже всех, зато он единственный не сбивает ночную
+ * адаптацию зрения.
  */
 export const HUD_COLORS = {
-  amber: { id: 'amber', hex: '#ffb000' },
-  green: { id: 'green', hex: '#39d27a' },
-  red:   { id: 'red',   hex: '#e8544a' },
+  amber:  { id: 'amber',  hex: '#ffb000' },  // классика приборных панелей (по умолчанию)
+  green:  { id: 'green',  hex: '#39d27a' },  // цвет авиационных HUD
+  red:    { id: 'red',    hex: '#e8544a' },  // сохраняет ночную адаптацию глаза
+  ice:    { id: 'ice',    hex: '#4fd8e8' },  // холодный голубой заводских автомобильных HUD
+  white:  { id: 'white',  hex: '#edeff2' },  // максимальная различимость днём, ночью резковат
+  lime:   { id: 'lime',   hex: '#c8e645' },  // пик чувствительности глаза — виден дальше всех
+  violet: { id: 'violet', hex: '#b18cff' },
+  pink:   { id: 'pink',   hex: '#ff7bb0' },
 };
 
-/** Начертания цифры. Все — системные шрифты: грузить веб-шрифт ради HUD
-    значило бы задержать открытие ровно того экрана, что нужен на ходу. */
+/**
+ * Начертания цифры.
+ *
+ * Все, кроме сегментного, — системные: веб-шрифт задержал бы ровно тот экран,
+ * который нужен уже на ходу, и потянул бы загрузку со стороннего сервера.
+ * Сегментное начертание системным быть не может — его нет ни в одной системе,
+ * поэтому цифры собираются из палочек и рисуются (см. segmentDigits.js).
+ */
 export const HUD_FONTS = {
   mono:    { id: 'mono' },     // моноширинный жирный — по умолчанию
+  segment: { id: 'segment' },  // электронные часы: цифра из семи палочек
   rounded: { id: 'rounded' },  // скруглённый — мягче в отражении
   thin:    { id: 'thin' },     // тонкий — меньше света в тёмной машине
+  heavy:   { id: 'heavy' },    // плотный — самый заметный днём
+  italic:  { id: 'italic' },   // наклонный
+  serif:   { id: 'serif' },    // с засечками
+  outline: { id: 'outline' },  // контурный — светится только обводка
 };
 
 export const HUD_DEFAULT_COLOR = 'amber';
@@ -206,7 +223,7 @@ export async function openHud() {
         <div class="hud-limit-sign" id="hud-limit-value"></div>
         <div class="hud-limit-note" id="hud-limit-note"></div>
       </div>
-      <div class="hud-value" id="hud-value">– –</div>
+      <div class="hud-value hud-digits" id="hud-value"></div>
       <div class="hud-unit" id="hud-unit"></div>
       <div class="hud-signal" id="hud-signal" hidden></div>
     </div>
@@ -241,7 +258,7 @@ export async function openHud() {
   function render() {
     const kmh = meter.read(Date.now());
     const { value, unit } = displaySpeed(kmh, AppState.units);
-    valueEl.textContent = value;
+    applyDigits(valueEl, value, style.font);
     unitEl.textContent = unit;
 
     // Цифра краснеет при превышении: на стекле это единственное, что водитель

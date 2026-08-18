@@ -664,22 +664,68 @@ body.hud-open { overflow: hidden; }
   color: var(--hud-color);
 }
 
-/* Начертания цифры. Все системные — веб-шрифт задержал бы экран, нужный на ходу. */
-.hud-font-rounded .hud-value {
+
+/* ── Начертания цифры ──────────────────────────────────────────────────────
+   Одни и те же правила для проекции на стекле и для образца в настройках:
+   иначе человек выбирал бы одно, а в машине получал другое. Размер задаётся
+   отдельно в каждом месте, всё остальное — здесь.
+
+   Все начертания системные. Единственное исключение — сегментное: такого
+   шрифта нет ни в одной системе, и его цифры собираются из палочек в
+   segmentDigits.js. Веб-шрифт не берём принципиально: он тянет загрузку со
+   стороннего сервера и задерживает ровно тот экран, что нужен уже на ходу. */
+.hud-digits {
+  font-weight: 800;
+  /* Моноширинные цифры не дают числу дёргаться при смене разряда. */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.hud-font-rounded .hud-digits {
   font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif;
   letter-spacing: 0;
 }
-.hud-font-thin .hud-value { font-weight: 200; letter-spacing: 0.02em; }
+.hud-font-thin .hud-digits { font-weight: 200; letter-spacing: 0.02em; }
+.hud-font-heavy .hud-digits {
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+}
+.hud-font-italic .hud-digits {
+  font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.hud-font-serif .hud-digits {
+  font-family: ui-serif, 'New York', Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+/* Контурный: светится только обводка. В тёмной машине это заметно меньше
+   света в стекле, а днём цифра всё равно читается по краю.
+   Обводка берёт currentColor, поэтому подсветка превышения работает и здесь. */
+.hud-font-outline .hud-digits {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.035em currentColor;
+  paint-order: stroke fill;
+}
+
+/* Цифры из палочек. Высота задаётся в em, поэтому масштаб наследуется от
+   font-size родителя — как у обычного текста. */
+.hud-digits .seg-digits {
+  display: block;
+  margin: 0 auto;
+  height: 0.78em;
+  width: auto;
+  max-width: 92%;
+}
+
 .hud-plate.mirrored { transform: scaleX(-1); }
 
 .hud-value {
   /* Цифра занимает экран целиком: на неё смотрят краем глаза и доли секунды. */
   font-size: min(46vw, 62vh);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  /* Моноширинные цифры не дают числу дёргаться при смене разряда. */
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: -0.02em;
 }
 .hud-unit {
   font-size: min(7vw, 9vh);
@@ -1158,18 +1204,7 @@ body.hud-open { overflow: hidden; }
      сам цвет: элемент один и крошечный, пересчёта раскладки не будет. */
   transition: color 200ms ease;
 }
-.hud-preview-value {
-  font-size: 46px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: -0.02em;
-}
-.hud-preview.hud-font-rounded .hud-preview-value {
-  font-family: ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif;
-  letter-spacing: 0;
-}
-.hud-preview.hud-font-thin .hud-preview-value { font-weight: 200; letter-spacing: 0.02em; }
+.hud-preview-value { font-size: 46px; }
 .hud-preview-unit {
   font-size: 12px;
   font-weight: 600;

@@ -8,6 +8,7 @@ import { t, getLang } from '../i18n.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
 import { HUD_COLORS, HUD_FONTS, getHudStyle, setHudStyle } from '../hud.js';
+import { applyDigits } from '../segmentDigits.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
 import { openPaywall } from '../paywall.js';
@@ -87,8 +88,9 @@ export async function refresh() {
         <span data-i18n="hud.style_title"></span>
       </div>
       <div class="hud-preview hud-font-${hudStyle.font}" id="hud-preview"
+           data-font="${hudStyle.font}"
            style="--hud-color:${HUD_COLORS[hudStyle.color].hex}">
-        <div class="hud-preview-value" id="hud-preview-value">88</div>
+        <div class="hud-preview-value hud-digits" id="hud-preview-value"></div>
         <div class="hud-preview-unit" data-i18n="unit.kmh"></div>
       </div>
       <div class="chip-row">
@@ -347,6 +349,10 @@ function bind(body) {
   }));
 
   const preview = body.querySelector('#hud-preview');
+  // 88 — не случайное число: на сегментном начертании горят все палочки
+  // сразу, и сразу видно и цвет, и «призрак восьмёрки».
+  const previewValue = body.querySelector('#hud-preview-value');
+  applyDigits(previewValue, '88', preview?.dataset.font);
 
   body.querySelectorAll('[data-hud-color]').forEach(btn => btn.addEventListener('click', async () => {
     const id = btn.dataset.hudColor;
@@ -371,6 +377,10 @@ function bind(body) {
     if (preview) {
       Object.keys(HUD_FONTS).forEach(f => preview.classList.remove('hud-font-' + f));
       preview.classList.add('hud-font-' + id);
+      preview.dataset.font = id;
+      // Сегментное начертание — не шрифт, а рисунок, поэтому цифры образца
+      // надо пересобрать: сменой класса тут не обойтись.
+      applyDigits(previewValue, '88', id);
     }
     body.querySelectorAll('[data-hud-font]').forEach(c => c.classList.toggle('active', c === btn));
     await setHudStyle({ font: id });
