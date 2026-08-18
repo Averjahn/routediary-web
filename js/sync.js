@@ -138,6 +138,11 @@ export function createSync({ db, request, getSetting, setSetting }) {
     await setSetting('syncInvitedCount', res.body.invitedCount);
     await setSetting('syncProUntil', res.body.proUntil || undefined);
     await setSetting('syncRewardDays', res.body.rewardDays);
+    // Время сервера из тела ответа: заголовок Date при межсайтовом запросе
+    // браузер прячет, а тело доходит всегда.
+    await import('./serverClock.js')
+      .then(({ noteServerTime }) => noteServerTime(res.body.now))
+      .catch(() => {});
     // Срок мог закончиться — тогда платное оформление снимается здесь же.
     // Это единственный момент, когда уровень доступа меняется не по нажатию.
     await import('./subscription.js')
