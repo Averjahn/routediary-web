@@ -64,18 +64,28 @@ export const PLANS = [
 const KEY = 'tier';
 
 /**
- * До какого момента Про выдан за приглашённых друзей.
- * Срок присылает сервер, местное время на него не влияет — накрутить,
- * переведя часы на телефоне, не выйдет.
+ * До какого момента действует Про.
+ *
+ * Срок один на все причины: покупка и награда за приглашённых друзей кладут
+ * его в одно и то же место. Имя осталось от времён, когда причина была одна.
  */
 export async function rewardedProUntil() {
   return getSetting('syncProUntil');
 }
 
-/** Действует ли награда за приглашения прямо сейчас. */
+/**
+ * Действует ли Про прямо сейчас.
+ *
+ * Сравнение идёт не с часами телефона, а с наибольшим временем, которое мы
+ * когда-либо видели от сервера (см. serverClock.js). Прежде здесь стояло
+ * `new Date()`, и перевод часов на год назад оживлял истёкшую подписку —
+ * это было проверено и работало.
+ */
 export async function rewardActive() {
   const until = await rewardedProUntil();
-  return !!until && new Date(until) > new Date();
+  if (!until) return false;
+  const { effectiveNow } = await import('./serverClock.js');
+  return new Date(until) > (await effectiveNow());
 }
 
 /**
@@ -114,4 +124,40 @@ export async function simulatePurchase(tier) {
 
 export async function resetPurchase() {
   await setSetting(KEY, TIER.FREE);
+}
+
+/**
+ * Вернуть бесплатный вид, если Про больше не действует.
+ *
+ * Само решение — в entitlements.js: оно денежное, и его проверяют тестами.
+ * Здесь только чтение состояния и запись изменений.
+ *
+ * Молчаливо и безопасно в офлайне: срок лежит на устройстве и переживает
+ * отсутствие сети, поэтому действующая подписка ничего не теряет, даже если
+ * сервер сейчас недоступен.
+ *
+ * @returns {Promise<boolean>} менялось ли что-нибудь
+ */
+export async function enforceEntitlements() {
+  const { downgradePlan } = await import('./entitlements.js');
+  const { AppState, setThemeId } = await import('./state.js');
+  const { getHudStyle, setHudStyle } = await import('./hud.js');
+
+  const style = await getHudStyle();
+  const plan = downgradePlan({
+    isPro: (await currentTier()) === TIER.PRO,
+    theme: AppState.theme,
+    hudColor: style.color,
+    hudFont: style.font,
+  });
+
+  if (plan.theme) {
+    await setThemeId(plan.theme);
+    // Без объявления экран останется в старых цветах до следующей перерисовки.
+    document.dispatchEvent(new CustomEvent('theme-changed'));
+  }
+  if (plan.hudColor || plan.hudFont) {
+    await setHudStyle({ color: plan.hudColor, font: plan.hudFont });
+  }
+  return Object.keys(plan).length > 0;
 }

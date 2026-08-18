@@ -138,6 +138,11 @@ export function createSync({ db, request, getSetting, setSetting }) {
     await setSetting('syncInvitedCount', res.body.invitedCount);
     await setSetting('syncProUntil', res.body.proUntil || undefined);
     await setSetting('syncRewardDays', res.body.rewardDays);
+    // Срок мог закончиться — тогда платное оформление снимается здесь же.
+    // Это единственный момент, когда уровень доступа меняется не по нажатию.
+    await import('./subscription.js')
+      .then(({ enforceEntitlements }) => enforceEntitlements())
+      .catch(() => {});
     return res.body;
   }
 

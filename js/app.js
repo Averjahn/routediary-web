@@ -43,6 +43,12 @@ async function init() {
   // Внутри Telegram окно ведёт себя как встроенное приложение. Вне его
   // ничего не происходит и никаких запросов наружу не уходит.
   await setupTelegram().catch(() => {});
+  // Подписка могла закончиться, пока приложение было закрыто: платное
+  // оформление снимается до первой отрисовки, чтобы человек не увидел его
+  // на секунду и не решил, что оно осталось.
+  await import('./subscription.js')
+    .then(({ enforceEntitlements }) => enforceEntitlements())
+    .catch(() => {});
   applyI18nTree(document.body);
 
   for (const key of Object.keys(SCREENS)) {

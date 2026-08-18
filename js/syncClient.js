@@ -53,6 +53,13 @@ async function request(method, path, body, token) {
       },
       body: body ? JSON.stringify(body) : undefined,
     });
+    // Время сервера из заголовка Date. По нему проверяется срок подписки:
+    // часы телефона для этого не годятся, их переводят назад в две секунды.
+    // Здесь — на каждом ответе, а не только при входе: чем чаще отметка
+    // обновляется, тем меньше окно, в котором отмотка вообще что-то даёт.
+    import('./serverClock.js')
+      .then(({ noteServerTime }) => noteServerTime(res.headers.get('date')))
+      .catch(() => {});
     let parsed = null;
     try { parsed = await res.json(); } catch { /* пустой ответ — не беда */ }
     return { ok: res.ok, status: res.status, body: parsed };
