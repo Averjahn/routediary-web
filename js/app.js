@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
 import { initInstallBanner } from './installBanner.js';
 import { captureIncomingReferral } from './referral.js';
+import { captureTrafficSource } from './trafficSource.js';
 import { startAutoSync } from './syncClient.js';
 import { setupTelegram } from './telegram.js';
 import * as MapScreen from './screens/map.js';
@@ -40,6 +41,9 @@ async function init() {
   // До первой отрисовки: код приглашения убирается из адресной строки,
   // чтобы не осесть в истории и закладках.
   await captureIncomingReferral().catch(() => {});
+  // До первой отрисовки: метка вывески/QR убирается из адресной строки
+  // так же, как код приглашения — по тем же причинам.
+  await captureTrafficSource().catch(() => {});
   // Внутри Telegram окно ведёт себя как встроенное приложение. Вне его
   // ничего не происходит и никаких запросов наружу не уходит.
   await setupTelegram().catch(() => {});

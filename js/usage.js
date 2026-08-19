@@ -42,6 +42,7 @@ export async function ping({ force = false } = {}) {
     if (!force && (await getSetting(LAST_KEY)) === today()) return false;
 
     const { syncOrigin } = await import('./syncClient.js');
+    const { trafficSource } = await import('./trafficSource.js');
     const res = await fetch(`${syncOrigin()}/api/usage/ping`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -49,6 +50,10 @@ export async function ping({ force = false } = {}) {
         installId: await installId(),
         platform: platform(),
         version: document.querySelector('meta[name="app-version"]')?.content || null,
+        // Источник шлётся при каждом пинге, а не только при первом: если
+        // отметка о вчерашнем дне потерялась (например, человек снёс и
+        // поставил приложение заново), сервер должен получить её снова.
+        source: await trafficSource(),
       }),
     });
 
