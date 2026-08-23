@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v47';
+const CACHE_NAME = 'avtopuls-v48';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,14 @@ const APP_SHELL = [
   './js/db.js',
   './js/theme.js',
   './js/i18n.js',
+  // Реестр языков и два базовых словаря — часть модульного графа: без них
+  // приложение не стартует вовсе. Остальные семь языков подгружаются файлом
+  // при выборе и попадают в кэш обычным обработчиком fetch — держать все
+  // девять в предзагрузке значило бы вернуть те самые триста килобайт,
+  // ради которых словари и разделили.
+  './js/i18n/registry.js',
+  './js/i18n/ru.js',
+  './js/i18n/en.js',
   './js/format.js',
   './js/geo.js',
   './js/tracking.js',
@@ -20,6 +28,7 @@ const APP_SHELL = [
   './js/icons.js',
   './js/carArt.js',
   './js/vehicleCatalog.js',
+  './js/vehicleRegion.js',
   './js/vehicleClass.js',
   './js/vehicleData.js',
   './js/referral.js',

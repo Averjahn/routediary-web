@@ -1,6 +1,9 @@
 import { DB, getSetting, setSetting } from './db.js';
-import { detectDefaultCurrency, detectDefaultLang, uuid, todayKey } from './format.js';
-import { setLang } from './i18n.js';
+import { detectDefaultCurrency, uuid, todayKey } from './format.js';
+import { detectLang, LANGUAGES } from './i18n/registry.js';
+import { detectRegion, REGION_MAKES } from './vehicleRegion.js';
+import { applyRegion } from './vehicleCatalog.js';
+import { setLang, loadLang } from './i18n.js';
 import { applyTheme, THEME_ORDER } from './theme.js';
 import { buildServicePlan, averageKmPerDay } from './maintenance.js';
 
@@ -14,6 +17,7 @@ export const AppState = {
   theme: 'classic',
   lang: 'ru',
   currency: 'RUB',
+  region: null,
   units: 'metric',
   weightKg: 75,
   currentDay: todayKey(),
@@ -28,10 +32,15 @@ export async function loadSettings() {
   let currency = await getSetting('currency', null);
   const units = await getSetting('units', 'metric');
   const weightKg = await getSetting('weightKg', 75);
+  let region = await getSetting('region', null);
   const firstRun = lang === null;
 
-  if (lang === null) lang = detectDefaultLang();
+  if (lang === null) lang = detectLang();
   if (currency === null) currency = detectDefaultCurrency();
+  // Страна не сохраняется при определении: система могла ошибиться, а
+  // человек — переехать. Пустое значение означает «спрашивать систему
+  // каждый раз», выбранное вручную — «слушать только меня».
+  if (region === null) region = detectRegion();
 
   if (firstRun) {
     await setSetting('lang', lang);
@@ -43,7 +52,15 @@ export async function loadSettings() {
   AppState.currency = currency;
   AppState.units = units;
   AppState.weightKg = weightKg;
+  AppState.region = region;
+  // Порядок марок в справочнике — под страну: до Volkswagen немцу не
+  // должно требоваться листать три сотни марок российского рынка.
+  applyRegion(region);
 
+  // Словарь грузится ДО первой отрисовки: t() вызывается из разметки и
+  // ждать не умеет. Не загрузился (нет файла, нет сети при первом заходе) —
+  // setLang сам откатится на базовый, а не оставит экран из голых ключей.
+  await loadLang(AppState.lang);
   setLang(AppState.lang);
   applyTheme(AppState.theme);
 
@@ -57,9 +74,24 @@ export async function setThemeId(id) {
 }
 
 export async function setLanguage(lang) {
+  if (!LANGUAGES[lang]) return false;
+  // Сначала грузим, потом переключаем: иначе между двумя строчками экран
+  // успел бы перерисоваться на языке, словаря которого ещё нет.
+  const ok = await loadLang(lang);
+  if (!ok) return false;
   AppState.lang = lang;
   setLang(lang);
   await setSetting('lang', lang);
+  return true;
+}
+
+export async function setRegion(code) {
+  // Пустая строка — вернуться к определению по системе.
+  const region = code && REGION_MAKES[code] ? code : null;
+  AppState.region = region ?? detectRegion();
+  applyRegion(AppState.region);
+  await setSetting('region', region);
+  return AppState.region;
 }
 
 export async function setCurrency(code) {

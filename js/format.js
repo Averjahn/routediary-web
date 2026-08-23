@@ -1,26 +1,46 @@
 import { getLang, t } from './i18n.js';
 
-export const CURRENCY_SYMBOLS = { RUB: '₽', USD: '$', EUR: '€', GBP: '£', KZT: '₸', UAH: '₴', BYN: 'Br', CNY: '¥' };
+export const CURRENCY_SYMBOLS = {
+  RUB: '₽', USD: '$', EUR: '€', GBP: '£', KZT: '₸', UAH: '₴', BYN: 'Br',
+  CNY: '¥', JPY: '¥', INR: '₹', PLN: 'zł', CHF: 'CHF', CAD: 'CA$', AUD: 'A$',
+};
+
+/**
+ * Валюта по стране, а не по языку.
+ *
+ * Язык и валюта — разные вещи: у немецкоговорящего швейцарца интерфейс
+ * немецкий, а деньги франки; у испаноговорящего мексиканца — песо, а не евро.
+ * Поэтому сначала спрашиваем регион самой системы, и только если его нет —
+ * гадаем по языку.
+ */
+const CURRENCY_BY_REGION = {
+  RU: 'RUB', BY: 'BYN', KZ: 'KZT', UA: 'UAH',
+  US: 'USD', CA: 'CAD', AU: 'AUD', GB: 'GBP', CH: 'CHF',
+  DE: 'EUR', AT: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR',
+  BE: 'EUR', PT: 'EUR', IE: 'EUR', FI: 'EUR', GR: 'EUR',
+  PL: 'PLN', CN: 'CNY', JP: 'JPY', IN: 'INR',
+};
+
+const CURRENCY_BY_LANG = {
+  ru: 'RUB', uk: 'UAH', kk: 'KZT', be: 'BYN',
+  zh: 'CNY', ja: 'JPY', hi: 'INR', pl: 'PLN',
+  de: 'EUR', fr: 'EUR', es: 'EUR', it: 'EUR',
+};
 
 export function detectDefaultCurrency() {
   try {
     const opts = Intl.NumberFormat().resolvedOptions();
     if (opts.currency) return opts.currency;
-  } catch (e) { /* ignore */ }
-  const lang = (navigator.language || 'ru').toLowerCase();
-  if (lang.startsWith('ru')) return 'RUB';
-  if (lang.startsWith('uk')) return 'UAH';
-  if (lang.startsWith('kk')) return 'KZT';
-  if (lang.startsWith('be')) return 'BYN';
-  if (lang.startsWith('zh')) return 'CNY';
-  if (lang.startsWith('de') || lang.startsWith('fr') || lang.startsWith('es') || lang.startsWith('it')) return 'EUR';
-  return 'USD';
+  } catch (e) { /* система без данных о валюте — идём дальше */ }
+
+  const tag = (navigator.language || '').toLowerCase();
+  const parts = tag.split(/[-_]/);
+  const region = parts[parts.length - 1]?.toUpperCase();
+  if (region && CURRENCY_BY_REGION[region]) return CURRENCY_BY_REGION[region];
+
+  return CURRENCY_BY_LANG[parts[0]] || 'USD';
 }
 
-export function detectDefaultLang() {
-  const lang = (navigator.language || 'ru').toLowerCase();
-  return lang.startsWith('ru') ? 'ru' : 'en';
-}
 
 export const Fmt = {
   currencySymbol(code) { return CURRENCY_SYMBOLS[code] || code; },

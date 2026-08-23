@@ -1,10 +1,11 @@
 import { DB, getSetting, setSetting } from '../db.js';
 import {
-  AppState, setThemeId, setLanguage, setCurrency, setUnits, setWeight,
+  AppState, setThemeId, setLanguage, setCurrency, setUnits, setWeight, setRegion,
   getPrimaryVehicle, getVehicles, getSevereConditions, setSevereConditions, recalcIntervals,
 } from '../state.js';
 import { CURRENCY_SYMBOLS } from '../format.js';
-import { t, getLang } from '../i18n.js';
+import { t, getLang, LANGUAGES, LANGUAGE_ORDER } from '../i18n.js';
+import { REGION_ORDER } from '../vehicleRegion.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
 import { HUD_COLORS, HUD_FONTS, HUD_DEFAULT_COLOR, HUD_DEFAULT_FONT, getHudStyle, setHudStyle } from '../hud.js';
@@ -54,7 +55,7 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle, savedRegion] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
@@ -65,6 +66,9 @@ export async function refresh() {
     // Стиль проекции нужен здесь же: под чипами показывается живой образец
     // с этими цифрами, шрифтом и цветом — тот же, что окажется на стекле.
     getHudStyle(),
+    // Сохранённая страна, а не действующая: в списке надо показать «авто»,
+    // если человек её не выбирал, — иначе он не отличит свой выбор от догадки.
+    getSetting('region', null),
   ]);
   const provider = getMapProvider();
   // Замочки видны только тем, кому функция реально закрыта: у Про (и в
@@ -105,10 +109,15 @@ export async function refresh() {
     <div class="section-title" data-i18n="settings.section_regional"></div>
     <div class="card">
       <div class="settings-row"><span data-i18n="settings.language"></span>
-        <div class="chip-row">
-          <button class="chip ${AppState.lang === 'ru' ? 'active' : ''}" data-lang="ru">RU</button>
-          <button class="chip ${AppState.lang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
-        </div>
+        <select id="set-lang" style="width:auto;">
+          ${LANGUAGE_ORDER.map(code => `<option value="${code}" ${AppState.lang === code ? 'selected' : ''}>${LANGUAGES[code].nativeName}</option>`).join('')}
+        </select>
+      </div>
+      <div class="settings-row"><span data-i18n="settings.region"></span>
+        <select id="set-region" style="width:auto;">
+          <option value="" ${!savedRegion ? 'selected' : ''}>${t('settings.region_auto')}</option>
+          ${REGION_ORDER.map(code => `<option value="${code}" ${savedRegion === code ? 'selected' : ''}>${t('region.' + code)}</option>`).join('')}
+        </select>
       </div>
       <div class="settings-row"><span data-i18n="settings.units"></span>
         <div class="chip-row">
@@ -416,10 +425,19 @@ function bind(body) {
     await setHudStyle({ font: id });
   }));
 
-  body.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', async () => {
-    await setLanguage(btn.dataset.lang);
+  body.querySelector('#set-lang').addEventListener('change', async (e) => {
+    // Словарь может не загрузиться (нет сети при первом выборе языка) —
+    // тогда язык не меняется, и список возвращается к прежнему значению,
+    // а не показывает выбранным то, чего на экране нет.
+    const ok = await setLanguage(e.target.value);
+    if (!ok) { e.target.value = AppState.lang; toast(t('settings.lang_failed')); return; }
     document.dispatchEvent(new CustomEvent('lang-changed'));
-  }));
+  });
+
+  body.querySelector('#set-region').addEventListener('change', async (e) => {
+    await setRegion(e.target.value);
+    refreshKeepingScroll();
+  });
 
   body.querySelectorAll('[data-units]').forEach(btn => btn.addEventListener('click', async () => {
     await setUnits(btn.dataset.units);

@@ -13,6 +13,7 @@
  */
 
 import { t } from './i18n.js';
+import { AppState } from './state.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
 import { paymentOptions, openTonPayment, openStarsPayment, formatTon } from './tonPay.js';
@@ -50,10 +51,17 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
       <span class="pay-plan-note">${plan.days >= 36500 ? t('card.one_time') : t('ton.for_days', { days: plan.days })}</span>
     </button>`;
 
+  // ЮKassa принимает карты только российских банков. Человеку из другой
+  // страны об этом надо сказать ДО того, как он введёт номер карты и
+  // получит отказ, — иначе это выглядит как поломка приложения.
+  const RU_MARKET_REGIONS = new Set(['RU', 'BY', 'KZ', 'UA', 'AM', 'GE', 'KG', 'UZ']);
+  const cardIsLocal = !AppState.region || RU_MARKET_REGIONS.has(AppState.region);
+
   const cardBlock = () => `
     <div class="pay-ton">
       <div class="pay-ton-head">${t('card.section')}</div>
       <div class="pay-plans">${pay.cardPlans.map(cardPlanCard).join('')}</div>
+      ${cardIsLocal ? '' : `<div class="muted" style="font-size:12px;padding-top:8px;">${t('card.russian_only')}</div>`}
     </div>`;
 
   const featureRow = (f) => `

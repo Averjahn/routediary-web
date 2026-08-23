@@ -1,5 +1,6 @@
 // Парсер компактного формата справочника — портирован из VehicleCatalog.swift (метод parse).
 import { VEHICLE_CATALOG_RAW } from './vehicleData.js';
+import { makeRank, detectRegion } from './vehicleRegion.js';
 
 export const FUEL_CODES = { p: 'petrol', d: 'diesel', h: 'hybrid', e: 'electric', g: 'gas' };
 
@@ -65,17 +66,43 @@ function parseCatalog(raw) {
     }
   }
   flushMake();
-  // Сначала популярные марки, дальше по алфавиту. Список открывается на том,
-  // что человек ищет: без этого до Lada нужно пролистать «212», «Abarth»,
-  // «AC», «Acura» и ещё три сотни марок, которых в России почти нет.
-  makes.sort((a, b) => {
-    if (a.popular !== b.popular) return a.popular ? -1 : 1;
-    return a.nameEn.localeCompare(b.nameEn);
-  });
   return makes;
 }
 
-export const VEHICLE_MAKES = parseCatalog(VEHICLE_CATALOG_RAW);
+/**
+ * Порядок марок в списке — под страну человека.
+ *
+ * Раньше наверх поднимались марки с пометкой popular из справочника, а она
+ * означает «популярно в России». Немцу это не помогало: до Volkswagen всё
+ * равно надо было листать мимо «212», «Abarth» и трёхсот других.
+ *
+ * Флаг popular из справочника здесь НЕ используется: он означает
+ * «популярно в России», и для немца поднимал наверх Lada, GAZ и Daewoo
+ * сразу за немецкими марками. Когда страна известна, всё, чего нет в её
+ * списке, идёт по алфавиту — предсказуемый хвост лучше произвольного.
+ * Российская популярность живёт теперь в самом RU_MARKET, где ей и место.
+ */
+export function sortMakesForRegion(makes, region) {
+  return [...makes].sort((a, b) => {
+    const ra = makeRank(a.nameEn, region);
+    const rb = makeRank(b.nameEn, region);
+    if (ra !== rb) return ra - rb;
+    return a.nameEn.localeCompare(b.nameEn);
+  });
+}
+
+const ALL_MAKES = parseCatalog(VEHICLE_CATALOG_RAW);
+
+/**
+ * Список для показа. Пересобирается при смене страны в настройках —
+ * сортировать четыреста записей на каждый показ экрана незачем.
+ */
+export let VEHICLE_MAKES = sortMakesForRegion(ALL_MAKES, detectRegion());
+
+export function applyRegion(region) {
+  VEHICLE_MAKES = sortMakesForRegion(ALL_MAKES, region);
+  return VEHICLE_MAKES;
+}
 
 export function makeCount() { return VEHICLE_MAKES.length; }
 export function modelCount() { return VEHICLE_MAKES.reduce((s, m) => s + m.models.length, 0); }
