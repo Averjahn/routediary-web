@@ -77,6 +77,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >u6|U6|ю6|2021–2023|D
 #aixam|Aixam|Аиксам|aixam,аиксам
 >500|500||2000–2004|A
+>coupe|Coupe|купе|2023–|A
 #alfa_romeo|Alfa Romeo|Альфа Ромео|alfa romeo,альфа ромео
 >105_115|105/115||1965–1977|S
 >145|145||1994–2001|C
@@ -162,6 +163,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >alpha_t|Alpha T|альфа т|2020–2025|D
 >alpha_t5|Alpha T5|альфа т5|2023–|D
 >alpha_t6|Alpha T6|альфа т6|2025–|D
+>alpha_t7|Alpha T7|альфа т7|2026–|E
 >beta_t1|Beta T1|бета т1|2026–|C
 >kaola|Kaola|каола|2023–|M
 >lite|Lite|лайт|2017–2020|B
@@ -617,19 +619,22 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #byd|BYD|BYD|бид,бивайди
 >atto3|Atto 3|атто 3
 -EV|0|e|204|60|15.5|1750|2022–
+>dolphin|Dolphin|дельфин|2021–|B
+-Active 70кВт|0|e|95|44.9|13.2|1405|2022–
 >byd_han|Han|хан|2020–|E
 -EV AWD|0|e|517|85|15.4|2200|2020–
 >byd_seal|Seal|сил|2022–|D
 -EV RWD|0|e|313|82|14.5|1885|2022–
 >song_plus|Song Plus|сонг плюс|2020–2025|D
 -DM-i гибрид|1.5|h|235|60|5.0|1800|2021–
+>yuan_plus|Yuan Plus|юан плюс|2021–|C
+-430 км базовая|0|e|204|49.92|12.2|1625|2023–
 >atto_2|Atto 2|атто 2|2025–|B
 >chazor|Chazor|чазор|2024–|D
 >d1|D1|д1|2020–|C
 >dahan|Dahan|дахан|2026–|F
 >datang|Datang|датанг|2026–|E
 >destroyer_05|Destroyer 05|дестройер 05|2022–|D
->dolphin|Dolphin|дельфин|2021–|B
 >dolphin_g|Dolphin G|дельфин г|2026–|B
 >e1|E1|е1|2019–2021|A
 >e2|E2|е2|2019–|C
@@ -648,6 +653,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >fangchengbao_leopard_8|FangChengBao Leopard 8|фенгченгбао леопард 8|2024–|J
 >fangchengbao_titanium_3|FangChengBao Titanium 3|фенгченгбао титаниум 3|2024–|D
 >fangchengbao_titanium_7|FangChengBao Titanium 7|фенгченгбао титаниум 7|2025–|E
+>fangchengbao_titanium_9|Fangchengbao Titanium 9|фенгченгбао титаниум 9|2026–|F
 >flyer|Flyer|флаер|2005–2008|A
 >frigate_07|Frigate 07|фригейт_07|2022–|D
 >g3|G3|г3|2009–2014|C
@@ -659,6 +665,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >qin_l|Qin L|кин эль|2024–|C
 >qin_max|Qin Max|чин макс|2026–|D
 >qin_plus|Qin Plus|кин плюс|2020–|C
+>qin_pro|Qin Pro|кин про|2018–2025|C
 >racco|Racco|рэкко|2026–|M
 >s6|S6|с6|2011–2015|D
 >sea_lion_05|Sea Lion 05|сиа лион 05|2024–|C
@@ -685,7 +692,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >yangwang_u8|Yangwang U8|янгвэнг ю8|2023–|J
 >yangwang_u9|Yangwang U9|янгвэнг ю9|2024–|S
 >yuan|Yuan|юан|2016–2023|B
->yuan_plus|Yuan Plus|юан плюс|2021–|C
 >yuan_up|Yuan Up|юан ап|2024–|B
 #byvin|Byvin|Бивин|byvin,бивин
 >bd132j|BD132J (CoCo)|бд132ж (сосо)|2011–2016|A
@@ -758,8 +764,12 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -1.5 T AT|1.5|p|181|55|7.6|1520|2020–
 >cs75plus|CS75 Plus|цс75 плюс|2019–|D
 -2.0 T AT|2.0|p|233|58|8.6|1690|2020–
+>eado_plus|Eado Plus|еадо плюс|2020–|C
+-1.4 GDI AMT LX|1.4|p|150|53|5.7|1415|2024–
 >uniK|UNI-K|юни к|2020–|E
 -2.0 T AT 4WD|2.0|p|233|65|9.2|1850|2020–
+>uni_s|UNI-S (CS55 Plus)|уни-с|2024–|C
+-1.5T AMT Tech|1.5|p|181|55|6.9|1535|2024–
 >uniV|UNI-V|юни в|2022–|D
 -1.5 T DCT|1.5|p|181|55|7.0|1490|2021–
 >alsvin_v7|Alsvin V7|алсвин в7|2014–2018|B
@@ -789,7 +799,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >deepal_sl03|Deepal SL03|дипал сл03|2022–|D
 >eado|Eado|еадо|2013–|C
 >eado_dt|Eado DT|еадо дт|2018–2022|B
->eado_plus|Eado Plus|еадо плюс|2020–|C
 >hunter|Hunter|хантер|2020–|J
 >hunter_plus|Hunter Plus|хантер плюс|2023–|J
 >kaicene_f70|Kaicene F70|кайсен ф70|2019–|F
@@ -800,6 +809,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >oshan_cx70|Oshan CX70|цикс70|2016–2019|C
 >oushan_changxing|Oushan Changxing|оушан чанксин|2018–2022|M
 >qiyuan_a05|Qiyuan A05|циюань а05|2023–|D
+>qiyuan_a05l|Qiyuan A05L|циюань а05л|2026–|D
 >qiyuan_a06|Qiyuan A06|циюань а06|2025–|D
 >qiyuan_a07|Qiyuan A07|циюань а07|2023–|E
 >qiyuan_e07|Qiyuan E07|циюань е07|2024–|D
@@ -811,7 +821,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >raeton_cc|Raeton CC|раетон сс|2017–2022|D
 >raeton_plus|Raeton Plus|раетон плюс|2022–|D
 >uni_l|UNI-L|уни-эл|2024–|D
->uni_s|UNI-S (CS55 Plus)|уни-с|2024–|C
 >uni_t|UNI-T|уни-т|2020–|C
 >uni_z|UNI-Z|уни-зед|2024–|D
 >x5_plus|X5 Plus|икс 5 плюс|2024–|C
@@ -864,6 +873,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >fulwin_t10|Fulwin T10|фулвин т10|2024–|E
 >fulwin_t11|Fulwin T11|фулвин т11|2025–|E
 >fulwin_t6|Fulwin T6|фулвин т6|2024–2025|D
+>fulwin_t7|Fulwin T7|фулвин т7|2026–|C
 >fulwin_t8|Fulwin T8|фулвин т8|2025–|D
 >fulwin_t9|Fulwin T9|фулвин т9|2024–|D
 >fulwin_t9l|Fulwin T9L|фулвин т9л|2026–|D
@@ -900,6 +910,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >tiggo_8_pro_plug_in_hybrid|Tiggo 8 Pro Plug-in Hybrid|тигго 8 про плаг-ин гибрид|2023–2025|D
 >tiggo_8l|Tiggo 8L|тигго 8л|2024–|D
 >tiggo_9|Tiggo 9|тигго 9|2023–|D
+>tiggo_9x|Tiggo 9x|тигго 9х|2025–|D
 >tiggo_e|Tiggo E|тигго е|2019–2022|B
 >very|Very (A13)|вери|2011–2014|B
 >windcloud|Windcloud (A11)|виндклауд|1999–2006|C
@@ -925,7 +936,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >astra|Astra|астра|1998–2011|C
 >astro|Astro|астро|1985–2005|M
 >avalanche|Avalanche|аваланч|2001–2013|J
->bel_air|Bel Air|бел эйр|1949–1957
+>bel_air|Bel Air|бел эйр|1949–1957|S
 >beretta|Beretta|беретта|1987–1996|C
 >blazer|Blazer|блейзер|1982–|J
 >blazer_ev|Blazer EV|блейзер иви|2023–|E
@@ -938,7 +949,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >caprice|Caprice|каприз|1965–2017|F
 >captiva_sport|Captiva Sport|каптива спорт|2008–2016|D
 >cavalier|Cavalier|кавалер|1982–2005|C
->celebrity|Celebrity|селебрити|1982–1990
+>celebrity|Celebrity|селебрити|1982–1990|D
 >celta|Celta|сельта|2000–2006|B
 >chevelle|Chevelle|чевелле|1963–1977|S
 >chevette|Chevette|шевет|1975–1987|C
@@ -1027,7 +1038,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >dynasty|Dynasty|династия|1988–1993|D
 >es|ES|ес|1988–1991|C
 >fifth_avenue|Fifth Avenue|5-е авеню|1982–1993|E
->imperial|Imperial|империал|1926–1993
+>imperial|Imperial|империал|1926–1993|E
 >imperial_crown|Imperial Crown|империал краун|1963–1975|S
 >intrepid|Intrepid|интерпид|1993–2004|E
 >lebaron|LeBaron|ле барон|1977–1995|S
@@ -1096,13 +1107,13 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >e_mehari|E-Mehari|е-мехари|2016–2019|B
 >evasion|Evasion|эвазион|1994–2002|M
 >gs|GS||1971–1986|C
->jumpy|Jumpy|джампи|1994–
+>jumpy|Jumpy|джампи|1994–|M
 >ln|LN|лн|1976–1986|A
->nemo|Nemo|немо|2007–2017
+>nemo|Nemo|немо|2007–2017|M
 >saxo|Saxo|саксо|1996–2003|B
 >sm|SM|см|1970–1975|S
 >spacetourer|SpaceTourer|спейс турер|2016–|M
->traction_avant|Traction Avant|трекшн авант|1934–1957
+>traction_avant|Traction Avant|трекшн авант|1934–1957|D
 >visa|Visa|виза|1978–1991|B
 >xantia|Xantia|ксантия|1992–2002|D
 >xm|XM||1989–2000|E
@@ -1298,6 +1309,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >x|X|икс|2019–2022|E
 >z|Z|зет|2026–|S
 >z9|Z9|з9|2024–|E
+>z9s|Z9S|з9с|2026–|E
 #derways|Derways|Дервейс|derways,дервейс
 >antelope|Antelope|антилопа|2007–2007|J
 >aurora|Aurora|аврора|2006–2008|J
@@ -1358,6 +1370,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >viper|Viper|вайпер|1992–2017|S
 >wc_series|WC series|вс|1941–1945|J
 #dongfeng|Dongfeng|ДонгФенг|dongfeng,донгфенг
+>ax7|AX7|ах7|2015–2019|D
+-2.0 AT|2.0|p|140|60|8.3|1610|2017–2020
 >370|370||2016–2020|C
 >580|580||2016–|D
 >a30|A30|а30|2014–2019|C
@@ -1372,7 +1386,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >aeolus_yixuan_gs|Aeolus Yixuan GS|исюань гс|2020–|C
 >aeolus_yixuan_max|Aeolus Yixuan Max|иэлес исюань макс|2021–|D
 >ax4|AX4|ах4|2017–2021|B
->ax7|AX7|ах7|2015–2019|D
 >box|Box|бокс|2024–|B
 >c36|C36|с36|2012–|M
 >df6|DF6|дф6|2022–|J
@@ -1501,11 +1514,12 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #facel_vega|Facel Vega|Фэйсл Вега|facel vega,фэйсл вега
 >fv|FV|фв|1954–1958
 #faw|FAW|FAW|фав
+>bestune_b70|Bestune B70|бестюн б70|2020–|D
+-1.5T|1.5|p|160|50|7.1|1485|2020–2024
 >bestune_t77|Bestune T77|бестюн т77|2018–|C
 -1.2 T DCT|1.2|p|143|55|6.9|1420|2018–
 >bestune_t99|Bestune T99|бестюн т99|2019–|D
 -2.0 T AT|2.0|p|224|60|8.8|1740|2019–
->bestune_b70|Bestune B70|бестюн б70|2020–|D
 >bestune_b70s|Bestune B70S|бестюн б70с|2022–|C
 >bestune_e01|Bestune E01|бестюн е01|2020–2024|C
 >bestune_joyee_03|Bestune Joyee 03|бестюн юи 03|2025–|B
@@ -1763,8 +1777,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >tourneo_connect|Tourneo Connect|турнео коннект|2002–|M
 >tourneo_courier|Tourneo Courier|турнео курьер|2014–|M
 >tourneo_custom|Tourneo Custom|турнео кастом|2012–|M
->transit_connect|Transit Connect|транзит коннект|2002–2024
->transit_custom|Transit Custom|транзит кастом|2012–
+>transit_connect|Transit Connect|транзит коннект|2002–2024|M
+>transit_custom|Transit Custom|транзит кастом|2012–|M
 >v8|V8|в8|1932–1939|F
 >windstar|Windstar|виндстар|1994–2003|M
 >zephyr|Zephyr|зефир|1951–1962|C
@@ -1811,13 +1825,15 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #gac|GAC|GAC|гак,гуанчжоу
 >gn8|GN8|гн8|2019–2023|M
 -2.0 T AT|2.0|p|252|65|9.8|1950|2021–
+>gs4|GS4|гс4|2024–|C
+-1.5T DCT|1.5|p|170|55|7.2|1575|2024–
+-2.0T AT 4WD|2.0|p|231|55|9.2|1745|2024–
 >gs8|GS8|гс8|2016–|E
 -2.0 T AT 4WD|2.0|p|252|66|9.5|1980|2021–
 >aion_v|Aion V|айон ви|2026–|C
 >ea6|EA6|еа6|2021–|D
 >empow|Empow|емпоу|2024–|C
 >gs3|GS3|гс3|2023–|C
->gs4|GS4|гс4|2024–|C
 >gs5|GS5|гс5|2020–2024|D
 >hyptec_ht|Hyptec HT|хиптек аш ти|2026–|E
 >ia5|iA5|иа5|2019–2022|D
@@ -1850,6 +1866,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >m8|M8|м8|2019–|M
 >s7|S7|с7|2025–|D
 >s9|S9|с9|2025–|E
+>yue_7|Yue 7|юэ 7|2026–|F
 #gaz|GAZ|ГАЗ|газ,gorky|1
 >gazelle_business|Gazelle Business|газель бизнес
 -2.7 MT|2.7|p|106|70|13.0|2000|2010–
@@ -1921,6 +1938,9 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -2.0 T AT 4WD|2.0|p|238|60|9.0|1830|2021–
 >okavango|Okavango|окаванго|2020–|D
 -2.0 T HEV|2.0|h|218|60|7.4|1850|2023–
+>preface|Preface|префейс|2020–|D
+-2.0T 7DCT|2.0|p|150|49|7.2|1610|2021–
+-2.0T 7DCT Флагман|2.0|p|200|49|7.2|1610|2021–
 >tugella|Tugella|тугелла|2019–2024|C
 -2.0 T AT 4WD|2.0|p|238|60|9.5|1840|2019–
 >azkarra|Azkarra|азкарра|2019–2023|C
@@ -1949,6 +1969,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >ex2|EX2|еикс2|2025–|B
 >ex5|EX5|еикс5|2024–|D
 >ex5_em_i|EX5 EM-i|еикс5 ем-ай|2025–|D
+>ex5_gibrid|EX5 Гибрид|еикс5 гибрид|2025–|D
 >farizon_fx|Farizon FX|фаризон фх|2020–2023|J
 >farizon_happiness|Farizon Happiness|фаризон хеппинесс|2024–|M
 >fc|FC (Vision)|фс (вижн)|2006–2011|D
@@ -1992,7 +2013,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >mk_cross|MK Cross|мк кросс|2010–2016|B
 >mr|MR||2003–2009|B
 >panda|Panda|панда|2022–|A
->preface|Preface|префейс|2020–|D
 >radar_king_kong|Radar King Kong|радар кинг конг|2024–|J
 >sc7|SC7||2011–2015|C
 >tx4|TX4|тх4|2008–2017|C
@@ -2121,6 +2141,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -2.0 T DCT|2.0|p|190|56|9.2|1690|2019–
 >h3|H3|аш3|2024–|J
 -1.5 T DCT|1.5|p|150|55|8.4|1580|2023–
+>h6|H6|н6|2014–|C
+-2.0 7DCT|2.0|p|204|58|7.8|1585|2021–
 >h9|H9|аш9|2014–|J
 -2.0 T AT|2.0|p|224|80|12.0|2265|2015–
 >jolion|Jolion|джолион|2021–|C
@@ -2141,7 +2163,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >h2s|H2s|х2с|2016–2020|B
 >h4|H4|эйч4|2018–2020|C
 >h5|H5|эйч5|2020–|J
->h6|H6|н6|2014–|C
 >h6_coupe|H6 Coupe|н6 купе|2015–2021|C
 >h6l|H6L|х6л|2025–|D
 >h6s|H6S|х6с|2021–2024|J
@@ -2326,6 +2347,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -EV AWD|0|e|551|99|21.0|2700|2020–
 >hongqi_h5|H5|аш5 хончи|2017–|D
 -1.5 T DCT|1.5|p|169|55|6.9|1520|2022–
+>h9|H9|х9|2020–|F
+-2.0T 7DCT RWD Deluxe|2.0|p|245|62|7.1|1895|2023–2025
 >hongqi_hs5|HS5|хс5 хончи|2019–|D
 -2.0 T AT 4WD|2.0|p|224|60|9.2|1850|2019–
 >e_hs3|E-HS3|е-хс3|2018–2023|C
@@ -2335,7 +2358,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >guoya|Guoya|гуоя|2024–|F
 >h6|H6|эйч6|2023–|E
 >h7|H7|х7|2013–2022|E
->h9|H9|х9|2020–|F
 >hq9|HQ9|эйчкью 9|2022–|M
 >hs3|HS3|хс3|2023–|D
 >hs6|HS6|хс6|2025–|E
@@ -2440,7 +2462,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >genesis_coupe|Genesis Coupe|дженесис купе|2009–2016|D
 >getz|Getz|гетц|2002–2011|B
 >grace|Grace|грейс|1986–2004|M
->grand_starex|Grand Starex|гранд старекс|2007–2021
+>grand_starex|Grand Starex|гранд старекс|2007–2021|M
 >grandeur|Grandeur|грандер|1986–|E
 >h_1|H-1|н-1|1997–2021|M
 >h200|H200|н200|1997–2007|M
@@ -2478,9 +2500,9 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >santamo|Santamo|сантамо|1995–2002|M
 >santro|Santro|сантро|1998–2022|A
 >scoupe|Scoupe|с купе|1988–1996|C
->starex|Starex|старекс|1997–2007
+>starex|Starex|старекс|1997–2007|M
 >stargazer|Stargazer|старгейзер|2022–2025|M
->staria|Staria|стария|2021–
+>staria|Staria|стария|2021–|M
 >stellar|Stellar|стеллар|1983–1993|D
 >terracan|Terracan|терракан|2001–2007|J
 >tiburon|Tiburon|тибурон|1996–2009|S
@@ -2566,7 +2588,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >bellett|Bellett|беллетт|1963–1973|C
 >bighorn|Bighorn|бигхорн|1981–2002|J
 >d_max|D-Max|д-макс|2002–|J
->fargo|Fargo|фарго|1980–2002
+>fargo|Fargo|фарго|1980–2002|M
 >fargo_filly|Fargo Filly|фарго филли|1997–2005|M
 >florian|Florian|флориан|1967–1983|C
 >gemini|Gemini|джемини|1974–2000|C
@@ -2610,6 +2632,9 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >27175|27175||2005–2012|B
 >moskvich_412|Москвич-412|412|1967–1998|C
 #jac|JAC|JAC|джак
+>js4|JS4|джиэс4|2020–|B
+-1.5T CVT Luxury|1.5|p|136|50|5.6|1365|2022–
+-1.5T MT Freedom|1.5|p|150|50|7.2|1365|2020–
 >jac_js6|JS6|джс6|2022–|C
 -1.5 T CVT|1.5|p|177|55|7.7|1600|2021–
 >jac_s3|S3|с3 джак|2014–|C
@@ -2631,12 +2656,12 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >js2|JS2|джейэс2|2018–|B
 >js2_pro|JS2 Pro|джейэс2 про|2024–|B
 >js3|JS3|джейэс3|2023–|C
->js4|JS4|джиэс4|2020–|B
 >js5|JS5|джиэс5|2024–|B
 >js9|JS9|джейэс9|2025–|J
 >m1|M1 (Refine)|m1 рефайн|2006–2011|M
 >m4|M4|эм4|2016–|M
 >m5|M5|м5|2011–|M
+>qx|QX|кюикс|2024–|C
 >refine_l6_max|Refine L6 Max|рефин л6 макс|2020–|M
 >refine_m3|Refine M3|рефин м3|2016–
 >refine_rf8|Refine RF8|рефайн рф8|2023–|M
@@ -2651,6 +2676,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >sehol_a5_plus|Sehol A5 Plus|сехол а5 плюс|2021–|C
 >sehol_aipao|Sehol Aipao|сехол айпао|2022–|C
 >sehol_e20x|Sehol E20X|сехол е20х|2018–2021|B
+>sehol_qx|Sehol QX|сехол куикс|2021–|C
 >sehol_x6|Sehol X6|сехол икс6|2022–2023|C
 >sehol_x8|Sehol X8|сехол икс8|2020–2023|C
 >sehol_x8_plus|Sehol X8 Plus|сехол икс8 плюс|2022–|C
@@ -2660,9 +2686,11 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >t9|T9|т9|2023–|J
 >yttrium_3|Yttrium 3|итриум 3|2023–|B
 #jaecoo|Jaecoo|Джейку|jaecoo,джейку
+>j7|J7|джей7|2023–|C
+-1.6T AMT|1.6|p|150|57|8.1|1709|2026–
+-1.6T AMT 4WD|1.6|p|186|57|8.1|1709|2026–
 >ej6|EJ6|еджей6|2024–|C
 >j6|J6|джей6|2025–|C
->j7|J7|джей7|2023–|C
 >j8|J8|джей8|2024–|D
 #jaguar|Jaguar|Ягуар|jaguar,ягуар
 >e_pace|E-Pace|е-пейс|2017–2024|C
@@ -2719,6 +2747,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -1.5 T DCT|1.5|p|147|57|8.0|1620|2020–
 >x90plus|X90 Plus|х90 плюс
 -1.6 T DCT|1.6|p|186|57|8.4|1750|2021–
+>f700|F700|эф700|2026–|J
 >freedom|Freedom|фридом|2025–|D
 >freedom_7_plus|Freedom 7 Plus|фри́дом 7 плюс|2026–|D
 >g700|G700|джи 700|2025–|J
@@ -2741,6 +2770,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >x902|X90+|х90+|2021–|D
 >x95|X95|икс95|2019–|D
 #jetta|Jetta|Джетта|jetta,джетта
+>m6|M6|м6|2026–|C
 >va3|VA3|ва3|2019–|B
 >va7|VA7|ва7|2024–|D
 >vs5|VS5|вс5|2019–|C
@@ -2855,7 +2885,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >pegas|Pegas|пегас|2017–|B
 >picanto|Picanto|пиканто|2004–|A
 >potentia|Potentia|потентиа|1992–2001|E
->pregio|Pregio|преджио|1995–2007
+>pregio|Pregio|преджио|1995–2007|M
 >pride|Pride|прайд|1987–2017|B
 >proceed|Proceed|просид|2018–2025|C
 >pv5|PV5|пи ви пять|2025–|M
@@ -3168,12 +3198,13 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -EREV гибрид|1.5|h|408|65|7.1|2250|2024–
 >li_l7|L7|л7|2023–|E
 -EREV гибрид|1.5|h|449|65|7.4|2350|2022–
+>l8|L8|л8|2022–|E
+-Pro EREV|1.5|h|449|65|6.2|2500|2022–2026
 >li_l9|L9|л9|2022–|F
 -EREV гибрид|1.5|h|449|65|7.8|2520|2022–
 >i6|i6|ай 6|2025–|E
 >i8|i8|ай8|2025–|E
 >i9|i9|ай9|2026–|F
->l8|L8|л8|2022–|E
 >mega|Mega|мега|2024–|M
 >one|One|ван|2019–2022|E
 #liebao_motor|Liebao Motor|Лиебао Мотор|liebao motor,лиебао мотор
@@ -3220,13 +3251,15 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #lingxi|Lingxi|Лингкси|lingxi,лингкси
 >l|L|л|2024–|E
 #livan|Livan|Ливан|livan,ливан
+>x3_pro|X3 Pro|икс3 про|2022–|B
+-1.5 CVT|1.5|p|103|45|6.9|1290|2022–
+>x6_pro|X6 Pro|икс6 про|2023–|C
+-1.5T DCT|1.5|p|147|55|6.5|1605|2023–
 >7|7||2023–|C
 >8|8||2024–|M
 >9|9||2022–|D
 >blue_baloon|Blue Baloon|блу балун|2025–|A
 >s6_pro|S6 Pro|c6 про|2023–|C
->x3_pro|X3 Pro|икс3 про|2022–|B
->x6_pro|X6 Pro|икс6 про|2023–|C
 #logem|Logem|Логем|logem,логем
 >ec30|EC30|ес30|2018–2020|M
 #lotus|Lotus|Лотус|lotus,лотус
@@ -3290,6 +3323,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >i|I|1|2023–|J
 #maextro|Maextro|Маэкстро|maextro,маэкстро
 >s800|S800|с800|2024–|F
+>v|V|ви|2026–|M
 >v680|V680|в680|2026–|M
 >v800|V800|в800|2026–|M
 #mahindra|Mahindra|Махиндра|mahindra,махиндра
@@ -3363,6 +3397,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #maxus|Maxus|Максус|maxus,максус
 >d60|D60|д60|2019–2023|D
 >d90|D90|д90 про|2017–2023|J
+>dana_v1|Dana V1|дана в1|2024–|M
 >euniq_5|EUNIQ 5|юник 5|2019–2022|M
 >euniq_6|EUNIQ 6|юник 6|2020–2023|D
 >g10|G10|г10|2013–|M
@@ -3376,7 +3411,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >mifa_5|MIFA 5|мифа 5|2022–2024|M
 >mifa_7|MIFA 7|мифа 7|2023–|M
 >mifa_9|MIFA 9|мифа 9|2021–|M
->t70|T70|т70|2019–2023
+>t70|T70|т70|2019–2023|J
 >t90|T90|т90|2021–2023|J
 >territory|Territory|территори|2022–|J
 >v70|V70|в70|2023–|M
@@ -3531,7 +3566,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 -S400 3.0 AT 4WD|3.0|p|367|76|8.5|2035|2013–
 >mb_sprinter|Sprinter|спринтер
 -2.1 CDI MT|2.1|d|143|75|8.5|2100|2006–
->mb_vito|Vito|вито|1996–
+>mb_vito|Vito|вито|1996–|M
 -2.1 CDI AT|2.1|d|136|70|7.5|2050|2014–
 >190|190 (W201)|190|1982–1993|D
 >190_sl|190 SL|190 сл|1955–1963|S
@@ -3664,12 +3699,17 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >metrocab_i|Metrocab I|метрокаб 1|1987–2000|E
 >metrocab_ii|Metrocab II (TTT)|метрокаб 2|2001–2006|E
 #mg|MG|Эм-Джи|mg,эм-джи
+>5|5||2013–|C
+-1.5 CVT|1.5|p|114|45|6.7|1230|2023–
+>hs|HS|хс|2018–|D
+-1.5T DCT|1.5|p|169|55|6.6|1523|2018–2024
+>zs|ZS|зс|2001–|C
+-1.5 CVT|1.5|p|114|45|7.2|1380|2019–
 >07|07||2026–|D
 >3|3||2011–|B
 >350|350||2010–2015|C
 >4_ev|4 EV|4 ев|2022–|C
 >4x|4X|4х|2026–|C
->5|5||2013–|C
 >5_ev|5 EV|5 ев|2020–|C
 >5_scorpio|5 Scorpio|5 скорпио|2022–2024|C
 >550|550||2009–2017|D
@@ -3682,7 +3722,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >es5|ES5|ес5|2024–|C
 >f|F|ф|1995–2002|S
 >gs|GS|джи эс|2015–2019|C
->hs|HS|хс|2018–|D
 >maestro|Maestro|маэстро|1983–1990|C
 >metro|Metro|метро|1982–1990|B
 >mga|MGA|мга|1955–1962|S
@@ -3702,7 +3741,6 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >u9|U9|ю9|2025–|J
 >xpower_sv|Xpower SV|хпауер св|2003–2005|S
 >zr|ZR|зр|2001–2005|C
->zs|ZS|зс|2001–|C
 >zt|ZT|зт|2001–2005|D
 #mia|Mia|Миа|mia,миа
 >electric|Electric|электрик|2011–2013|A
@@ -3787,8 +3825,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >i|i||2006–2013|A
 >i_miev|i-MiEV||2009–2015|A
 >jeep_j|Jeep J|джип|1953–1998|J
->l300|L300|л300|1979–1999
->l400|L400|л400|1995–2006
+>l300|L300|л300|1979–1999|M
+>l400|L400|л400|1995–2006|M
 >lancer_cargo|Lancer Cargo|лансер карго|2002–2019|C
 >lancer_evolution|Lancer Evolution|лансер эволюшн|1992–2016|C
 >lancer_ralliart|Lancer Ralliart|лансер раллиарт|2003–2012|C
@@ -4025,9 +4063,10 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >np300|NP300|np 300|2008–2015|J
 >nv100_clipper|NV100 Clipper|клиппер|2003–|M
 >nv200|NV200|нв200|2009–|M
->nv300|NV300|нв300|2016–2021
->nv350_caravan|NV350 Caravan|nv350 караван|2012–2021
+>nv300|NV300|нв300|2016–2021|M
+>nv350_caravan|NV350 Caravan|nv350 караван|2012–2021|M
 >nx_coupe|NX Coupe|нх купе|1990–1994|C
+>nx7|NX7|нх7|2026–|D
 >nx8|NX8|нх8|2026–|D
 >otti|Otti|отти|2005–2013|A
 >pao|Pao|пао|1989–1991|B
@@ -4038,7 +4077,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >presage|Presage|пресаж|1998–2009|M
 >presea|Presea|преси|1990–2000|C
 >president|President|президент|1973–2010|F
->primastar|Primastar|примастар|2002–
+>primastar|Primastar|примастар|2002–|M
 >primera|Primera|примера|1990–2008|D
 >pulsar|Pulsar|пульсар|1982–2018|C
 >qashqai_2|Qashqai+2|кашкай+2|2008–2013|C
@@ -4066,7 +4105,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >tiida|Tiida|тиида|2004–|C
 >tino|Tino|тино|1998–2003|M
 >titan|Titan|титан|2003–2024|J
->urvan|Urvan|урван|1986–2012
+>townstar|Townstar|таунстар|2022–|M
+>urvan|Urvan|урван|1986–2012|M
 >vanette|Vanette|ванэт|1978–2017|M
 >versa|Versa|верса|2006–|C
 >versa_note|Versa Note|верса нот|2013–2019|B
@@ -4103,7 +4143,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >ninety_eight|Ninety-Eight|89|1977–1996|E
 >omega|Omega|омега|1979–1984|C
 >series_60|Series 60|серия 60|1939–1948
->series_70|Series 70|серия 70|1939–1950
+>series_70|Series 70|серия 70|1939–1950|S
 >silhouette|Silhouette|силуэт|1989–2004|M
 >starfire|Starfire|старфайер|1961–1980|C
 >toronado|Toronado|торонадо|1966–1992|S
@@ -4252,7 +4292,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >106|106||1991–2004|A
 >107|107||2005–2014|A
 >108|108||2014–2021|A
->201|201||1929–1937
+>201|201||1929–1937|S
 >202|202||1938–1948
 >203|203||1948–1960
 >204|204||1965–1977|B
@@ -4288,7 +4328,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >806|806||1994–2002|M
 >807|807||2002–2014|M
 >bipper|Bipper|биппер|2008–2018|M
->expert|Expert|эксперт|1995–
+>expert|Expert|эксперт|1995–|M
 >ion|iOn|ион|2010–2020|A
 >landtrek|Landtrek|ландтрек|2020–|J
 >pick_up|Pick Up|пик ап|2017–2021|J
@@ -4300,7 +4340,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >hemera|Hemera|хемера|2009–|S
 >speedster_ii|Speedster II|спидстер 2|2005–|S
 #piaggio|Piaggio|Пьяджо|piaggio,пьяджо
->porter|Porter|портер|1992–2021
+>porter|Porter|портер|1992–2021|M
 #pierce_arrow|Pierce-Arrow|Пирс-Арроу|pierce-arrow,пирс-арроу
 >twelve|Twelve|твелв|1932–1938|F
 #plymouth|Plymouth|Плимут|plymouth,плимут
@@ -4438,7 +4478,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 #ram|Ram|Рам|ram,рам
 >1500|1500||2011–|J
 >dakota|Dakota|дакота|2025–|J
->promaster_city|ProMaster City|промастер сити|2014–
+>promaster_city|ProMaster City|промастер сити|2014–|M
 >rampage|Rampage|рэмпейдж|2023–|J
 >v1000|V1000|ви 1000|2022–2023|M
 #ravon|Ravon|Ravon|равон
@@ -4540,7 +4580,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >symbol|Symbol|симбол|1999–2021|B
 >taliant|Taliant|талиант|2021–|B
 >talisman|Talisman|талисман|2015–2022|D
->trafic|Trafic|трафик|1980–
+>trafic|Trafic|трафик|1980–|M
 >triber|Triber|трибер|2019–|M
 >twingo|Twingo|твинго|1993–|A
 >twizy|Twizy|твизи|2011–2023|A
@@ -4690,7 +4730,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >fura|Fura|фура|1982–1986|B
 >ibiza|Ibiza|ибица|1984–|B
 >ibiza_cupra|Ibiza Cupra|ибица купра|1996–2018|B
->inca|Inca|инка|1995–2003
+>inca|Inca|инка|1995–2003|M
 >leon|Leon|леон|1999–|C
 >leon_cupra|Leon Cupra|леон купра|1999–2020|C
 >malaga|Malaga|малага|1985–1993|C
@@ -4714,6 +4754,8 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >c52|C52|ц52|2007–2010|C
 >c61|C61|с61|2007–2010|C
 >c81|C81|ц81|2005–2010|C
+#shay_motors|Shay Motors|Шэй Mоторс|shay motors,шэй mоторс
+>model_a|Model A|модел а|1979–1982|S
 #shuanghuan|ShuangHuan|Шунган|shuanghuan,шунган
 >noble|Noble|нобл|2006–2016|A
 >sceo|Sceo|сцео|2006–2011|D
@@ -4740,7 +4782,9 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >yeti|Yeti|йети|2009–2018|B
 -1.8 TSI DSG 4WD|1.8|p|152|60|8.0|1495|2009–2017
 >100_series|100 Series|100 серия|1969–1991|C
+>100_110|100/110||1969–1980|C
 >105_120|105, 120||1976–1990|B
+>105_120_125_130|105/120/125/130||1976–1990|B
 >1200|1200||1952–1973|C
 >440|440||1955–1959|C
 >445|445||1957–1959|C
@@ -4922,7 +4966,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >beidouxing|Beidouxing|бейдусинг|2004–2022|B
 >cappuccino|Cappuccino|каппучино|1990–1997|A
 >cara|Cara|кара|1993–1995|S
->carry|Carry|карри|1979–2005
+>carry|Carry|карри|1979–2005|M
 >celerio|Celerio|целерио|2014–|A
 >cervo|Cervo|серво|1977–2011|A
 >ciaz|Ciaz|циаз|2014–2025|B
@@ -5030,6 +5074,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >t4l|T4L|т4л|2026–|C
 >t7|T7|т7|2025–|C
 >t8|T8|т8|2025–|D
+>t9|T9|т9|2026–|D
 #tenet_plus|Tenet Plus|Тенет Плюс|tenet plus,тенет плюс
 >l4|L4|л4|2026–|C
 >l6|L6|л6|2026–|C
@@ -5245,6 +5290,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >starlet_cross|Starlet Cross|старлет кросс|2024–|B
 >succeed|Succeed|саксид|2002–2020|C
 >supra|Supra|супра|1986–|S
+>t100|T100|т100|1992–1998|J
 >tacoma|Tacoma|такома|1995–|J
 >tank|Tank|танк|2016–2020|M
 >tercel|Tercel|терсел|1978–1999|B
@@ -5338,6 +5384,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >3160|3160||1997–2004|J
 >3162_simbir|3162 Simbir|3162 симбир|1999–2005|J
 >astero|Астеро||1997–1999|J
+>pikap|Пикап||2008–|J
 #ultima|Ultima|Ультима|ultima,ультима
 >can_am|Can-Am|кан-ам|2001–2016|S
 >gtr|GTR|гтр|1999–2016|S
@@ -5370,7 +5417,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >viceroy|Viceroy|вайсрой|1978–1982|E
 >victor|Victor|виктор|1963–1978|D
 >viva|Viva|вива|1963–1979|C
->vivaro|Vivaro|виваро|2019–
+>vivaro|Vivaro|виваро|2019–|M
 >vxr8|VXR8|вхр8|2007–2009|S
 >zafira|Zafira|зафира|1999–2018|M
 #vector|Vector|Вектор|vector,вектор
@@ -5388,7 +5435,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >vx6|VX6|вх6|2023–|C
 >t60|Т60||2018–|C
 #vgv|VGV|ВГВ|vgv,вгв
->bolden|Bolden|болден|2024–
+>bolden|Bolden|болден|2024–|J
 >u70|U70|ю70|2019–2022|D
 >u70_pro|U70 Pro|ю70 про|2022–|D
 >u75_plus|U75 Plus|ю75 плюс|2021–|D
@@ -5453,14 +5500,18 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >id_5|ID.5|ид5|2021–|C
 >id_6|ID.6|ид6|2021–|D
 >id_7|ID.7|ид7|2023–|D
->id_buzz|ID.Buzz|идбузз|2022–
+>id_aura_t6|ID.Aura T6|айди аура т6|2026–|D
+>id_buzz|ID.Buzz|идбузз|2022–|M
 >id_cross|ID.Cross|айди кросс|2026–|B
+>id_era_5s|ID.Era 5S|айди эра 5 эс|2026–|D
+>id_era_5x|ID.Era 5X|айди эра 5икс|2026–|D
 >id_era_8x|ID.Era 8X|айди эра 8 икс|2026–
 >id_era_9x|ID.Era 9X|айди эра 9икс|2026–|E
 >id_unyx|ID.Unyx|айдиюнэкс|2024–2025|C
 >id_unyx_06|ID.Unyx 06|айдиюнэкс 06|2025–|C
 >id_unyx_07|ID.Unyx 07|айдиюнэкс 07|2025–|C
 >id_unyx_08|ID.Unyx 08|айдиюнэкс 08|2025–|E
+>id_unyx_09|ID.Unyx 09|айдиюнэкс 09|2026–|E
 >iltis|Iltis|илтис|1978–1988|J
 >k70|K70|к70|1970–1974|C
 >karmann_ghia|Karmann-Ghia|карманн-гиа|1955–1974|S
@@ -5576,9 +5627,10 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >estina|Estina|эстина|2008–2013|C
 >tingo|Tingo|тинго|2010–2014|C
 #voyah|Voyah|Воя|voyah,воя
+>free|Free|фри|2021–|E
+-1.5 EREV|1.5|h|490|56|10.5|2290|2022–2025
 >courage|Courage|кураж|2024–|D
 >dream|Dream|дрим|2021–|M
->free|Free|фри|2021–|E
 >passion|Passion|пассион|2022–|E
 >passion_s|Passion S|пассион с|2026–|E
 >taishan|Taishan|тайшан|2025–|F
@@ -5614,6 +5666,7 @@ export const VEHICLE_CATALOG_RAW = `#212|212|212|212
 >latte|Latte|латте|2021–2025|D
 >macchiato|Macchiato|маккиато|2021–2023|E
 >mocca|Mocca|мокка|2021–|E
+>v8x|V8X|в8икс|2026–|E
 >v9x|V9X|в9икс|2026–|F
 >vv5|VV5|вв5|2017–2021|D
 >vv6|VV6|вв6|2018–2021|C
