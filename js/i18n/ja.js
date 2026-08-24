@@ -631,4 +631,5 @@ export default {
   'region.IN': 'インド',
   'region.CN': '中国',
   'card.russian_only': 'カード決済はロシアの銀行カードのみ対応しています。それ以外のカードは暗号資産をご利用ください。',
+  'share.reward_friend': '友だちもリンクを開くとすぐに {days} 日間の Pro を獲得します。',
 };

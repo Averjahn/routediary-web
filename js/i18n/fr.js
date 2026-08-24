@@ -454,4 +454,5 @@ export default {
   'region.IN': 'Inde',
   'region.CN': 'Chine',
   'card.russian_only': "Le paiement par carte n'accepte que les cartes de banques russes. Pour les autres cartes, utilisez la crypto.",
+  'share.reward_friend': "Votre ami reçoit aussi {days} jours de Pro dès qu'il ouvre votre lien.",
 };

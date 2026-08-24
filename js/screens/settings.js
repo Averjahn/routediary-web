@@ -1013,6 +1013,7 @@ async function openShare() {
 
     <div class="card" style="margin-top:16px;">
       <div class="muted" style="font-size:13px;">${t('share.reward', { days: sync.rewardDays })}</div>
+      <div class="muted" style="font-size:13px;padding-top:4px;">${t('share.reward_friend', { days: sync.inviteeRewardDays })}</div>
       ${sync.signedIn ? `
         <div class="settings-row" style="margin-top:8px;">
           <span data-i18n="share.invited_count"></span><b>${sync.invitedCount}</b></div>

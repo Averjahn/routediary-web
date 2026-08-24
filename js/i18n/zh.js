@@ -454,4 +454,5 @@ export default {
   'region.IN': '印度',
   'region.CN': '中国',
   'card.russian_only': '银行卡支付仅支持俄罗斯银行卡。其他国家的卡请使用加密货币支付。',
+  'share.reward_friend': '好友打开您的链接后，也会立即获得 {days} 天 Pro。',
 };

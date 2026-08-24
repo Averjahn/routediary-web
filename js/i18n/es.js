@@ -454,4 +454,5 @@ export default {
   'region.IN': 'India',
   'region.CN': 'China',
   'card.russian_only': 'El pago con tarjeta solo acepta tarjetas de bancos rusos. Para otras tarjetas, use el pago con criptomonedas.',
+  'share.reward_friend': 'Tu amigo también recibe {days} días de Pro en cuanto abre tu enlace.',
 };

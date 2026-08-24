@@ -138,6 +138,7 @@ export function createSync({ db, request, getSetting, setSetting }) {
     await setSetting('syncInvitedCount', res.body.invitedCount);
     await setSetting('syncProUntil', res.body.proUntil || undefined);
     await setSetting('syncRewardDays', res.body.rewardDays);
+    await setSetting('syncInviteeRewardDays', res.body.inviteeRewardDays);
     // Время сервера из тела ответа: заголовок Date при межсайтовом запросе
     // браузер прячет, а тело доходит всегда.
     await import('./serverClock.js')
@@ -180,6 +181,7 @@ export function createSync({ db, request, getSetting, setSetting }) {
       invitedCount: (await getSetting('syncInvitedCount')) || 0,
       proUntil: await getSetting('syncProUntil'),
       rewardDays: (await getSetting('syncRewardDays')) || 90,
+      inviteeRewardDays: (await getSetting('syncInviteeRewardDays')) || 30,
     };
   }
 
