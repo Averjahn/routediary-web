@@ -535,6 +535,8 @@ canvas.chart { width: 100%; display: block; }
 .pay-plan-title { font-size: 15px; font-weight: 700; }
 .pay-plan-price { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
 .pay-plan-note { font-size: 12px; color: var(--text-secondary); }
+/* Курс ЦБ, а не цена — поэтому мельче и тише подписи, а не рядом с суммой. */
+.pay-plan-approx { display: block; font-size: 11px; color: var(--text-secondary); opacity: 0.7; }
 
 .pay-legal {
   margin: 18px 0 0;

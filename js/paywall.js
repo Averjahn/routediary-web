@@ -18,6 +18,7 @@ import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
 import { paymentOptions, openTonPayment, openStarsPayment, formatTon } from './tonPay.js';
 import { openCardPayment } from './cardPay.js';
+import { approxInCurrency } from './exchangeRates.js';
 
 /**
  * @param {object} opts
@@ -44,10 +45,17 @@ export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}
       <div class="pay-plans">${pay.plans.map(p => planCardFor(method, p)).join('')}</div>
     </div>`;
 
+  // Заряд всегда идёт в рублях — курс здесь ничего не решает, только
+  // подписывает рядом, сколько это примерно в деньгах человека. Для самих
+  // рублей и когда курса ещё не было ни разу approx возвращает null,
+  // и вторая строка просто не рисуется.
+  const approxPrice = (rub) => approxInCurrency(rub, AppState.currency, pay?.rubRates);
+
   const cardPlanCard = (plan) => `
     <button class="pay-plan card" data-card="${plan.id}">
       <span class="pay-plan-title">${t('ton.plan.' + plan.id)}</span>
       <span class="pay-plan-price">${plan.rub.toLocaleString('ru-RU')} ₽</span>
+      ${approxPrice(plan.rub) ? `<span class="pay-plan-approx">${approxPrice(plan.rub)}</span>` : ''}
       <span class="pay-plan-note">${plan.days >= 36500 ? t('card.one_time') : t('ton.for_days', { days: plan.days })}</span>
     </button>`;
 

@@ -48,11 +48,15 @@ async function api(method, path, body) {
 export async function paymentOptions() {
   const res = await api('GET', '/api/pay/plans');
   if (!res.ok) return null;
-  const { ton, stars, card, plans, cardPlans } = res.body;
+  const { ton, stars, card, plans, cardPlans, rubRates } = res.body;
   // Звёзды существуют только внутри Telegram: вне его окно оплаты открыть нечем.
   return {
     plans, ton: !!ton?.enabled, stars: !!stars?.enabled && inTelegram(),
     card: !!card?.enabled, cardPlans: cardPlans || [],
+    // Курс — только чтобы подписать рублёвую цену в валюте человека.
+    // Сервер мог не сходить в сеть за курсом ни разу — тогда пустой объект,
+    // и подпись просто не появится.
+    rubRates: rubRates || {},
   };
 }
 
