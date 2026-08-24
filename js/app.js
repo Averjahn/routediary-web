@@ -1,5 +1,5 @@
 import { loadSettings, AppState } from './state.js';
-import { applyI18nTree, keepScroll } from './ui.js';
+import { applyI18nTree, keepScroll, closeAllModals } from './ui.js';
 import { t } from './i18n.js';
 import { icon } from './icons.js';
 import { applyTheme } from './theme.js';
@@ -119,6 +119,12 @@ const TAB_ORDER = ['map', 'trips', 'car', 'settings', 'stats'];
 
 async function switchTab(tab, force) {
   if (tab === currentTab && !force) return;
+  // Открытое окно живёт вне экранов и смены вкладки не замечает: оно
+  // осталось бы висеть поверх новой, закрыв собой и таббар — уйти было бы
+  // уже нечем, а со стороны это выглядит как «экран не прокручивается».
+  // Только при настоящей смене вкладки: force — это перерисовка текущей,
+  // и закрывать на ней только что открытое окно было бы неожиданно.
+  if (tab !== currentTab) closeAllModals();
   // Направление: вкладка правее — экран въезжает справа. Так движение
   // подсказывает, куда переместился человек, а не просто украшает.
   const from = TAB_ORDER.indexOf(currentTab);

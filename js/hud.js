@@ -190,6 +190,8 @@ export function displaySpeed(kmh, units) {
 // --- Экран ---
 
 let overlay = null;
+// Панель ещё создаётся: overlay пуст, но открывать вторую уже нельзя.
+let opening = false;
 let watchId = null;
 let wakeLock = null;
 let timer = null;
@@ -207,13 +209,27 @@ export function isOpen() {
  * Возвращает false, если геолокация недоступна — звать её незачем.
  */
 export async function openHud() {
-  if (overlay) return true;
+  // Проверка стоит перед await'ами, а функция асинхронная: между ней и
+  // созданием панели overlay ещё пуст, и второе нажатие проходило её
+  // насквозь. Получались ДВЕ панели во весь экран, а ссылка оставалась
+  // только на вторую — первая становилась неснимаемой и закрывала собой
+  // всё приложение, включая собственную кнопку закрытия.
+  if (overlay || opening) return true;
   if (!('geolocation' in navigator)) return false;
 
-  const mirrored = (await getSetting(MIRROR_KEY, true)) !== false;
-  const meter = createSpeedMeter();
+  let mirrored, meter, style;
+  opening = true;
+  try {
+    mirrored = (await getSetting(MIRROR_KEY, true)) !== false;
+    meter = createSpeedMeter();
+    style = await getHudStyle();
+  } finally {
+    // Снимаем сразу после последнего await: дальше до появления overlay
+    // идёт только синхронный код, прерваться там уже нечему. А через
+    // finally флаг не залипнет, если чтение настроек не удалось.
+    opening = false;
+  }
 
-  const style = await getHudStyle();
   overlay = document.createElement('div');
   overlay.className = `hud hud-font-${style.font}`;
   overlay.style.setProperty('--hud-color', HUD_COLORS[style.color].hex);
@@ -354,6 +370,16 @@ export async function openHud() {
 }
 
 export function closeHud() {
+  // Блокировку прокрутки снимаем безусловно, ДО всех проверок: если
+  // панели уже нет, а класс остался, на body навсегда висит
+  // overflow:hidden — страница выглядит совершенно обычной и просто не
+  // прокручивается, без единой подсказки почему.
+  document.body.classList.remove('hud-open');
+  // Панель во весь экран, поверх всего (z-index 9000). Осиротевшая — та,
+  // на которую потеряна ссылка, — закрыла бы приложение целиком, и закрыть
+  // её было бы уже нечем: её собственная кнопка зовёт этот же closeHud().
+  document.querySelectorAll('.hud').forEach(node => { if (node !== overlay) node.remove(); });
+
   if (!overlay) return;
   clearInterval(timer);
   clearInterval(roadTimer);
@@ -369,7 +395,6 @@ export function closeHud() {
 
   overlay.remove();
   overlay = null;
-  document.body.classList.remove('hud-open');
 }
 
 async function requestWakeLock() {

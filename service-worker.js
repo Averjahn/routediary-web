@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v50';
+const CACHE_NAME = 'avtopuls-v51';
 const APP_SHELL = [
   './',
   './index.html',

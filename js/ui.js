@@ -17,14 +17,26 @@ export function applyI18nTree(root) {
   });
 }
 
-let modalStack = [];
+/**
+ * Модальные окна.
+ *
+ * Стопка окон — это сами узлы внутри #modal-root, а не массив рядом с ними.
+ * Отдельный массив уже расходился с деревом: окно уходило со страницы мимо
+ * closeModal() (или, наоборот, оставалось на ней), и следующее закрытие
+ * снимало не то окно. Наружу это выглядело не как «сломались окна», а как
+ * «экран почему-то не прокручивается»: сверху висел слой во весь экран.
+ * Одно место правды убирает весь этот класс ошибок разом.
+ */
+
+function modalRoot() {
+  return document.getElementById('modal-root');
+}
 
 export function openModal(contentHtml, { onMount, onClose } = {}) {
-  const root = document.getElementById('modal-root');
+  const root = modalRoot();
   const overlay = el(`<div class="modal-overlay"><div class="modal-sheet">${contentHtml}</div></div>`);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
   root.appendChild(overlay);
-  modalStack.push(overlay);
   // Обработчик закрытия живёт на самом окне: closeModal() снимает верхнее
   // окно стопки и не знает, чьё оно. Без этого тот, кто ждёт ответа от окна
   // (например, «создать аккаунт и продолжить покупку»), не узнаёт о закрытии
@@ -35,11 +47,40 @@ export function openModal(contentHtml, { onMount, onClose } = {}) {
   return overlay;
 }
 
+/** Закрывает верхнее окно — то, которое человек и видит сверху. */
 export function closeModal() {
-  const overlay = modalStack.pop();
+  const overlay = modalRoot()?.lastElementChild;
   if (!overlay) return;
   overlay.remove();
   try { overlay._onClose?.(); } catch { /* закрытие не должно ломать вызвавшего */ }
+}
+
+/**
+ * Закрывает все окна разом — при уходе с экрана.
+ *
+ * Окно лежит в #modal-root, снаружи экранов, и смены вкладки само не
+ * замечает: без этого оно остаётся висеть поверх новой вкладки и
+ * перекрывает её вместе с таббаром, так что уйти оттуда уже нечем.
+ */
+export function closeAllModals() {
+  const root = modalRoot();
+  if (!root) return;
+  // Ограничение на случай, если чей-то onClose откроет окно заново:
+  // выйти из цикла важнее, чем закрыть непременно всё.
+  for (let guard = 0; guard < 50 && root.lastElementChild; guard++) closeModal();
+}
+
+// Escape закрывает верхнее окно: на настольном браузере это первое, что
+// пробует человек, и без этого окно выглядит зависшим. Пока открыта
+// проекция на стекло (она выше окон), клавиша принадлежит ей.
+//
+// Проверка среды нужна не для красоты: модуль импортируется и в тестах на
+// node, где document нет вовсе, и подписка на уровне модуля роняла бы там
+// весь файл целиком — вместе с теми, кто тянет отсюда совсем другое.
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.body.classList.contains('hud-open')) closeModal();
+  });
 }
 
 export function toast(message, { actionLabel, onAction, duration = 5000 } = {}) {
