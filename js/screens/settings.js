@@ -8,7 +8,10 @@ import { t, getLang, LANGUAGES, LANGUAGE_ORDER } from '../i18n.js';
 import { REGION_ORDER } from '../vehicleRegion.js';
 import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escapeHtml } from '../ui.js';
 import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
-import { HUD_COLORS, HUD_FONTS, HUD_DEFAULT_COLOR, HUD_DEFAULT_FONT, getHudStyle, setHudStyle } from '../hud.js';
+import {
+  HUD_COLORS, HUD_FONTS, HUD_DEFAULT_COLOR, HUD_DEFAULT_FONT, getHudStyle, setHudStyle,
+  MOTION_KEY, motionAvailable, requestMotionAccess,
+} from '../hud.js';
 import { applyDigits } from '../segmentDigits.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
 import { currentTier, TIER, TEST_MODE, resetPurchase, hasFeature } from '../subscription.js';
@@ -55,7 +58,7 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle, savedRegion] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle, savedRegion, motionAssist] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
@@ -69,6 +72,7 @@ export async function refresh() {
     // Сохранённая страна, а не действующая: в списке надо показать «авто»,
     // если человек её не выбирал, — иначе он не отличит свой выбор от догадки.
     getSetting('region', null),
+    getSetting(MOTION_KEY, false),
   ]);
   const provider = getMapProvider();
   // Замочки видны только тем, кому функция реально закрыта: у Про (и в
@@ -104,6 +108,13 @@ export async function refresh() {
         ${Object.keys(HUD_FONTS).map(id => hudFontSwatch(id, hudStyle.font === id, styleLocked)).join('')}
       </div>
       <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="hud.style_hint"></div>
+      ${motionAvailable() ? `
+        <div class="settings-row" style="margin-top:10px;">
+          <span data-i18n="hud.motion"></span>
+          <input type="checkbox" id="set-hud-motion" style="width:auto;"${motionAssist ? ' checked' : ''}>
+        </div>
+        <div class="muted" style="font-size:12px;" data-i18n="hud.motion_hint"></div>
+      ` : ''}
     </div>
 
     <div class="section-title" data-i18n="settings.section_regional"></div>
@@ -464,6 +475,25 @@ function bind(body) {
     const vehicle = await getPrimaryVehicle();
     if (vehicle) await recalcIntervals(vehicle, e.target.checked);
     toast(t('settings.severe_saved'));
+  });
+
+  // Разрешение на датчик спрашивается ЗДЕСЬ, а не при открытии проекции:
+  // на iOS запрос обязан идти прямо из касания, а проекция открывается
+  // асинхронно — к тому моменту жест уже не считается, и запрос пропал бы
+  // молча, причём второй раз его не покажут.
+  body.querySelector('#set-hud-motion')?.addEventListener('change', async (e) => {
+    if (!e.target.checked) {
+      await setSetting(MOTION_KEY, false);
+      refreshKeepingScroll();
+      return;
+    }
+    const granted = await requestMotionAccess();
+    await setSetting(MOTION_KEY, granted);
+    if (!granted) {
+      e.target.checked = false;
+      toast(t('hud.motion_denied'));
+    }
+    refreshKeepingScroll();
   });
 
   body.querySelector('#set-road').addEventListener('change', async (e) => {

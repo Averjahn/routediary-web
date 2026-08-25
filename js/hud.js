@@ -4,6 +4,7 @@ import { getSetting, setSetting } from './db.js';
 import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadData.js';
 import { overspeedState } from './roadRules.js';
 import { applyDigits } from './segmentDigits.js';
+import { createMotionBridge } from './motionSpeed.js';
 
 /**
  * Проекция скорости на лобовое стекло.
@@ -217,6 +218,9 @@ export function displaySpeed(kmh, units) {
 let overlay = null;
 // Панель ещё создаётся: overlay пуст, но открывать вторую уже нельзя.
 let opening = false;
+// Мост по акселерометру и подписка на него — живут ровно пока открыта панель.
+let bridge = null;
+let onMotion = null;
 let watchId = null;
 let wakeLock = null;
 let timer = null;
@@ -224,6 +228,42 @@ let roadTimer = null;
 let hideControlsTimer = null;
 
 const MIRROR_KEY = 'hudMirror';
+
+/**
+ * Достраивать ли скорость датчиком между отсчётами спутников.
+ *
+ * Выключено по умолчанию, и это не осторожность ради осторожности:
+ * на iOS датчик требует отдельного разрешения, а работает всё это только
+ * когда телефон ЗАКРЕПЛЁН. Человек, который держит телефон в руке,
+ * получил бы бодро скачущее и неверное число вместо честно устаревшего.
+ * Включается осознанно, из настроек, где рядом написано про держатель.
+ */
+export const MOTION_KEY = 'hudMotionAssist';
+
+/** Есть ли датчик в принципе. */
+export function motionAvailable() {
+  return typeof DeviceMotionEvent !== 'undefined';
+}
+
+/**
+ * Спросить разрешение на датчик.
+ *
+ * Вызывать ТОЛЬКО прямо из обработчика касания: на iOS 13+ запрос вне
+ * жеста молча отклоняется, а второй раз его уже не покажут. Поэтому
+ * переключатель в настройках зовёт эту функцию синхронно, а проекция
+ * потом лишь подписывается на события — разрешение к тому моменту есть.
+ */
+export async function requestMotionAccess() {
+  if (!motionAvailable()) return false;
+  const ask = DeviceMotionEvent.requestPermission;
+  if (typeof ask !== 'function') return true;   // Android и настольные — без спроса
+  try {
+    return (await ask.call(DeviceMotionEvent)) === 'granted';
+  } catch {
+    // На iOS запрос вне жеста бросает исключение. Отказ — это отказ.
+    return false;
+  }
+}
 
 export function isOpen() {
   return !!overlay;
@@ -297,7 +337,19 @@ export async function openHud() {
   let road = { limit: null, signal: null };
 
   function render() {
-    const kmh = meter.read(Date.now());
+    const now = Date.now();
+    const gpsKmh = meter.read(now);
+    // Мост достраивает скорость между отсчётами спутников. Он сам решает,
+    // когда молчать: без калибровки, на несвежих данных и при слабом
+    // сопоставлении возвращает то же, что дал приёмник. Здесь только
+    // выбираем — и падаем обратно на GPS при малейшем сомнении.
+    let kmh = gpsKmh;
+    if (bridge && gpsKmh != null) {
+      const guess = bridge.read(now);
+      if (guess && guess.bridged && Number.isFinite(guess.speedMs)) {
+        kmh = guess.speedMs * MS_TO_KMH;
+      }
+    }
     const { value, unit } = displaySpeed(kmh, AppState.units);
     applyDigits(valueEl, value, style.font);
     unitEl.textContent = unit;
@@ -327,7 +379,27 @@ export async function openHud() {
   }
   render();
 
-  timer = setInterval(render, 250);
+  // Датчик подключаем, только если человек включил его сам и разрешение
+  // уже дано: спрашивать отсюда нельзя, вызов вне жеста на iOS пропадёт.
+  if (await getSetting(MOTION_KEY, false) === true && motionAvailable()) {
+    bridge = createMotionBridge();
+    onMotion = (e) => {
+      // acceleration — уже без гравитации, её считает сама система по
+      // гироскопу, и делает это заведомо лучше любого нашего фильтра.
+      // Без гироскопа поле пустое: тогда достраивать нечем, и это честно.
+      const a = e.acceleration;
+      const withG = e.accelerationIncludingGravity;
+      if (!a || !withG || a.x == null || withG.x == null) return;
+      bridge.addMotion(Date.now(),
+        [a.x, a.y, a.z],
+        [withG.x - a.x, withG.y - a.y, withG.z - a.z]);
+    };
+    window.addEventListener('devicemotion', onMotion);
+  }
+
+  // Чаще, когда есть чему меняться между отсчётами: смысл датчика в том,
+  // что цифра идёт за торможением, а не ждёт следующей секунды.
+  timer = setInterval(render, bridge ? 100 : 250);
 
   // Дорожные данные подтягиваются редко: раз в несколько секунд, и только
   // когда человек включил их сам. Внутри проверяется, не загружен ли квадрат
@@ -349,6 +421,13 @@ export async function openHud() {
         speed: pos.coords.speed,
         accuracy: pos.coords.accuracy,
       });
+
+      // Мост держится за то, что показано, а не за сырой отсчёт: иначе в
+      // момент прихода спутников цифра дёргалась бы на разницу между ними.
+      if (bridge) {
+        const shown = meter.read(Date.now());
+        if (shown != null) bridge.addFix(pos.timestamp || Date.now(), shown / MS_TO_KMH);
+      }
 
       position = { lat: pos.coords.latitude, lon: pos.coords.longitude };
       if (Number.isFinite(pos.coords.heading)) heading = pos.coords.heading;
@@ -404,6 +483,15 @@ export function closeHud() {
   // на которую потеряна ссылка, — закрыла бы приложение целиком, и закрыть
   // её было бы уже нечем: её собственная кнопка зовёт этот же closeHud().
   document.querySelectorAll('.hud').forEach(node => { if (node !== overlay) node.remove(); });
+  // Датчик отписываем тоже безусловно и по той же причине: подписка
+  // переживёт закрытие панели и будет будить процессор всю дорогу,
+  // ничего при этом не показывая. Снаружи это видно только как
+  // подозрительно быстро садящаяся батарея.
+  if (onMotion) {
+    window.removeEventListener('devicemotion', onMotion);
+    onMotion = null;
+  }
+  bridge = null;
 
   if (!overlay) return;
   clearInterval(timer);
