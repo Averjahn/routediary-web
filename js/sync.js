@@ -181,7 +181,10 @@ export function createSync({ db, request, getSetting, setSetting }) {
       invitedCount: (await getSetting('syncInvitedCount')) || 0,
       proUntil: await getSetting('syncProUntil'),
       rewardDays: (await getSetting('syncRewardDays')) || 90,
-      inviteeRewardDays: (await getSetting('syncInviteeRewardDays')) || 30,
+      // Именно ??, а не ||: награда приглашённому сейчас нулевая, и «||»
+      // подставил бы вместо честного нуля прежние тридцать дней — экран
+      // обещал бы то, чего сервер уже не выдаёт.
+      inviteeRewardDays: (await getSetting('syncInviteeRewardDays')) ?? 0,
     };
   }
 
