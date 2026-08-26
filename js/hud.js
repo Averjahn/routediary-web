@@ -89,8 +89,19 @@ export async function setHudStyle({ color, font }) {
 }
 
 // Точность хуже 50 м — то же ограничение, что и в записи маршрута:
-// по таким данным скорость получается фантастической.
+// по таким данным скорость, посчитанная ПО КООРДИНАТАМ, получается
+// фантастической.
 const ACCURACY_LIMIT_M = 50;
+
+// Отдельный, куда более мягкий порог для скорости от самого приёмника.
+//
+// Он меряет её по доплеровскому сдвигу частоты, а не по разности точек,
+// поэтому обычная городская погрешность места (60–150 м среди домов) на
+// скорость почти не влияет. Но связь всё же есть на краю: точность в
+// сотни метров означает, что спутников почти не видно, — а без них не
+// сойдётся и решение по скорости. Здесь проходит граница между «место
+// знаем плохо, скорость знаем хорошо» и «не знаем ничего».
+const SPEED_ACCURACY_LIMIT_M = 200;
 
 // Дольше этого без свежих данных — показываем прочерки вместо числа.
 const STALE_MS = 5000;
@@ -141,6 +152,7 @@ function metersBetween(a, b) {
  */
 export function createSpeedMeter({
   accuracyLimitM = ACCURACY_LIMIT_M,
+  speedAccuracyLimitM = SPEED_ACCURACY_LIMIT_M,
   staleMs = STALE_MS,
   smoothing = SMOOTHING,
 } = {}) {
@@ -154,22 +166,35 @@ export function createSpeedMeter({
    */
   function update(sample) {
     if (!sample || !Number.isFinite(sample.timestamp)) return false;
-    if (Number.isFinite(sample.accuracy) && sample.accuracy > accuracyLimitM) return false;
+
+    // Точность КООРДИНАТЫ и точность СКОРОСТИ — разные вещи, и это главное
+    // здесь. Приёмник меряет скорость по доплеровскому сдвигу частоты, а не
+    // по разности двух точек: в городе среди домов точность места легко
+    // уходит за сотню метров, а скорость при этом остаётся верной до
+    // десятых долей м/с.
+    //
+    // Раньше порог точности отбрасывал ВЕСЬ отсчёт, вместе с исправной
+    // доплеровской скоростью — отсюда и брались прочерки на ровном месте,
+    // особенно в городе. Теперь порог сторожит только тот путь, где
+    // погрешность места действительно превращается в погрешность скорости:
+    // расчёт по двум координатам.
+    const placeIsAccurate = !Number.isFinite(sample.accuracy) || sample.accuracy <= accuracyLimitM;
+    const fixIsUsable = !Number.isFinite(sample.accuracy) || sample.accuracy <= speedAccuracyLimitM;
 
     let speedMs = null;
-
-    // Скорость от приёмника точнее посчитанной по двум точкам: она берётся
-    // из доплеровского сдвига, а не из разности координат с их погрешностью.
-    if (Number.isFinite(sample.speed) && sample.speed >= 0) {
+    if (fixIsUsable && Number.isFinite(sample.speed) && sample.speed >= 0) {
       speedMs = sample.speed;
-    } else if (lastFix) {
+    } else if (placeIsAccurate && lastFix) {
       const dtSec = (sample.timestamp - lastFix.timestamp) / 1000;
       if (dtSec > 0 && dtSec <= MAX_GAP_S) {
         speedMs = metersBetween(lastFix, sample) / dtSec;
       }
     }
 
-    lastFix = sample;
+    // Опорной точкой для расчёта по расстоянию становится только та, которой
+    // можно верить. Неточную запоминать нельзя: следующий отсчёт посчитал бы
+    // расстояние от заведомо кривого места и выдал бы фантастическую скорость.
+    if (placeIsAccurate) lastFix = sample;
     if (speedMs == null || speedMs > MAX_PLAUSIBLE_MS) return false;
 
     if (smoothed == null) {
@@ -510,18 +535,98 @@ export function closeHud() {
   overlay = null;
 }
 
+/**
+ * Экран не должен гаснуть, пока открыта проекция.
+ *
+ * Способ первый — Screen Wake Lock API. Он правильный, но в Safari появился
+ * только в iOS 16.4, а приложение живёт и на более старых айфонах: там
+ * `navigator.wakeLock` отсутствует, и раньше это молча означало «экран
+ * погаснет через минуту». Для проекции на стекло это не мелочь, а отказ
+ * функции: водителю приходится разблокировать телефон на ходу — ровно то,
+ * ради чего проекция и делалась.
+ *
+ * Способ второй, запасной — беззвучное видео в цикле. Пока на странице
+ * проигрывается видео, система считает, что человек его смотрит, и экран
+ * не гасит. Приём старый и общеизвестный, работает с iOS 10.
+ *
+ * Видео тут своё, а не из библиотеки: два кадра чёрного 64×64, полтора
+ * килобайта, сгенерировано ffmpeg и вшито прямо сюда. Тянуть ради этого
+ * зависимость или отдельный файл — дороже самого файла.
+ *
+ * `muted` + `playsinline` обязательны: без первого iOS не даст запустить
+ * без нажатия, без второго — развернёт на весь экран поверх проекции.
+ */
+const KEEP_AWAKE_MP4 = 'data:video/mp4;base64,' +
+  'AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMsbW9vdgAAAGxtdmhkAAAAAAAAAAAA' +
+  'AAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA' +
+  'AABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlZ0cmFrAAAAXHRraGQAAAADAAAA' +
+  'AAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAA' +
+  'AAAAAAAAAABAAAAAAEAAAABAAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAA' +
+  'AAHObWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZp' +
+  'ZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABeW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAA' +
+  'ACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAATlzdGJsAAAAuXN0c2QAAAAAAAAA' +
+  'AQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAEAAQABIAAAASAAAAAAAAAABFUxhdmM2' +
+  'Mi4yOC4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAe/+EAF2dCwB7ZBCbARAAA' +
+  'AwAEAAADAAg8WLkgAQAFaMuDyyAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKcAAAAAAA' +
+  'AAAYc3R0cwAAAAAAAAABAAAAAgAAQAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAA' +
+  'AAEAAAABAAAAAgAAAAEAAAAcc3RzegAAAAAAAAAAAAAAAgAAApIAAAAKAAAAFHN0Y28AAAAAAAAA' +
+  'AQAAA1wAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAA' +
+  'AAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjYyLjEyLjEwMgAAAAhmcmVlAAAC' +
+  'pG1kYXQAAAJwBgX//2zcRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY1IHIzMjIzIDA0ODBj' +
+  'YjAgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDI1IC0gaHR0cDov' +
+  'L3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MCByZWY9MyBkZWJs' +
+  'b2NrPTE6MDowIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0x' +
+  'LjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4' +
+  'OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0' +
+  'PS0yIHRocmVhZHM9MiBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBk' +
+  'ZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9' +
+  'MCBiZnJhbWVzPTAgd2VpZ2h0cD0wIGtleWludD0yNTAga2V5aW50X21pbj0xIHNjZW5lY3V0PTQw' +
+  'IGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4w' +
+  'IHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6' +
+  'MS4wMACAAAAAGmWIhAW///8PRQABT38nJyddddddddddddeAAAAABkGaOAr4Rg==';
+
+let wakeVideo = null;
+
 async function requestWakeLock() {
+  // Правильный способ, если он есть.
   try {
     wakeLock = await navigator.wakeLock?.request('screen');
+    if (wakeLock) return;
   } catch {
-    // Не во всех браузерах есть; тогда экран погаснет по системным правилам.
     wakeLock = null;
+  }
+
+  // Запасной: беззвучное видео в цикле.
+  if (wakeVideo) return;
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('muted', '');
+  video.muted = true;
+  video.loop = true;
+  video.src = KEEP_AWAKE_MP4;
+  // Не display:none и не visibility:hidden — с ними воспроизведение
+  // останавливается, и вместе с ним пропадает весь смысл. Поэтому видео
+  // остаётся «видимым» для браузера, но не видимым для человека.
+  video.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0;';
+  document.body.appendChild(video);
+  wakeVideo = video;
+  try {
+    await video.play();
+  } catch {
+    // Не дали запустить — значит этого пути тут нет. Убираем за собой,
+    // чтобы в теле страницы не болтался мёртвый элемент.
+    releaseWakeLock();
   }
 }
 
 function releaseWakeLock() {
   try { wakeLock?.release(); } catch { /* уже отпущен */ }
   wakeLock = null;
+  if (wakeVideo) {
+    try { wakeVideo.pause(); } catch { /* уже остановлено */ }
+    wakeVideo.remove();
+    wakeVideo = null;
+  }
 }
 
 /** Блокировка сна теряется при сворачивании — возвращаем её при возврате. */
