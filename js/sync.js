@@ -84,10 +84,21 @@ export function createSync({ db, request, getSetting, setSetting }) {
     const master = newMasterKey();
     const wrappedKey = await wrapMasterKey(kek, master);
 
+    // Метка вывески, по которой человек пришёл. Без неё видно, сколько
+    // народу пришло с каждого плаката, но не видно, кто из них потом купил
+    // подписку — а это единственная цифра, по которой понятно, окупился
+    // плакат или нет.
+    //
+    // Читаем через внедрённый getSetting, а не импортом trafficSource.js:
+    // модуль собирается с подменёнными зависимостями и своего хранилища не
+    // знает. Импорт сюда затащил бы настоящий db.js и уронил все тесты
+    // синхронизации — что он и сделал, пока это не поправили.
+    const source = await getSetting('trafficSource');
+
     // Код с устройства предлагается серверу к закреплению: его могли раздать
     // до регистрации, и такие ссылки должны продолжать работать.
     const res = await request('POST', '/api/auth/register',
-      { login, authHash, kdfSalt, wrappedKey, device, referralCode, invitedBy }, null);
+      { login, authHash, kdfSalt, wrappedKey, device, referralCode, invitedBy, source }, null);
     if (!res.ok) throw new SyncError(res.body?.error || 'register_failed');
 
     await saveSession(res.body, master);
