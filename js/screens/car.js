@@ -13,6 +13,7 @@ import { acceptablePhoto, drawScaled } from '../photos.js';
 import { hasGuide } from '../guides.js';
 import { openGuide } from './guide.js';
 import { openObd } from './obdScreen.js';
+import { OBD_ENABLED } from '../features.js';
 
 /** Название узла: ключ словаря, если он известен, иначе строка как есть.
     Пользовательские записи регламента хранят название текстом. */
@@ -137,6 +138,7 @@ export async function refresh() {
     </label>
     <div style="text-align:center;margin:0 0 4px;"><button class="btn sm" id="maint-add">+ <span data-i18n="maint.name"></span></button></div>
 
+    ${OBD_ENABLED ? `
     <div class="section-title" data-i18n="obd.section"></div>
     <div class="card settings-row" id="obd-open" style="cursor:pointer;">
       <span>
@@ -144,7 +146,7 @@ export async function refresh() {
         <span class="muted" style="display:block;font-size:12px;" data-i18n="obd.section_hint"></span>
       </span>
       <span class="muted">›</span>
-    </div>
+    </div>` : ''}
 
     <div class="section-title" data-i18n="docs.section"></div>
     <div class="card" id="docs-list" style="padding:6px 14px;cursor:pointer;"></div>
@@ -202,7 +204,7 @@ export async function refresh() {
   renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
   // Пробег передаём внутрь: он попадёт в текст для сервиса, а механику
   // «120 000 км» говорит о вероятных причинах больше, чем сам код.
-  body.querySelector('#obd-open').addEventListener('click',
+  body.querySelector('#obd-open')?.addEventListener('click',
     () => openObd({ vehicle, odometerKm: odometer }));
   renderDocuments(body.querySelector('#docs-list'), vehicle);
   const parts = await DB.getAllByIndex('parts', 'vehicleId', vehicle.id);
