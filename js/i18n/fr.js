@@ -412,6 +412,7 @@ export default {
   'hud.open': 'Projeter sur le pare-brise',
   'hud.mirror': 'Miroir',
   'hud.hint': "Posez le téléphone écran vers le haut sur le tableau de bord — le chiffre se reflète dans le pare-brise. Touchez l'écran pour afficher les boutons.",
+  'hud.session_started': 'Trajet en cours d’enregistrement — l’itinéraire sera enregistré automatiquement.',
   'hud.unavailable': 'Position indisponible',
   'settings.section_sync': 'Synchronisation',
   'sync.off': 'Désactivée',

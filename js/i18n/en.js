@@ -414,6 +414,7 @@ export default {
   'hud.open': 'Project on windshield',
   'hud.mirror': 'Mirror',
   'hud.hint': 'Lay the phone screen-up on the dashboard — the figure reflects in the windshield. Tap the screen to show the buttons.',
+  'hud.session_started': 'Recording the trip — the route will be saved for you.',
   'hud.unavailable': 'Location is unavailable',
   'settings.section_sync': 'Sync',
   'sync.off': 'Off',

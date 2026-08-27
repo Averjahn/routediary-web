@@ -79,7 +79,13 @@ export function render(container) {
   container.querySelector('#map-day-next').addEventListener('click', () => changeDay(1));
   container.querySelector('#map-manual-btn').addEventListener('click', openManualTripForm);
   container.querySelector('#map-hud-btn').addEventListener('click', async () => {
-    if (!await openHud()) toast(t('hud.unavailable'));
+    if (!await openHud()) { toast(t('hud.unavailable')); return; }
+    // Проекция могла поднять запись сама. Кнопка под ней осталась бы в
+    // положении «Начать запись», и человек, закрыв проекцию, нажал бы на
+    // неё — то есть остановил бы собственную поездку, будучи уверен, что
+    // начинает её.
+    livePoints = [];
+    refreshRecordButton();
   });
 
   initLeaflet(container);

@@ -584,6 +584,7 @@ export default {
   'hud.open': 'フロントガラスに投影',
   'hud.mirror': '反転表示',
   'hud.hint': 'スマートフォンを画面を上にしてダッシュボードに置いてください — 数字がフロントガラスに映り込みます。画面をタップするとボタンが表示されます。',
+  'hud.session_started': '走行を記録中です。ルートは自動で保存されます。',
   'hud.unavailable': '位置情報を取得できません',
   'settings.section_sync': '同期',
   'sync.off': 'オフ',

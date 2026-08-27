@@ -412,6 +412,7 @@ export default {
   'hud.open': '投影到挡风玻璃',
   'hud.mirror': '镜像',
   'hud.hint': '将手机屏幕朝上平放在仪表台上——数字会反射到挡风玻璃上。点击屏幕可显示按钮。',
+  'hud.session_started': '正在记录行程，路线会自动保存。',
   'hud.unavailable': '无法获取位置信息',
   'settings.section_sync': '同步',
   'sync.off': '已关闭',

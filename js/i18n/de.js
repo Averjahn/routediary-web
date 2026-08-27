@@ -412,6 +412,7 @@ export default {
   'hud.open': 'Auf Windschutzscheibe projizieren',
   'hud.mirror': 'Spiegeln',
   'hud.hint': 'Lege das Handy mit dem Display nach oben aufs Armaturenbrett — die Anzeige spiegelt sich in der Windschutzscheibe. Tippe auf den Bildschirm, um die Schaltflächen einzublenden.',
+  'hud.session_started': 'Die Fahrt wird aufgezeichnet — die Route wird automatisch gespeichert.',
   'hud.unavailable': 'Standort ist nicht verfügbar',
   'settings.section_sync': 'Synchronisation',
   'sync.off': 'Aus',
