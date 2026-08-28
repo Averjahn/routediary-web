@@ -161,4 +161,43 @@ async function switchTab(tab, force) {
   }
 }
 
+/**
+ * Q+W+E открывает внутреннюю панель владельца.
+ *
+ * Слушатель крохотный и живёт здесь, а сама панель подтягивается
+ * динамическим import() только в момент нажатия: обычный посетитель её
+ * не скачивает и о ней не знает — в интерфейсе на неё ничего не указывает.
+ *
+ * Читаем event.code, а не event.key: code — это физическая клавиша, и
+ * сочетание срабатывает на любой раскладке. Через key пришлось бы
+ * перечислять буквы каждого языка («йцу» для русской), и первая же
+ * раскладка, о которой не подумали, молча перестала бы работать.
+ */
+const ADMIN_KEYS = ['KeyQ', 'KeyW', 'KeyE'];
+
+function installAdminHotkey() {
+  let down = new Set();
+
+  const typing = () => {
+    const a = document.activeElement;
+    return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable);
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (typing()) return;
+    if (!ADMIN_KEYS.includes(e.code)) return;
+    down.add(e.code);
+    if (ADMIN_KEYS.every(k => down.has(k))) {
+      down = new Set();
+      import('./admin.js').then(m => m.openAdminLogin());
+    }
+  });
+  document.addEventListener('keyup', (e) => { down.delete(e.code); });
+  // Без сброса на потерю фокуса клавиши «залипают»: ушёл на другое окно с
+  // зажатой Q, вернулся, нажал W и E — и панель открылась сама собой.
+  window.addEventListener('blur', () => { down = new Set(); });
+}
+
+installAdminHotkey();
+
 init().catch(err => console.error('Avtopuls init failed:', err));

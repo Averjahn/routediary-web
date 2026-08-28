@@ -1246,3 +1246,39 @@ body.hud-open { overflow: hidden; }
   margin-top: 6px;
   text-transform: lowercase;
 }
+
+/* --- Внутренняя панель владельца (Q+W+E) -----------------------------------
+   Открывается поверх приложения в обычном модальном окне, но содержимое у
+   неё табличное и широкое, поэтому окну разрешено занять почти весь экран.
+   Тема не переключается: панель служебная, её смотрит один человек. */
+.admin-panel h3 { margin: 0 0 12px; font-size: 17px; }
+.admin-panel h4 { margin: 18px 0 6px; font-size: 13px; color: var(--text-secondary); }
+.admin-panel .admin-sub { float: right; font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+.modal-sheet.admin-wide { max-width: min(96vw, 1100px); width: 96vw; }
+.admin-err { color: #d33; font-size: 13px; margin: 4px 0; }
+
+/* Таблица шире экрана телефона — прокручиваем её саму, а не страницу:
+   иначе окно уезжает вбок целиком вместе с кнопками. */
+.admin-scroll { overflow: auto; max-height: 62vh; -webkit-overflow-scrolling: touch; }
+.admin-scroll.short { max-height: 26vh; }
+.admin-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.admin-table th, .admin-table td { padding: 6px 9px; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--separator); }
+.admin-table th { position: sticky; top: 0; background: var(--surface); color: var(--text-secondary);
+  font-weight: 600; z-index: 1; }
+.admin-table tbody tr[data-id] { cursor: pointer; }
+.admin-table tbody tr[data-id]:hover { background: var(--surface-alt); }
+.admin-live { color: #0a7; font-weight: 600; }
+.admin-pro { color: var(--accent); font-size: 11px; }
+
+.admin-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.admin-facts div { background: var(--surface-alt); border-radius: 10px; padding: 8px 10px; }
+.admin-facts b { display: block; font-size: 16px; }
+.admin-facts span { font-size: 11px; color: var(--text-secondary); }
+
+/* Столбики по дням: высота задаётся из кода относительно самого
+   нагруженного дня, здесь только ширина и выравнивание по низу. */
+.admin-bars { display: flex; align-items: flex-end; gap: 2px; height: 44px; overflow-x: auto; }
+.admin-bar { flex: 0 0 6px; background: var(--accent); border-radius: 2px 2px 0 0; }
+
+.admin-note { font-size: 11px; color: var(--text-secondary); line-height: 1.45; margin: 8px 0 0; }
