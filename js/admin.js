@@ -155,7 +155,7 @@ export async function openAdminUser(id) {
 
   const invoices = u.invoices.map(i => `
     <tr><td>${day(i.created_at)}</td><td>${escapeHtml(i.plan || '—')}</td>
-        <td>${escapeHtml(i.method || '—')}</td><td>${i.amount_rub || 0} ₽</td>
+        <td>${escapeHtml(i.method || '—')}</td><td>${i.amount_rub ? i.amount_rub + ' ₽' : '—'}</td>
         <td>${escapeHtml(i.status || '—')}</td></tr>`).join('');
 
   // Столбики по дням. Высота относительно самого нагруженного дня — так видно форму
