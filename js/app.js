@@ -7,6 +7,7 @@ import { initInstallBanner } from './installBanner.js';
 import { captureIncomingReferral } from './referral.js';
 import { captureTrafficSource } from './trafficSource.js';
 import { startAutoSync } from './syncClient.js';
+import { initAnalytics } from './analytics.js';
 import { setupTelegram } from './telegram.js';
 import * as MapScreen from './screens/map.js';
 
@@ -197,6 +198,11 @@ function installAdminHotkey() {
   // зажатой Q, вернулся, нажал W и E — и панель открылась сама собой.
   window.addEventListener('blur', () => { down = new Set(); });
 }
+
+// Счётчик поднимается после разметки источника перехода: та читает метку
+// из адреса, и порядок здесь не косметический — если счётчик успеет
+// переписать адрес, метка плаката потеряется.
+initAnalytics();
 
 installAdminHotkey();
 

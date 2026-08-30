@@ -2,6 +2,7 @@ import { DB, setSetting, getSetting } from './db.js';
 import { AppState, getPrimaryVehicle } from './state.js';
 import { uuid, todayKey, dayKeyOf } from './format.js';
 import { segmentDay, detectMode, computeMetrics, userFreeFlowSpeed, congestionScore } from './geo.js';
+import { goal, GOALS } from './analytics.js';
 
 /**
  * Разрешена ли записи начинаться САМОЙ — без нажатия кнопки.
@@ -53,6 +54,10 @@ export async function startRecording() {
 
 export async function stopRecording() {
   AppState.recording = false;
+  // Цель именно на остановке, а не на старте: начатая и тут же брошенная
+  // запись — не поездка, и считать её как результат значит учить
+  // алгоритм искать людей, которые ничего не довели до конца.
+  goal(GOALS.TRIP_RECORDED);
   if (AppState.watchId != null) {
     navigator.geolocation.clearWatch(AppState.watchId);
     AppState.watchId = null;

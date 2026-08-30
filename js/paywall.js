@@ -26,6 +26,7 @@ import { approxInCurrency } from './exchangeRates.js';
  * @param {function} opts.onDone вызывается после «покупки»
  */
 export async function openPaywall({ reason = 'pay.reason_default', onDone } = {}) {
+  goal(GOALS.PAYWALL_OPENED);
   const tier = await currentTier();
   // Способы оплаты показываются только те, что сервер включил: иначе кнопка
   // вела бы в тупик. Звёзды вдобавок существуют лишь внутри Telegram.

@@ -1,3 +1,4 @@
+import { goal, GOALS } from '../analytics.js';
 import { DB } from '../db.js';
 import {
   AppState, getPrimaryVehicle, currentOdometerKm,
@@ -1005,6 +1006,10 @@ async function saveVehicleFromTrim(make, model, trim, { add = false } = {}) {
   };
   vehicle.rangeKm = vehicle.consumptionL100 > 0 ? vehicle.tankLiters / vehicle.consumptionL100 * 100 : 0;
   await DB.put('vehicles', vehicle);
+  // Только на СОЗДАНИИ машины: этот же put стоит ещё в правке
+  // документов и пробега, и цель на каждом сохранении учила бы
+  // алгоритм на людях, которые ничего нового не завели.
+  goal(GOALS.VEHICLE_ADDED);
   // Именно эту машину человек только что выбрал — её и показываем.
   // setPrimaryVehicle снимает флаг у остальных: двух основных быть не может.
   await setPrimaryVehicle(vehicle.id);
@@ -1102,6 +1107,10 @@ function openCustomVehicleForm(preset = null) {
         vehicle.bodyType = bodyTypeFor(vehicle.modelId, vehicle.displayName);
         vehicle.colorId = 'blue';
         await DB.put('vehicles', vehicle);
+        // Только на СОЗДАНИИ машины: этот же put стоит ещё в правке
+        // документов и пробега, и цель на каждом сохранении учила бы
+        // алгоритм на людях, которые ничего нового не завели.
+        goal(GOALS.VEHICLE_ADDED);
         await setPrimaryVehicle(vehicle.id);
         closeModal();
         if (preset) closeModal();

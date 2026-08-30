@@ -1,3 +1,4 @@
+import { goal, GOALS } from './analytics.js';
 import { t } from './i18n.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { getSetting, setSetting } from './db.js';
@@ -78,6 +79,9 @@ export async function resumeCardPayment(onPaid) {
   if (!result.ok) return;
 
   if (result.body.status === 'paid') {
+    // Цель на ФАКТЕ оплаты, подтверждённом сервером, а не на нажатии
+    // кнопки: иначе в отчёт попадут все, кто дошёл до банка и передумал.
+    goal(GOALS.PURCHASE);
     toast(t('ton.paid'));
     const { Sync } = await import('./syncClient.js');
     await Sync.refreshAccount().catch(() => {});
@@ -152,6 +156,7 @@ function openCardPendingScreen(invoiceId, onPaid) {
         if (!res.ok) { if (manual) status.textContent = t('ton.check_failed'); return; }
         if (res.body.status === 'paid') {
           done = true; stop(); closeModal();
+          goal(GOALS.PURCHASE);
           toast(t('ton.paid'));
           const { Sync } = await import('./syncClient.js');
           await Sync.refreshAccount().catch(() => {});
