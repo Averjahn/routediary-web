@@ -2,8 +2,13 @@
  * Рекламный режим: живая анимация в стилистике печатных плакатов.
  *
  * ЗАЧЕМ ЖИВАЯ, А НЕ ГИФКА. Гифку нельзя перекрасить: цвет запечён в
- * пиксели. Здесь цвет выбирается на ходу и по умолчанию идёт за темой
- * приложения.
+ * пиксели. Здесь цвет выбирается на ходу.
+ *
+ * ЦВЕТ СВОЙ, А НЕ ОТ ПРОЕКЦИИ. Сначала он был общий с цифрой на стекле,
+ * и получалось, что при светлой теме реклама открывалась ледяной. Но
+ * плакат — это всегда фирменный бирюзовый, по нему марку и узнают.
+ * Поэтому у режима отдельная настройка со своим значением по умолчанию;
+ * «как в теме» осталось отдельным вариантом для тех, кому так нравится.
  *
  * ПОЧЕМУ БЕЗ QR. Он здесь был и оказался нечитаемым: на экране телефона
  * код выходил слишком мелким, чтобы навести на него вторую камеру. А
@@ -27,7 +32,9 @@
  *
  */
 import { t } from './i18n.js';
-import { HUD_COLORS, getHudStyle, setHudStyle, HUD_COLOR_AUTO } from './hud.js';
+import { getSetting, setSetting } from './db.js';
+import { HUD_COLORS, hudColorForTheme } from './hud.js';
+import { AppState } from './state.js';
 
 // --- Модель времени (зеркало tools/hud_ad_gif.py) ---------------------------
 //
@@ -102,6 +109,27 @@ export function readableBackground(hex, need = 3.0) {
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
+/** Фирменный бирюзовый — тот же, что на печатных плакатах. */
+export const BRAND = '#0E9C93';
+export const AD_COLOR_KEY = 'adColor';
+/** Значение, означающее «как в теме», а не конкретный цвет. */
+export const AD_COLOR_THEME = 'theme';
+
+/** Палитра режима: фирменный первым, дальше цвета проекции. */
+export function adPalette() {
+  return [{ id: 'brand', hex: BRAND }, ...Object.values(HUD_COLORS)];
+}
+
+/** Выбранный цвет и то, откуда он взялся. */
+export async function getAdColor() {
+  const stored = await getSetting(AD_COLOR_KEY, 'brand');
+  if (stored === AD_COLOR_THEME) {
+    return { id: AD_COLOR_THEME, hex: HUD_COLORS[hudColorForTheme(AppState.theme)].hex };
+  }
+  const found = adPalette().find(c => c.id === stored);
+  return found || { id: 'brand', hex: BRAND };
+}
+
 let overlay = null;
 let frameId = null;
 
@@ -121,14 +149,14 @@ export function closeAd() {
 
 export async function openAd() {
   if (overlay) return;
-  const style = await getHudStyle();
+  const chosen = await getAdColor();
   const list = scenes();
   const marks = timeline(list);
   const total = marks[marks.length - 1].to;
 
   overlay = document.createElement('div');
   overlay.className = 'admode';
-  overlay.style.setProperty('--ad-bg', readableBackground(HUD_COLORS[style.color].hex));
+  overlay.style.setProperty('--ad-bg', readableBackground(chosen.hex));
   overlay.innerHTML = `
     <div class="ad-stage">
       ${list.map((s, i) => `
@@ -145,11 +173,11 @@ export async function openAd() {
     </div>
     <div class="ad-controls" id="ad-controls">
       <div class="ad-swatches">
-        <button class="ad-sw ad-auto${style.auto ? ' active' : ''}" data-color="${HUD_COLOR_AUTO}"
-                title="${t('hud.color_auto')}">A</button>
-        ${Object.values(HUD_COLORS).map(c => `
-          <button class="ad-sw${!style.auto && style.color === c.id ? ' active' : ''}"
-                  data-color="${c.id}" style="background:${c.hex}"></button>`).join('')}
+        ${adPalette().map(c => `
+          <button class="ad-sw${chosen.id === c.id ? ' active' : ''}"
+                  data-color="${c.id}" style="background:${readableBackground(c.hex)}"></button>`).join('')}
+        <button class="ad-sw ad-auto${chosen.id === AD_COLOR_THEME ? ' active' : ''}"
+                data-color="${AD_COLOR_THEME}" title="${t('hud.color_auto')}">A</button>
       </div>
       <button class="ad-close" id="ad-close">${t('common.close')}</button>
     </div>`;
@@ -186,14 +214,13 @@ export async function openAd() {
 
   overlay.querySelectorAll('.ad-sw').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const chosen = btn.dataset.color;
-      await setHudStyle({ color: chosen });
-      // Перечитываем, а не берём нажатое: при «как в теме» реальный цвет
-      // решает тема, и подставлять сюда слово «auto» нельзя.
-      const next = await getHudStyle();
-      overlay.style.setProperty('--ad-bg', readableBackground(HUD_COLORS[next.color].hex));
-      overlay.querySelectorAll('.ad-sw').forEach(b => b.classList.toggle('active',
-        b.dataset.color === (next.auto ? HUD_COLOR_AUTO : next.color)));
+      await setSetting(AD_COLOR_KEY, btn.dataset.color);
+      // Перечитываем, а не берём нажатое: у варианта «как в теме» слово
+      // и цвет — разные вещи, и подставлять сюда слово нельзя.
+      const next = await getAdColor();
+      overlay.style.setProperty('--ad-bg', readableBackground(next.hex));
+      overlay.querySelectorAll('.ad-sw').forEach(b =>
+        b.classList.toggle('active', b.dataset.color === next.id));
     });
   });
   overlay.querySelector('#ad-close').addEventListener('click', closeAd);
