@@ -19,6 +19,7 @@ import { openPaywall } from '../paywall.js';
 import { getReferralCode, getShareUrl, getInvitedBy, getLocalCode } from '../referral.js';
 import { qrSvg } from '../qr.js';
 import { Sync, syncQuietly, startAutoSync, stopAutoSync, deviceLabel } from '../syncClient.js';
+import { AUTO_TRACK_KEY } from '../tracking.js';
 import { openSignals } from './signals.js';
 import { SIGNALS_ENABLED } from '../features.js';
 import {
@@ -58,7 +59,7 @@ export async function refresh() {
   if (!containerRef) return;
   const body = containerRef.querySelector('#settings-body');
 
-  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle, savedRegion, motionAssist] = await Promise.all([
+  const [tier, severe, vehicles, sync, road, roadTiles, pool, hudStyle, savedRegion, motionAssist, autoTrack] = await Promise.all([
     currentTier(),
     getSevereConditions(),
     getVehicles(),
@@ -73,6 +74,7 @@ export async function refresh() {
     // если человек её не выбирал, — иначе он не отличит свой выбор от догадки.
     getSetting('region', null),
     getSetting(MOTION_KEY, false),
+    getSetting(AUTO_TRACK_KEY, false),
   ]);
   const provider = getMapProvider();
   // Замочки видны только тем, кому функция реально закрыта: у Про (и в
@@ -108,6 +110,11 @@ export async function refresh() {
         ${Object.keys(HUD_FONTS).map(id => hudFontSwatch(id, hudStyle.font === id, styleLocked)).join('')}
       </div>
       <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="hud.style_hint"></div>
+      <div class="settings-row" style="margin-top:10px;">
+        <span data-i18n="settings.auto_tracking"></span>
+        <input type="checkbox" id="set-auto-track" style="width:auto;"${autoTrack ? ' checked' : ''}>
+      </div>
+      <div class="muted" style="font-size:12px;" data-i18n="settings.auto_tracking_hint"></div>
       ${motionAvailable() ? `
         <div class="settings-row" style="margin-top:10px;">
           <span data-i18n="hud.motion"></span>
@@ -481,6 +488,10 @@ function bind(body) {
   // на iOS запрос обязан идти прямо из касания, а проекция открывается
   // асинхронно — к тому моменту жест уже не считается, и запрос пропал бы
   // молча, причём второй раз его не покажут.
+  body.querySelector('#set-auto-track')?.addEventListener('change', async (e) => {
+    await setSetting(AUTO_TRACK_KEY, e.target.checked);
+  });
+
   body.querySelector('#set-hud-motion')?.addEventListener('change', async (e) => {
     if (!e.target.checked) {
       await setSetting(MOTION_KEY, false);

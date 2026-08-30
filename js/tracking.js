@@ -3,6 +3,20 @@ import { AppState, getPrimaryVehicle } from './state.js';
 import { uuid, todayKey, dayKeyOf } from './format.js';
 import { segmentDay, detectMode, computeMetrics, userFreeFlowSpeed, congestionScore } from './geo.js';
 
+/**
+ * Разрешена ли записи начинаться САМОЙ — без нажатия кнопки.
+ *
+ * Выключено по умолчанию, и это осознанно. Непрерывная геолокация — самая
+ * дорогая по батарее вещь в приложении, а человек, только что открывший
+ * приложение, ещё не выбирал такой размен. Пусть решает сам: кнопка
+ * «Начать запись» работает всегда и ни от чего здесь не зависит.
+ */
+export const AUTO_TRACK_KEY = 'autoTrackingEnabled';
+
+export async function autoTrackingEnabled() {
+  return await getSetting(AUTO_TRACK_KEY, false) === true;
+}
+
 let lastRecordedPoint = null;
 let liveTrackListeners = [];
 

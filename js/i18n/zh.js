@@ -412,6 +412,8 @@ export default {
   'hud.open': '投影到挡风玻璃',
   'hud.mirror': '镜像',
   'hud.hint': '将手机屏幕朝上平放在仪表台上——数字会反射到挡风玻璃上。点击屏幕可显示按钮。',
+  'settings.auto_tracking': '自动记录行程',
+  'settings.auto_tracking_hint': '关闭时，只有按下开始按钮才会记录。如果希望行程自动记录（例如打开挡风玻璃投影时），请开启。这会明显更耗电：定位会一直保持开启。',
   'hud.session_started': '正在记录行程，路线会自动保存。',
   'hud.unavailable': '无法获取位置信息',
   'settings.section_sync': '同步',

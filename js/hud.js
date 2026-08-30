@@ -5,7 +5,7 @@ import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadD
 import { overspeedState } from './roadRules.js';
 import { applyDigits } from './segmentDigits.js';
 import { createMotionBridge } from './motionSpeed.js';
-import { isRecording, startRecording } from './tracking.js';
+import { isRecording, startRecording, autoTrackingEnabled } from './tracking.js';
 
 /**
  * Проекция скорости на лобовое стекло.
@@ -306,9 +306,14 @@ export function isOpen() {
  *
  * Возвращает true, только если запись начали ИМЕННО СЕЙЧАС, — чтобы не
  * сообщать о начале сессии тому, кто включил её сам минуту назад.
+ *
+ * Спрашиваем разрешение: человек, выключивший автозапись ради батареи,
+ * не ждёт, что она начнётся от открытия спидометра. Для него это такой
+ * же «сам включился», как и всё остальное.
  */
 async function startSession() {
   try {
+    if (!await autoTrackingEnabled()) return false;
     if (await isRecording()) return false;
     await startRecording();
     return true;

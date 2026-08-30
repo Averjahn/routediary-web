@@ -412,6 +412,8 @@ export default {
   'hud.open': 'Wyświetl na szybie',
   'hud.mirror': 'Odbicie lustrzane',
   'hud.hint': 'Połóż telefon ekranem do góry na desce rozdzielczej — cyfra odbije się w szybie. Dotknij ekranu, aby pokazać przyciski.',
+  'settings.auto_tracking': 'Automatycznie zapisuj przejazdy',
+  'settings.auto_tracking_hint': 'Gdy opcja jest wyłączona, nagrywanie zaczyna się tylko przyciskiem. Włącz, jeśli przejazd ma zapisywać się sam — na przykład po otwarciu projekcji na szybę. Zużywa zauważalnie więcej baterii: lokalizacja pozostaje włączona.',
   'hud.session_started': 'Trasa jest nagrywana — zapisze się sama.',
   'hud.unavailable': 'Lokalizacja niedostępna',
   'settings.section_sync': 'Synchronizacja',

@@ -412,6 +412,8 @@ export default {
   'hud.open': 'Proyectar en el parabrisas',
   'hud.mirror': 'Espejo',
   'hud.hint': 'Coloca el teléfono con la pantalla hacia arriba en el salpicadero — la cifra se refleja en el parabrisas. Toca la pantalla para mostrar los botones.',
+  'settings.auto_tracking': 'Grabar los viajes automáticamente',
+  'settings.auto_tracking_hint': 'Mientras esté desactivado, la grabación solo empieza con el botón. Actívalo si quieres que el viaje se grabe solo, por ejemplo al abrir la proyección en el parabrisas. Consume bastante más batería: la ubicación permanece activa.',
   'hud.session_started': 'Grabando el viaje: la ruta se guardará sola.',
   'hud.unavailable': 'La ubicación no está disponible',
   'settings.section_sync': 'Sincronización',

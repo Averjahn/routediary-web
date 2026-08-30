@@ -412,6 +412,8 @@ export default {
   'hud.open': 'Auf Windschutzscheibe projizieren',
   'hud.mirror': 'Spiegeln',
   'hud.hint': 'Lege das Handy mit dem Display nach oben aufs Armaturenbrett — die Anzeige spiegelt sich in der Windschutzscheibe. Tippe auf den Bildschirm, um die Schaltflächen einzublenden.',
+  'settings.auto_tracking': 'Fahrten automatisch aufzeichnen',
+  'settings.auto_tracking_hint': 'Solange dies aus ist, startet die Aufzeichnung nur über die Schaltfläche. Schalten Sie es ein, wenn eine Fahrt von selbst aufgezeichnet werden soll — etwa beim Öffnen der Windschutzscheiben-Projektion. Das verbraucht spürbar mehr Akku: die Ortung bleibt an.',
   'hud.session_started': 'Die Fahrt wird aufgezeichnet — die Route wird automatisch gespeichert.',
   'hud.unavailable': 'Standort ist nicht verfügbar',
   'settings.section_sync': 'Synchronisation',

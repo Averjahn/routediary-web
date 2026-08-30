@@ -414,6 +414,8 @@ export default {
   'hud.open': 'Project on windshield',
   'hud.mirror': 'Mirror',
   'hud.hint': 'Lay the phone screen-up on the dashboard — the figure reflects in the windshield. Tap the screen to show the buttons.',
+  'settings.auto_tracking': 'Record trips automatically',
+  'settings.auto_tracking_hint': 'While this is off, recording starts only from the Start button. Turn it on if you want a trip recorded on its own — for example when you open the windshield projection. It uses noticeably more battery: location stays on.',
   'hud.session_started': 'Recording the trip — the route will be saved for you.',
   'hud.unavailable': 'Location is unavailable',
   'settings.section_sync': 'Sync',

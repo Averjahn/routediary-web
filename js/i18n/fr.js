@@ -412,6 +412,8 @@ export default {
   'hud.open': 'Projeter sur le pare-brise',
   'hud.mirror': 'Miroir',
   'hud.hint': "Posez le téléphone écran vers le haut sur le tableau de bord — le chiffre se reflète dans le pare-brise. Touchez l'écran pour afficher les boutons.",
+  'settings.auto_tracking': 'Enregistrer les trajets automatiquement',
+  'settings.auto_tracking_hint': 'Tant que c’est désactivé, l’enregistrement ne démarre qu’avec le bouton. Activez-le pour qu’un trajet s’enregistre tout seul, par exemple à l’ouverture de la projection sur le pare-brise. Cela consomme nettement plus de batterie : la localisation reste active.',
   'hud.session_started': 'Trajet en cours d’enregistrement — l’itinéraire sera enregistré automatiquement.',
   'hud.unavailable': 'Position indisponible',
   'settings.section_sync': 'Synchronisation',
