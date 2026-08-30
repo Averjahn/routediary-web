@@ -1312,7 +1312,11 @@ body.hud-open { overflow: hidden; }
 
 .ad-controls { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.ad-swatches { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 12px; }
+/* Ряд на тёмной подложке: без неё образец фирменного цвета совпадает с
+   фоном страницы и выглядит пустым кружком — единственный цвет, который
+   нельзя было разглядеть, оказывался главным. */
+.ad-swatches { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+  background: rgba(0,0,0,0.32); border-radius: 999px; padding: 7px 10px; }
 .ad-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.35);
   cursor: pointer; }
 .ad-sw.active { border-color: #fff; border-width: 3px; }
