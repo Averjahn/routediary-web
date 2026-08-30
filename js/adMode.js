@@ -59,7 +59,7 @@ export function timeline(list) {
 }
 
 let overlay = null;
-let timer = null;
+let frameId = null;
 
 export function isAdOpen() {
   return !!overlay;
@@ -69,8 +69,8 @@ export function closeAd() {
   document.body.classList.remove('hud-open');
   document.querySelectorAll('.admode').forEach(n => { if (n !== overlay) n.remove(); });
   if (!overlay) return;
-  clearInterval(timer);
-  timer = null;
+  cancelAnimationFrame(frameId);
+  frameId = null;
   overlay.remove();
   overlay = null;
 }
@@ -129,8 +129,15 @@ export async function openAd(qrSvg) {
     const p = Math.max(0, Math.min(1, (at - from) / ((to - from) * 0.5)));
     if (speed) speed.textContent = String(Math.round(p * 87));
   }
-  frame();
-  timer = setInterval(frame, 80);
+  // Кадровый цикл, а не таймер: браузер душит setInterval в фоновой
+  // вкладке до одного срабатывания в секунду, и анимация начинает
+  // дёргаться. requestAnimationFrame в фоне честно останавливается, а на
+  // виду идёт плавно и не тратит время впустую.
+  function loop() {
+    frame();
+    frameId = requestAnimationFrame(loop);
+  }
+  loop();
 
   overlay.querySelectorAll('.ad-sw').forEach(btn => {
     btn.addEventListener('click', async () => {
