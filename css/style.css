@@ -1310,7 +1310,7 @@ body.hud-open { overflow: hidden; }
 .ad-mark { background: #fff; border-radius: 14px; padding: 10px; display: flex; flex: 0 0 auto; }
 .ad-mark img { width: clamp(56px, 13vw, 96px); height: auto; display: block; }
 
-.ad-controls { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom));
+.ad-controls { transition: opacity 220ms ease; position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; align-items: center; gap: 12px; }
 /* Ряд на тёмной подложке: без неё образец фирменного цвета совпадает с
    фоном страницы и выглядит пустым кружком — единственный цвет, который
@@ -1321,5 +1321,9 @@ body.hud-open { overflow: hidden; }
   cursor: pointer; }
 .ad-sw.active { border-color: #fff; border-width: 3px; }
 .ad-sw.ad-auto { background: rgba(0,0,0,0.35); color: #fff; font-weight: 800; font-size: 13px; }
+/* Пока кнопки скрыты, они не должны и перехватывать касания: иначе
+   первое касание попадало бы в невидимый образец цвета вместо того,
+   чтобы просто вернуть панель. */
+.ad-controls.faded { opacity: 0; pointer-events: none; }
 .ad-close { padding: 9px 22px; border: 0; border-radius: 10px; background: rgba(0,0,0,0.35);
   color: #fff; font-weight: 600; cursor: pointer; }

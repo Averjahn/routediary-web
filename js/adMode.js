@@ -133,6 +133,16 @@ export async function getAdColor() {
 let overlay = null;
 let frameId = null;
 let safetyId = null;
+let hideControlsTimer = null;
+
+/**
+ * Через сколько прятать кнопки, если их не трогают.
+ *
+ * Три секунды, а не четыре как у проекции: там кнопки соседствуют с одной
+ * цифрой, а здесь — с текстом, который человек читает. Ряд ярких кружков
+ * под строкой перетягивает взгляд ровно тогда, когда он нужен строке.
+ */
+const HIDE_CONTROLS_MS = 3000;
 
 export function isAdOpen() {
   return !!overlay;
@@ -144,7 +154,8 @@ export function closeAd() {
   if (!overlay) return;
   cancelAnimationFrame(frameId);
   clearInterval(safetyId);
-  frameId = safetyId = null;
+  clearTimeout(hideControlsTimer);
+  frameId = safetyId = hideControlsTimer = null;
   overlay.remove();
   overlay = null;
 }
@@ -240,5 +251,25 @@ export async function openAd() {
         b.classList.toggle('active', b.dataset.color === next.id));
     });
   });
+  // Кнопки прячутся сами: они соседствуют с текстом, который читают, и
+  // ряд ярких кружков под строкой перетягивает взгляд. Возвращаются по
+  // касанию экрана — как в проекции на стекло, чтобы не заводить второй
+  // способ обращения с тем же самым.
+  const controls = overlay.querySelector('#ad-controls');
+  function showControls() {
+    // Выход, если панели уже нет: щелчок по «Закрыть» сперва закрывает
+    // режим, а потом всплывает сюда — без проверки здесь заводился бы
+    // таймер, который потом трогает уже удалённый узел.
+    if (!overlay) return;
+    controls.classList.remove('faded');
+    clearTimeout(hideControlsTimer);
+    hideControlsTimer = setTimeout(() => controls.classList.add('faded'), HIDE_CONTROLS_MS);
+  }
+  // Щелчок по кнопкам всплывает сюда же, и это ровно то, что нужно:
+  // человек, подбирающий цвет, продлевает себе показ панели просто тем,
+  // что нажимает.
+  overlay.addEventListener('click', showControls);
+  showControls();
+
   overlay.querySelector('#ad-close').addEventListener('click', closeAd);
 }
