@@ -132,6 +132,7 @@ export async function getAdColor() {
 
 let overlay = null;
 let frameId = null;
+let safetyId = null;
 
 export function isAdOpen() {
   return !!overlay;
@@ -142,7 +143,8 @@ export function closeAd() {
   document.querySelectorAll('.admode').forEach(n => { if (n !== overlay) n.remove(); });
   if (!overlay) return;
   cancelAnimationFrame(frameId);
-  frameId = null;
+  clearInterval(safetyId);
+  frameId = safetyId = null;
   overlay.remove();
   overlay = null;
 }
@@ -202,15 +204,30 @@ export async function openAd() {
     const p = Math.max(0, Math.min(1, (at - from) / ((to - from) * 0.5)));
     if (speed) speed.textContent = String(Math.round(p * 87));
   }
-  // Кадровый цикл, а не таймер: браузер душит setInterval в фоновой
-  // вкладке до одного срабатывания в секунду, и анимация начинает
-  // дёргаться. requestAnimationFrame в фоне честно останавливается, а на
-  // виду идёт плавно и не тратит время впустую.
-  function loop() {
+  // Кадровый цикл ПЛЮС страховка таймером.
+  //
+  // Один requestAnimationFrame надёжен не везде: встречаются окружения,
+  // которые считают себя скрытыми, будучи на виду (проверено — встроенная
+  // панель браузера сообщает visibilityState: hidden и не отдаёт ни
+  // одного кадра). Для режима, единственная работа которого — играть,
+  // молча замереть недопустимо.
+  //
+  // Поэтому раз в 200 мс таймер проверяет, давно ли был кадр, и рисует
+  // сам, если кадров нет. Там, где rAF работает, страховка не делает
+  // ничего: перерисовка идёт чаще её порога.
+  let lastFrameAt = 0;
+  function frameNow() {
+    lastFrameAt = Date.now();
     frame();
+  }
+  function loop() {
+    frameNow();
     frameId = requestAnimationFrame(loop);
   }
   loop();
+  safetyId = setInterval(() => {
+    if (Date.now() - lastFrameAt > 400) frameNow();
+  }, 200);
 
   overlay.querySelectorAll('.ad-sw').forEach(btn => {
     btn.addEventListener('click', async () => {
