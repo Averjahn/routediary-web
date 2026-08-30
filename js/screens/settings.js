@@ -10,7 +10,7 @@ import { applyI18nTree, openModal, closeModal, toast, icon, restoreScroll, escap
 import { THEMES, THEME_ORDER, isFreeTheme } from '../theme.js';
 import {
   HUD_COLORS, HUD_FONTS, HUD_DEFAULT_COLOR, HUD_DEFAULT_FONT, getHudStyle, setHudStyle,
-  MOTION_KEY, motionAvailable, requestMotionAccess,
+  MOTION_KEY, motionAvailable, requestMotionAccess, HUD_COLOR_AUTO,
 } from '../hud.js';
 import { applyDigits } from '../segmentDigits.js';
 import { MAP_LAYERS, getMapProvider, setMapProvider } from '../mapLayers.js';
@@ -104,12 +104,19 @@ export async function refresh() {
         <div class="hud-preview-unit" data-i18n="unit.kmh"></div>
       </div>
       <div class="theme-row">
-        ${Object.keys(HUD_COLORS).map(id => hudColorSwatch(id, hudStyle.color === id, styleLocked)).join('')}
+        <button class="theme-swatch hud-auto ${hudStyle.auto ? 'active' : ''}"
+                data-hud-color="${HUD_COLOR_AUTO}"
+                aria-label="${t('hud.color_auto')}">A</button>
+        ${Object.keys(HUD_COLORS).map(id =>
+          hudColorSwatch(id, !hudStyle.auto && hudStyle.color === id, styleLocked)).join('')}
       </div>
       <div class="theme-row" style="margin-top:2px;">
         ${Object.keys(HUD_FONTS).map(id => hudFontSwatch(id, hudStyle.font === id, styleLocked)).join('')}
       </div>
       <div class="muted" style="font-size:12px;padding-top:6px;" data-i18n="hud.style_hint"></div>
+      <div class="muted" style="font-size:12px;padding-top:4px;" data-i18n="hud.color_auto_hint"></div>
+      <button class="btn" id="set-ad-mode" style="margin-top:10px;" data-i18n="settings.ad_mode"></button>
+      <div class="muted" style="font-size:12px;" data-i18n="settings.ad_mode_hint"></div>
       <div class="settings-row" style="margin-top:10px;">
         <span data-i18n="settings.auto_tracking"></span>
         <input type="checkbox" id="set-auto-track" style="width:auto;"${autoTrack ? ' checked' : ''}>
@@ -413,7 +420,7 @@ function bind(body) {
 
   body.querySelectorAll('[data-hud-color]').forEach(btn => btn.addEventListener('click', async () => {
     const id = btn.dataset.hudColor;
-    if (id !== HUD_DEFAULT_COLOR && !(await hasFeature('hud_style'))) {
+    if (id !== HUD_DEFAULT_COLOR && id !== HUD_COLOR_AUTO && !(await hasFeature('hud_style'))) {
       openPaywall({ reason: 'pay.reason_hud', onDone: refresh });
       return;
     }
@@ -488,6 +495,15 @@ function bind(body) {
   // на iOS запрос обязан идти прямо из касания, а проекция открывается
   // асинхронно — к тому моменту жест уже не считается, и запрос пропал бы
   // молча, причём второй раз его не покажут.
+  body.querySelector('#set-ad-mode')?.addEventListener('click', async () => {
+    // Модуль подтягивается по нажатию: рекламный режим открывают редко, и
+    // возить его в общем бандле ради этого незачем.
+    const [{ openAd }, { qrSvg }] = await Promise.all([
+      import('../adMode.js'), import('../qr.js'),
+    ]);
+    await openAd(qrSvg('https://autocoyc.com/?src=ad-mode', { size: 176 }));
+  });
+
   body.querySelector('#set-auto-track')?.addEventListener('change', async (e) => {
     await setSetting(AUTO_TRACK_KEY, e.target.checked);
   });

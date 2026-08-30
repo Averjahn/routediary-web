@@ -1282,3 +1282,40 @@ body.hud-open { overflow: hidden; }
 .admin-bar { flex: 0 0 6px; background: var(--accent); border-radius: 2px 2px 0 0; }
 
 .admin-note { font-size: 11px; color: var(--text-secondary); line-height: 1.45; margin: 8px 0 0; }
+
+/* --- Рекламный режим -------------------------------------------------------
+   Тот же чёрный фон и то же свечение, что у проекции на стекло: реклама
+   должна выглядеть тем, чем окажется приложение. Цвет берётся из --ad-color,
+   а он — из настройки проекции, которая сама следует за темой. */
+.admode { position: fixed; inset: 0; z-index: 9000; background: #000; color: var(--ad-color);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Inter Tight', 'Inter', -apple-system, sans-serif; }
+.ad-stage { position: relative; width: 100%; height: 100%; }
+.ad-scene { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; opacity: 0; padding: 24px;
+  text-align: center; }
+/* Свечение — то же, что у цифры на стекле: буквы должны выглядеть источником
+   света, а не наклейкой. Цвет берём из той же переменной, чтобы ореол не
+   разъезжался с текстом при смене цвета. */
+.ad-brand, .ad-speed, .ad-line, .ad-site { color: var(--ad-color);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--ad-color) 55%, transparent); }
+.ad-brand { font-size: clamp(38px, 11vw, 92px); font-weight: 800; letter-spacing: -0.03em; }
+.ad-speed { font-size: clamp(96px, 30vw, 220px); font-weight: 800; line-height: 1; }
+.ad-line { font-size: clamp(24px, 6vw, 46px); font-weight: 700; line-height: 1.25; max-width: 16em; }
+.ad-site { font-size: clamp(24px, 6vw, 52px); font-weight: 800; }
+.ad-cap { font-size: clamp(15px, 3.4vw, 32px); font-weight: 600;
+  color: color-mix(in srgb, var(--ad-color) 62%, #000); }
+.ad-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center; }
+.ad-row svg { stroke: var(--ad-color); }
+/* Код читается только тёмным по светлому — белая подложка обязательна. */
+.ad-qr { background: #fff; border-radius: 12px; padding: 10px; display: flex; }
+.ad-qr svg { width: clamp(110px, 26vw, 176px); height: auto; }
+
+.ad-controls { position: absolute; left: 0; right: 0; bottom: calc(16px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ad-swatches { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 12px; }
+.ad-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #333; cursor: pointer; }
+.ad-sw.active { border-color: #fff; }
+.ad-sw.ad-auto { background: #1a1a1a; color: #ccc; font-weight: 800; font-size: 13px; }
+.ad-close { padding: 9px 22px; border: 0; border-radius: 10px; background: #1c1c1e; color: #eee;
+  font-weight: 600; cursor: pointer; }

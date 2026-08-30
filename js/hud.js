@@ -1,4 +1,5 @@
 import { AppState } from './state.js';
+import { THEMES } from './theme.js';
 import { t } from './i18n.js';
 import { getSetting, setSetting } from './db.js';
 import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadData.js';
@@ -75,17 +76,71 @@ export const HUD_DEFAULT_FONT = 'mono';
 const HUD_COLOR_KEY = 'hudColor';
 const HUD_FONT_KEY = 'hudFont';
 
+/** Значение цвета, означающее «как в теме», а не конкретный цвет. */
+export const HUD_COLOR_AUTO = 'auto';
+
+function hueOf(hex) {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) h = mx === r ? 60 * (((g - b) / d) % 6) : mx === g ? 60 * ((b - r) / d + 2) : 60 * ((r - g) / d + 4);
+  if (h < 0) h += 360;
+  const l = (mx + mn) / 2;
+  return { h, s: d ? d / (1 - Math.abs(2 * l - 1)) : 0 };
+}
+
+/**
+ * Цвет проекции, подходящий теме приложения.
+ *
+ * Сам цвет темы взять нельзя: тёмно-синий акцент светлой темы на чёрном
+ * фоне почти не виден, а проекция обязана светиться. Поэтому из готовых
+ * цветов проекции выбирается ближайший по ТОНУ — так тема и стекло
+ * выглядят родственно, но цифра остаётся яркой.
+ *
+ * Бесцветные варианты (белый) в подборе не участвуют: у них насыщенность
+ * почти нулевая, тон вычисляется из шума округления и «выигрывает»
+ * случайным темам. Белый остаётся доступен, но только вручную.
+ */
+export function hudColorForTheme(themeId) {
+  const theme = THEMES[themeId];
+  if (!theme) return HUD_DEFAULT_COLOR;
+  const target = hueOf(theme.accent);
+  let best = HUD_DEFAULT_COLOR, bestDelta = Infinity;
+  for (const { id, hex } of Object.values(HUD_COLORS)) {
+    const c = hueOf(hex);
+    if (c.s < 0.3) continue;
+    const delta = Math.min(Math.abs(target.h - c.h), 360 - Math.abs(target.h - c.h));
+    if (delta < bestDelta) { bestDelta = delta; best = id; }
+  }
+  return best;
+}
+
+/**
+ * Возвращает цвет и шрифт проекции.
+ *
+ * Цвет по умолчанию — «как в теме», а не янтарный: сменив тему, человек
+ * ожидает, что за ней пойдёт и стекло. Но привязка мягкая: стоит выбрать
+ * цвет руками, и он останется при любой теме.
+ */
 export async function getHudStyle() {
-  const color = await getSetting(HUD_COLOR_KEY, HUD_DEFAULT_COLOR);
+  const stored = await getSetting(HUD_COLOR_KEY, HUD_COLOR_AUTO);
   const font = await getSetting(HUD_FONT_KEY, HUD_DEFAULT_FONT);
+  const auto = stored === HUD_COLOR_AUTO || !HUD_COLORS[stored];
   return {
-    color: HUD_COLORS[color] ? color : HUD_DEFAULT_COLOR,
+    color: auto ? hudColorForTheme(AppState.theme) : stored,
+    // Отдельно от color: интерфейсу надо знать не только ЧТО показать,
+    // но и выбрано ли это человеком — иначе он не сможет подсветить в
+    // списке вариант «как в теме».
+    auto,
     font: HUD_FONTS[font] ? font : HUD_DEFAULT_FONT,
   };
 }
 
 export async function setHudStyle({ color, font }) {
-  if (color && HUD_COLORS[color]) await setSetting(HUD_COLOR_KEY, color);
+  if (color === HUD_COLOR_AUTO) await setSetting(HUD_COLOR_KEY, HUD_COLOR_AUTO);
+  else if (color && HUD_COLORS[color]) await setSetting(HUD_COLOR_KEY, color);
   if (font && HUD_FONTS[font]) await setSetting(HUD_FONT_KEY, font);
 }
 
