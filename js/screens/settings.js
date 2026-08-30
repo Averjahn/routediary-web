@@ -498,10 +498,8 @@ function bind(body) {
   body.querySelector('#set-ad-mode')?.addEventListener('click', async () => {
     // Модуль подтягивается по нажатию: рекламный режим открывают редко, и
     // возить его в общем бандле ради этого незачем.
-    const [{ openAd }, { qrSvg }] = await Promise.all([
-      import('../adMode.js'), import('../qr.js'),
-    ]);
-    await openAd(qrSvg('https://autocoyc.com/?src=ad-mode', { size: 176 }));
+    const { openAd } = await import('../adMode.js');
+    await openAd();
   });
 
   body.querySelector('#set-auto-track')?.addEventListener('change', async (e) => {

@@ -420,7 +420,7 @@ export default {
   'ad.caption_speed': 'Tempo auf der Windschutzscheibe',
   'ad.line_service': 'Weiß, wann Öl und Beläge fällig sind',
   'ad.caption_service': 'Intervalle nach Motor und Kraftstoff',
-  'ad.caption_scan': 'Kamera draufhalten · ohne Anmeldung',
+  'ad.caption_site': 'Funktioniert offline, ohne Anmeldung',
   'settings.auto_tracking': 'Fahrten automatisch aufzeichnen',
   'settings.auto_tracking_hint': 'Solange dies aus ist, startet die Aufzeichnung nur über die Schaltfläche. Schalten Sie es ein, wenn eine Fahrt von selbst aufgezeichnet werden soll — etwa beim Öffnen der Windschutzscheiben-Projektion. Das verbraucht spürbar mehr Akku: die Ortung bleibt an.',
   'hud.session_started': 'Die Fahrt wird aufgezeichnet — die Route wird automatisch gespeichert.',

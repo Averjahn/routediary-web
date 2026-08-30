@@ -420,7 +420,7 @@ export default {
   'ad.caption_speed': '速度映在挡风玻璃上',
   'ad.line_service': '记得何时更换机油和刹车片',
   'ad.caption_service': '按发动机和燃料类型的间隔',
-  'ad.caption_scan': '对准摄像头 · 无需注册',
+  'ad.caption_site': '离线可用，无需注册',
   'settings.auto_tracking': '自动记录行程',
   'settings.auto_tracking_hint': '关闭时，只有按下开始按钮才会记录。如果希望行程自动记录（例如打开挡风玻璃投影时），请开启。这会明显更耗电：定位会一直保持开启。',
   'hud.session_started': '正在记录行程，路线会自动保存。',

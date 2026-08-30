@@ -420,7 +420,7 @@ export default {
   'ad.caption_speed': 'Velocidad en el parabrisas',
   'ad.line_service': 'Recuerda cuándo cambiar aceite y pastillas',
   'ad.caption_service': 'Intervalos según motor y combustible',
-  'ad.caption_scan': 'Apunta la cámara · sin registro',
+  'ad.caption_site': 'Funciona sin conexión y sin registro',
   'settings.auto_tracking': 'Grabar los viajes automáticamente',
   'settings.auto_tracking_hint': 'Mientras esté desactivado, la grabación solo empieza con el botón. Actívalo si quieres que el viaje se grabe solo, por ejemplo al abrir la proyección en el parabrisas. Consume bastante más batería: la ubicación permanece activa.',
   'hud.session_started': 'Grabando el viaje: la ruta se guardará sola.',

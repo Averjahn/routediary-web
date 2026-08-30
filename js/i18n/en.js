@@ -422,7 +422,7 @@ export default {
   'ad.caption_speed': 'Speed on the windshield',
   'ad.line_service': 'Remembers when to change oil and pads',
   'ad.caption_service': 'Intervals by engine and fuel type',
-  'ad.caption_scan': 'Point your camera · no sign-up',
+  'ad.caption_site': 'Works offline, no sign-up',
   'settings.auto_tracking': 'Record trips automatically',
   'settings.auto_tracking_hint': 'While this is off, recording starts only from the Start button. Turn it on if you want a trip recorded on its own — for example when you open the windshield projection. It uses noticeably more battery: location stays on.',
   'hud.session_started': 'Recording the trip — the route will be saved for you.',

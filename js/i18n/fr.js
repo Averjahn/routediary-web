@@ -420,7 +420,7 @@ export default {
   'ad.caption_speed': 'Vitesse sur le pare-brise',
   'ad.line_service': 'Retient quand changer huile et plaquettes',
   'ad.caption_service': 'Intervalles selon moteur et carburant',
-  'ad.caption_scan': 'Pointez la caméra · sans inscription',
+  'ad.caption_site': 'Fonctionne hors ligne, sans inscription',
   'settings.auto_tracking': 'Enregistrer les trajets automatiquement',
   'settings.auto_tracking_hint': 'Tant que c’est désactivé, l’enregistrement ne démarre qu’avec le bouton. Activez-le pour qu’un trajet s’enregistre tout seul, par exemple à l’ouverture de la projection sur le pare-brise. Cela consomme nettement plus de batterie : la localisation reste active.',
   'hud.session_started': 'Trajet en cours d’enregistrement — l’itinéraire sera enregistré automatiquement.',

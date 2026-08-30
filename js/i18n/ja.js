@@ -592,7 +592,7 @@ export default {
   'ad.caption_speed': 'フロントガラスに速度',
   'ad.line_service': 'オイルとパッドの交換時期を覚えています',
   'ad.caption_service': 'エンジンと燃料に応じた間隔',
-  'ad.caption_scan': 'カメラを向けるだけ・登録不要',
+  'ad.caption_site': 'オフラインで動作、登録不要',
   'settings.auto_tracking': '走行を自動で記録する',
   'settings.auto_tracking_hint': 'オフの間は、記録は「開始」ボタンからのみ始まります。フロントガラス投影を開いたときなど、走行を自動で記録したい場合にオンにしてください。位置情報が入ったままになるため、電池の消費が目に見えて増えます。',
   'hud.session_started': '走行を記録中です。ルートは自動で保存されます。',

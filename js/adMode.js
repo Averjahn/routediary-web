@@ -1,22 +1,33 @@
 /**
- * Рекламный режим: та же анимация, что и в готовой гифке, но живая.
+ * Рекламный режим: живая анимация в стилистике печатных плакатов.
  *
  * ЗАЧЕМ ЖИВАЯ, А НЕ ГИФКА. Гифку нельзя перекрасить: цвет запечён в
- * пиксели. Здесь же цифра светится тем же цветом, что и проекция на
- * стекло, — а он, в свою очередь, следует за темой приложения. Поменяли
- * тему, открыли рекламный режим — он уже в нужном цвете.
+ * пиксели. Здесь цвет выбирается на ходу и по умолчанию идёт за темой
+ * приложения.
+ *
+ * ПОЧЕМУ БЕЗ QR. Он здесь был и оказался нечитаемым: на экране телефона
+ * код выходил слишком мелким, чтобы навести на него вторую камеру. А
+ * главное, он не нужен — код уже есть на плакате, который человек и
+ * держит перед глазами. Экран показывает адрес словами, его переписать
+ * проще, чем сканировать с чужого телефона.
+ *
+ * ЦВЕТ ФОНА, А НЕ ТЕКСТА. Плакат устроен так: цветное поле, белые буквы.
+ * Поэтому выбранный цвет уходит в фон, а не в шрифт, и перед этим
+ * затемняется до читаемого — см. readableBackground.
+ *
+ * ЗНАК — ТОТ ЖЕ ФАЙЛ, ЧТО НА ПЛАКАТЕ (icons/icon.svg, байт в байт), и на
+ * белой плитке, как в печатных макетах. Рисовать его линиями из общего
+ * набора значков нельзя: человек, увидевший плакат и открывший экран,
+ * должен узнать одну и ту же марку, а не две похожие.
  *
  * ВРЕМЯ КАДРА СЧИТАЕТСЯ, А НЕ ЗАДАЁТСЯ. Ровно та же модель, что в
  * tools/hud_ad_gif.py: столько-то знаков в секунду плюс время на то,
  * чтобы глаз нашёл текст. Держать две копии одних и тех же чисел опасно
  * — на это есть тест, сверяющий их с гифкой.
  *
- * ФОН ЧЁРНЫЙ по той же причине, что и у проекции: любой светлый участок
- * отражается в стекле мутным пятном.
  */
 import { t } from './i18n.js';
 import { HUD_COLORS, getHudStyle, setHudStyle, HUD_COLOR_AUTO } from './hud.js';
-import { icon } from './icons.js';
 
 // --- Модель времени (зеркало tools/hud_ad_gif.py) ---------------------------
 //
@@ -27,8 +38,12 @@ export const CPS = 14;
 export const LEAD_IN = 0.5;
 /** Имя и цифру не читают по буквам, их узнают целиком. */
 export const GLANCE = 0.5;
-/** Навести камеру на код дольше, чем прочитать строку под ним. */
-export const QR_MIN = 3.5;
+/**
+ * Последний кадр держится дольше расчётного: на нём адрес сайта, и это
+ * единственное, что человек должен унести с собой. Мелькнувший адрес
+ * бесполезен — его не успеть ни прочитать, ни набрать.
+ */
+export const CLOSING_MIN = 3.5;
 const FADE = 0.25;
 
 /** Сцены: крупное, подпись, читается ли крупное как текст. */
@@ -37,14 +52,14 @@ export function scenes() {
     { big: t('app.name'), cap: t('ad.caption_diary'), text: false, kind: 'brand' },
     { big: '87', cap: t('ad.caption_speed'), text: false, kind: 'speed' },
     { big: t('ad.line_service'), cap: t('ad.caption_service'), text: true, kind: 'line' },
-    { big: 'autocoyc.com', cap: t('ad.caption_scan'), text: false, kind: 'qr' },
+    { big: 'autocoyc.com', cap: t('ad.caption_site'), text: false, kind: 'site' },
   ];
 }
 
 export function sceneSeconds({ big, cap, text }, isLast) {
   const chars = cap.length + (text ? big.length : 0);
   const need = LEAD_IN + chars / CPS + (text ? 0 : GLANCE);
-  return isLast ? Math.max(need, QR_MIN) : need;
+  return isLast ? Math.max(need, CLOSING_MIN) : need;
 }
 
 export function timeline(list) {
@@ -56,6 +71,35 @@ export function timeline(list) {
     at += d;
   });
   return out;
+}
+
+/** Яркость по формуле относительной светимости (WCAG). */
+function luminance(r, g, b) {
+  const f = v => {
+    const x = v / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+/**
+ * Затемняет цвет, пока белый текст на нём не станет читаемым.
+ *
+ * Порог 3:1 — норма для КРУПНОГО текста, а здесь всё крупное. Без этого
+ * шага плакат разваливается на половине палитры: белым по янтарному
+ * контраст 1,8, по ледяному 1,7 — буквы физически сливаются с фоном.
+ * Фирменный бирюзовый проходит как есть (3,39), поэтому вид по умолчанию
+ * ровно такой же, как у печатных плакатов.
+ */
+export function readableBackground(hex, need = 3.0) {
+  let [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  // Шаг 7% и не больше сорока шагов: даже белый доходит до нормы за
+  // двадцать с небольшим, а ограничение спасает от вечного цикла, если
+  // на вход придёт что-то неожиданное.
+  for (let k = 0; k < 40 && 1.05 / (luminance(r, g, b) + 0.05) < need; k++) {
+    r = Math.round(r * 0.93); g = Math.round(g * 0.93); b = Math.round(b * 0.93);
+  }
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
 let overlay = null;
@@ -75,7 +119,7 @@ export function closeAd() {
   overlay = null;
 }
 
-export async function openAd(qrSvg) {
+export async function openAd() {
   if (overlay) return;
   const style = await getHudStyle();
   const list = scenes();
@@ -84,16 +128,17 @@ export async function openAd(qrSvg) {
 
   overlay = document.createElement('div');
   overlay.className = 'admode';
-  overlay.style.setProperty('--ad-color', HUD_COLORS[style.color].hex);
+  overlay.style.setProperty('--ad-bg', readableBackground(HUD_COLORS[style.color].hex));
   overlay.innerHTML = `
     <div class="ad-stage">
       ${list.map((s, i) => `
         <div class="ad-scene" data-i="${i}">
           ${s.kind === 'brand'
-            ? `<div class="ad-row">${icon('car', { size: 96 })}<div class="ad-brand">${s.big}</div></div>`
+            ? `<div class="ad-row">
+                 <div class="ad-mark"><img src="icons/icon.svg" alt=""></div>
+                 <div class="ad-brand">${s.big}</div></div>`
             : s.kind === 'speed' ? `<div class="ad-speed" id="ad-speed">0</div>`
-            : s.kind === 'qr' ? `<div class="ad-row"><div class="ad-qr">${qrSvg}</div>
-                                  <div class="ad-site">${s.big}</div></div>`
+            : s.kind === 'site' ? `<div class="ad-site">${s.big}</div>`
             : `<div class="ad-line">${s.big}</div>`}
           <div class="ad-cap">${s.cap}</div>
         </div>`).join('')}
@@ -146,7 +191,7 @@ export async function openAd(qrSvg) {
       // Перечитываем, а не берём нажатое: при «как в теме» реальный цвет
       // решает тема, и подставлять сюда слово «auto» нельзя.
       const next = await getHudStyle();
-      overlay.style.setProperty('--ad-color', HUD_COLORS[next.color].hex);
+      overlay.style.setProperty('--ad-bg', readableBackground(HUD_COLORS[next.color].hex));
       overlay.querySelectorAll('.ad-sw').forEach(b => b.classList.toggle('active',
         b.dataset.color === (next.auto ? HUD_COLOR_AUTO : next.color)));
     });

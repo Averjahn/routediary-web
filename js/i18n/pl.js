@@ -420,7 +420,7 @@ export default {
   'ad.caption_speed': 'Prędkość na szybie',
   'ad.line_service': 'Pamięta, kiedy wymienić olej i klocki',
   'ad.caption_service': 'Interwały wg silnika i paliwa',
-  'ad.caption_scan': 'Skieruj aparat · bez rejestracji',
+  'ad.caption_site': 'Działa offline, bez rejestracji',
   'settings.auto_tracking': 'Automatycznie zapisuj przejazdy',
   'settings.auto_tracking_hint': 'Gdy opcja jest wyłączona, nagrywanie zaczyna się tylko przyciskiem. Włącz, jeśli przejazd ma zapisywać się sam — na przykład po otwarciu projekcji na szybę. Zużywa zauważalnie więcej baterii: lokalizacja pozostaje włączona.',
   'hud.session_started': 'Trasa jest nagrywana — zapisze się sama.',
