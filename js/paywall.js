@@ -13,6 +13,7 @@
  */
 
 import { t } from './i18n.js';
+import { goal, GOALS } from './analytics.js';
 import { AppState } from './state.js';
 import { openModal, closeModal, toast } from './ui.js';
 import { FEATURES, PLANS, TIER, TEST_MODE, currentTier, simulatePurchase, resetPurchase } from './subscription.js';
