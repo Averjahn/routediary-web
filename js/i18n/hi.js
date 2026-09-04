@@ -16,6 +16,8 @@ export default {
   'category.none': 'कोई कैटेगरी नहीं', 'category.work': 'काम', 'category.home': 'घर',
   'category.shop': 'शॉपिंग', 'category.medical': 'डॉक्टर', 'category.leisure': 'फुर्सत', 'category.other': 'अन्य',
   'day.today': 'आज', 'day.yesterday': 'कल (बीता)', 'day.tomorrow': 'कल (आने वाला)',
+  'map.locate': 'मैं कहाँ हूँ',
+  'map.locate_failed': 'स्थिति निर्धारित नहीं हो सकी',
   'map.start_recording': 'रिकॉर्डिंग शुरू करें', 'map.stop_recording': 'रिकॉर्डिंग बंद करें',
   'map.gps_off': 'GPS बंद है', 'map.gps_searching': 'GPS खोजा जा रहा है…',
   'map.permission_denied': 'लोकेशन एक्सेस नहीं दी गई। रूट रिकॉर्ड करने के लिए ब्राउज़र में इसे अनुमति दें।',

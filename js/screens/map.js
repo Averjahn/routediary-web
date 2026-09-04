@@ -44,6 +44,7 @@ export function render(container) {
         <div class="map-actions">
           <button class="btn sm" id="map-manual-btn" data-i18n="map.manual_add"></button>
           <button class="btn sm" id="map-hud-btn" data-i18n="hud.open"></button>
+          <button class="btn sm" id="map-locate-btn" data-i18n="map.locate"></button>
         </div>
       </div>
     </div>
@@ -78,6 +79,8 @@ export function render(container) {
   container.querySelector('#map-day-prev').addEventListener('click', () => changeDay(-1));
   container.querySelector('#map-day-next').addEventListener('click', () => changeDay(1));
   container.querySelector('#map-manual-btn').addEventListener('click', openManualTripForm);
+  const locateBtn = container.querySelector('#map-locate-btn');
+  locateBtn?.addEventListener('click', () => locateMe(locateBtn));
   container.querySelector('#map-hud-btn').addEventListener('click', async () => {
     if (!await openHud()) { toast(t('hud.unavailable')); return; }
     // Проекция могла поднять запись сама. Кнопка под ней осталась бы в
@@ -169,13 +172,34 @@ function initLeaflet(container) {
     resizeTimer = setTimeout(() => leafletMap && leafletMap.invalidateSize(), 150);
   });
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      pos => leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 14),
-      () => {},
-      { timeout: 5000 }
-    );
-  }
+  // Спутники сами не включаем.
+  //
+  // Раньше карта спрашивала позицию при КАЖДОЙ отрисовке — только чтобы
+  // подвинуть вид. Человек открывал вкладку, сидя дома, и получал запрос
+  // разрешения и разбуженный приёмник, ничего об этом не прося.
+  //
+  // Теперь позиция берётся по кнопке. Геолокация в приложении остаётся
+  // только там, где человек сам её включил: запись поездки и проекция на
+  // стекло.
+}
+
+/** Показать, где человек сейчас. Только по нажатию. */
+function locateMe(btn) {
+  if (!navigator.geolocation || !leafletMap) return;
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      leafletMap.setView([pos.coords.latitude, pos.coords.longitude], 14);
+      btn.disabled = false;
+    },
+    () => {
+      // Отказ в разрешении — не поломка: человек мог и не хотеть. Кнопку
+      // возвращаем в рабочее состояние, чтобы можно было передумать.
+      toast(t('map.locate_failed'));
+      btn.disabled = false;
+    },
+    { timeout: 5000, maximumAge: 60000 }
+  );
 }
 
 async function changeDay(delta) {

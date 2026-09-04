@@ -16,6 +16,8 @@ export default {
   'category.none': 'Bez kategorii', 'category.work': 'Praca', 'category.home': 'Dom',
   'category.shop': 'Zakupy', 'category.medical': 'Lekarz', 'category.leisure': 'Wypoczynek', 'category.other': 'Inne',
   'day.today': 'dziś', 'day.yesterday': 'wczoraj', 'day.tomorrow': 'jutro',
+  'map.locate': 'Gdzie jestem',
+  'map.locate_failed': 'Nie udało się ustalić położenia',
   'map.start_recording': 'Rozpocznij nagrywanie', 'map.stop_recording': 'Zatrzymaj nagrywanie',
   'map.gps_off': 'GPS wyłączony', 'map.gps_searching': 'wyszukiwanie GPS…',
   'map.permission_denied': 'Brak dostępu do lokalizacji. Zezwól na niego w przeglądarce, aby nagrywać trasy.',

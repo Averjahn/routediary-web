@@ -16,6 +16,8 @@ export default {
   'category.none': 'Aucune catégorie', 'category.work': 'Travail', 'category.home': 'Maison',
   'category.shop': 'Courses', 'category.medical': 'Médecin', 'category.leisure': 'Loisirs', 'category.other': 'Autre',
   'day.today': "aujourd'hui", 'day.yesterday': 'hier', 'day.tomorrow': 'demain',
+  'map.locate': 'Où suis-je',
+  'map.locate_failed': 'Impossible de déterminer la position',
   'map.start_recording': "Démarrer l'enregistrement", 'map.stop_recording': "Arrêter l'enregistrement",
   'map.gps_off': 'GPS désactivé', 'map.gps_searching': 'recherche GPS…',
   'map.permission_denied': 'Accès à la localisation refusé. Autorisez-le dans le navigateur pour enregistrer les trajets.',

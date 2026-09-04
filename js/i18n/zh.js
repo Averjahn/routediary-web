@@ -16,6 +16,8 @@ export default {
   'category.none': '无分类', 'category.work': '工作', 'category.home': '家',
   'category.shop': '购物', 'category.medical': '就医', 'category.leisure': '休闲', 'category.other': '其他',
   'day.today': '今天', 'day.yesterday': '昨天', 'day.tomorrow': '明天',
+  'map.locate': '我在哪',
+  'map.locate_failed': '无法获取位置',
   'map.start_recording': '开始记录', 'map.stop_recording': '停止记录',
   'map.gps_off': 'GPS 已关闭', 'map.gps_searching': '正在搜索 GPS…',
   'map.permission_denied': '位置访问被拒绝。请在浏览器中允许定位以记录路线。',

@@ -18,6 +18,8 @@ export default {
   'category.none': 'No category', 'category.work': 'Work', 'category.home': 'Home',
   'category.shop': 'Shop', 'category.medical': 'Doctor', 'category.leisure': 'Leisure', 'category.other': 'Other',
   'day.today': 'today', 'day.yesterday': 'yesterday', 'day.tomorrow': 'tomorrow',
+  'map.locate': 'Where am I',
+  'map.locate_failed': 'Could not get your position',
   'map.start_recording': 'Start recording', 'map.stop_recording': 'Stop recording',
   'map.gps_off': 'GPS off', 'map.gps_searching': 'searching GPS…',
   'map.permission_denied': 'Location access denied. Allow it in the browser to record routes.',

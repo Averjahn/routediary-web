@@ -45,6 +45,8 @@ export default {
   'day.today': '今日',
   'day.yesterday': '昨日',
   'day.tomorrow': '明日',
+  'map.locate': '現在地',
+  'map.locate_failed': '位置を取得できませんでした',
   'map.start_recording': '記録開始',
   'map.stop_recording': '記録終了',
   'map.gps_off': 'GPSオフ',

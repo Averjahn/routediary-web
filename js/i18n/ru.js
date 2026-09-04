@@ -17,6 +17,8 @@ export default {
   'category.none': 'Без категории', 'category.work': 'Работа', 'category.home': 'Дом',
   'category.shop': 'Магазин', 'category.medical': 'Врач', 'category.leisure': 'Отдых', 'category.other': 'Другое',
   'day.today': 'сегодня', 'day.yesterday': 'вчера', 'day.tomorrow': 'завтра',
+  'map.locate': 'Где я',
+  'map.locate_failed': 'Не удалось определить положение',
   'map.start_recording': 'Начать запись', 'map.stop_recording': 'Остановить запись',
   'map.gps_off': 'GPS выкл.', 'map.gps_searching': 'поиск GPS…',
   'map.permission_denied': 'Доступ к геолокации запрещён. Разрешите его в браузере, чтобы записывать маршруты.',

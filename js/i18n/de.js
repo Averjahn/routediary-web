@@ -16,6 +16,8 @@ export default {
   'category.none': 'Keine Kategorie', 'category.work': 'Arbeit', 'category.home': 'Zuhause',
   'category.shop': 'Einkauf', 'category.medical': 'Arzt', 'category.leisure': 'Freizeit', 'category.other': 'Sonstiges',
   'day.today': 'heute', 'day.yesterday': 'gestern', 'day.tomorrow': 'morgen',
+  'map.locate': 'Wo bin ich',
+  'map.locate_failed': 'Position konnte nicht ermittelt werden',
   'map.start_recording': 'Aufzeichnung starten', 'map.stop_recording': 'Aufzeichnung stoppen',
   'map.gps_off': 'GPS aus', 'map.gps_searching': 'GPS wird gesucht …',
   'map.permission_denied': 'Standortzugriff verweigert. Bitte im Browser erlauben, um Strecken aufzuzeichnen.',

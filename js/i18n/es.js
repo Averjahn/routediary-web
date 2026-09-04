@@ -16,6 +16,8 @@ export default {
   'category.none': 'Sin categoría', 'category.work': 'Trabajo', 'category.home': 'Casa',
   'category.shop': 'Compras', 'category.medical': 'Médico', 'category.leisure': 'Ocio', 'category.other': 'Otro',
   'day.today': 'hoy', 'day.yesterday': 'ayer', 'day.tomorrow': 'mañana',
+  'map.locate': 'Dónde estoy',
+  'map.locate_failed': 'No se pudo obtener la ubicación',
   'map.start_recording': 'Empezar a grabar', 'map.stop_recording': 'Detener grabación',
   'map.gps_off': 'GPS apagado', 'map.gps_searching': 'buscando GPS…',
   'map.permission_denied': 'Acceso a la ubicación denegado. Actívalo en el navegador para grabar rutas.',
