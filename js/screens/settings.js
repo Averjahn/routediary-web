@@ -221,6 +221,16 @@ export async function refresh() {
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.road_accuracy"></div>
     </div>
 
+    <div class="section-title" data-i18n="settings.section_car"></div>
+    <div class="card">
+      <div class="settings-row" style="cursor:pointer;" id="set-car">
+        <span>
+          <span data-i18n="settings.car"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="settings.car_hint"></span>
+        </span>
+      </div>
+    </div>
+
     <div class="section-title" data-i18n="settings.section_export"></div>
     <div class="card">
       <div class="settings-row" style="cursor:pointer;" id="set-export">
@@ -536,6 +546,11 @@ function bind(body) {
     refreshKeepingScroll();
   });
   body.querySelector('#set-signals')?.addEventListener('click', openSignals);
+  body.querySelector('#set-car').addEventListener('click', async () => {
+    // Подгружается по нажатию: подключением к машине пользуются немногие.
+    const { openCarConnect } = await import('../carConnect.js');
+    await openCarConnect();
+  });
   body.querySelector('#set-export').addEventListener('click', async () => {
     // Экспорт — платная возможность: это главный премиум-крючок всей ниши.
     // В тестовом режиме открыт всем, чтобы его можно было пощупать.
