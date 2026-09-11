@@ -6,7 +6,10 @@ import { ensureAround, roadContext, isEnabled as roadDataEnabled } from './roadD
 import { overspeedState } from './roadRules.js';
 import { applyDigits } from './segmentDigits.js';
 import { createMotionBridge } from './motionSpeed.js';
-import { isRecording, startRecording, autoTrackingEnabled } from './tracking.js';
+import {
+  isRecording, startRecording, autoTrackingEnabled,
+  attachExternalFeed, detachExternalFeed, feedFix,
+} from './tracking.js';
 
 /**
  * Проекция скорости на лобовое стекло.
@@ -524,8 +527,13 @@ export async function openHud() {
     }, 5000);
   }
 
+  // Один приёмник на двоих. Если идёт запись поездки, она гасит свой и
+  // получает отсчёты отсюда: проекция и так держит навигационную точность,
+  // а второй приёмник на полной мощности сообщал бы то же самое.
+  attachExternalFeed();
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
+      feedFix(pos);
       meter.update({
         timestamp: pos.timestamp || Date.now(),
         lat: pos.coords.latitude,
@@ -634,6 +642,8 @@ export function closeHud() {
     navigator.geolocation.clearWatch(watchId);
     watchId = null;
   }
+  // Запись забирает приёмник обратно — в режиме, который сейчас нужен.
+  detachExternalFeed();
   document.removeEventListener('visibilitychange', onVisibility);
   releaseWakeLock();
 

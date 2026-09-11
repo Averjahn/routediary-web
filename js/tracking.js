@@ -3,6 +3,7 @@ import { AppState, getPrimaryVehicle } from './state.js';
 import { uuid, todayKey, dayKeyOf } from './format.js';
 import { segmentDay, detectMode, computeMetrics, userFreeFlowSpeed, congestionScore } from './geo.js';
 import { goal, GOALS } from './analytics.js';
+import { createGpsGovernor, STILL_POLL_MS } from './gpsPower.js';
 
 /**
  * Разрешена ли записи начинаться САМОЙ — без нажатия кнопки.
@@ -31,6 +32,80 @@ function haversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+/**
+ * Приёмник во время записи: полный на ходу, экономный на стоянке.
+ * Когда едем и когда стоим — решает gpsPower.js; здесь только исполнение.
+ */
+const governor = createGpsGovernor();
+let stillPollId = null;
+/** Отсчёты сейчас даёт проекция на стекло — свой приёмник держать незачем. */
+let externalFeed = false;
+
+const MOVING_OPTS = { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 };
+// На стоянке спутники не нужны: чтобы заметить, что машина тронулась,
+// хватает положения по вышкам и Wi-Fi, а свежий отсчёт полуминутной
+// давности браузер отдаёт вообще без обращения к приёмнику.
+const STILL_OPTS = { enableHighAccuracy: false, maximumAge: 30000, timeout: 20000 };
+
+function startWatch() {
+  if (AppState.watchId != null || externalFeed) return;
+  AppState.watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, MOVING_OPTS);
+}
+
+function stopWatch() {
+  if (AppState.watchId == null) return;
+  navigator.geolocation.clearWatch(AppState.watchId);
+  AppState.watchId = null;
+}
+
+function startStillPoll() {
+  if (stillPollId != null || externalFeed) return;
+  stillPollId = setInterval(() => {
+    navigator.geolocation.getCurrentPosition(onPosition, () => {}, STILL_OPTS);
+  }, STILL_POLL_MS);
+}
+
+function stopStillPoll() {
+  if (stillPollId == null) return;
+  clearInterval(stillPollId);
+  stillPollId = null;
+}
+
+function applyPowerMode(mode) {
+  if (!AppState.recording || externalFeed) return;
+  if (mode === 'still') {
+    stopWatch();
+    startStillPoll();
+  } else {
+    stopStillPoll();
+    startWatch();
+  }
+}
+
+/**
+ * Проекция на стекло забирает подачу отсчётов на себя.
+ *
+ * Раньше при открытой проекции во время записи работали ДВА приёмника
+ * сразу, каждый на полной мощности, — и оба сообщали одно и то же. Теперь
+ * запись свой гасит, а отсчёты получает от проекции через feedFix.
+ */
+export function attachExternalFeed() {
+  externalFeed = true;
+  stopWatch();
+  stopStillPoll();
+}
+
+/** Проекция закрыта — запись снова ведёт приёмник сама, в том режиме, что сейчас нужен. */
+export function detachExternalFeed() {
+  externalFeed = false;
+  if (AppState.recording) applyPowerMode(governor.mode);
+}
+
+/** Отсчёт от проекции. Пока запись не идёт, никуда не пишется. */
+export function feedFix(pos) {
+  if (AppState.recording && externalFeed) onPosition(pos);
+}
+
 export async function isRecording() {
   return await getSetting('recording', false);
 }
@@ -44,12 +119,8 @@ export async function startRecording() {
   await setSetting('recording', true);
   await setSetting('recordingStartedAt', AppState.recordingStartedAt);
   lastRecordedPoint = null;
-
-  AppState.watchId = navigator.geolocation.watchPosition(
-    onPosition,
-    onPositionError,
-    { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
-  );
+  governor.reset();
+  startWatch();
 }
 
 export async function stopRecording() {
@@ -58,15 +129,27 @@ export async function stopRecording() {
   // запись — не поездка, и считать её как результат значит учить
   // алгоритм искать людей, которые ничего не довели до конца.
   goal(GOALS.TRIP_RECORDED);
-  if (AppState.watchId != null) {
-    navigator.geolocation.clearWatch(AppState.watchId);
-    AppState.watchId = null;
-  }
+  stopWatch();
+  stopStillPoll();
+  governor.reset();
   await setSetting('recording', false);
   await recomputeSegmentation(AppState.currentDay);
 }
 
 async function onPosition(pos) {
+  // Режим решается ДО фильтра точности: экономные отсчёты на стоянке почти
+  // всегда грубее 50 метров и в трек не попадают, но именно по ним видно,
+  // что машина тронулась.
+  const before = governor.mode;
+  const mode = governor.update({
+    lat: pos.coords.latitude,
+    lon: pos.coords.longitude,
+    t: pos.timestamp || Date.now(),
+    speed: pos.coords.speed != null ? pos.coords.speed : -1,
+    accuracy: pos.coords.accuracy != null ? pos.coords.accuracy : Infinity,
+  });
+  if (mode !== before) applyPowerMode(mode);
+
   const point = {
     id: uuid(),
     timestamp: pos.timestamp || Date.now(),
