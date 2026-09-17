@@ -414,6 +414,7 @@ export default {
   'hud.open': '投影到挡风玻璃',
   'hud.mirror': '镜像',
   'hud.hint': '将手机屏幕朝上平放在仪表台上——数字会反射到挡风玻璃上。点击屏幕可显示按钮。',
+  'hud.speed_warning': '请将该数字与车辆速度表核对。如果速度表正常，请以它为准：这里的速度由卫星计算，可能存在偏差。',
   'hud.color_auto': '跟随主题',
   'hud.color_auto_hint': '数字颜色跟随应用主题，取色相最接近的亮色。手动选择颜色后，无论换成哪个主题都保持不变。',
   'settings.section_car': '手机控车',

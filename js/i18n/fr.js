@@ -414,6 +414,7 @@ export default {
   'hud.open': 'Projeter sur le pare-brise',
   'hud.mirror': 'Miroir',
   'hud.hint': "Posez le téléphone écran vers le haut sur le tableau de bord — le chiffre se reflète dans le pare-brise. Touchez l'écran pour afficher les boutons.",
+  'hud.speed_warning': 'Comparez ce chiffre au compteur de la voiture. Si le compteur fonctionne, fiez-vous à lui : cette vitesse est calculée par satellites et peut différer.',
   'hud.color_auto': 'Selon le thème',
   'hud.color_auto_hint': 'La couleur du chiffre suit le thème de l’application : la couleur vive la plus proche en teinte. Choisissez-en une à la main et elle restera quel que soit le thème.',
   'settings.section_car': 'La voiture depuis le téléphone',

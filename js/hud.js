@@ -428,6 +428,7 @@ export async function openHud() {
       <button class="hud-btn" id="hud-close"></button>
     </div>
     <div class="hud-hint" id="hud-hint" data-i18n="hud.hint"></div>
+    <div class="hud-hint hud-warning" id="hud-warning" data-i18n="hud.speed_warning"></div>
   `;
   document.body.appendChild(overlay);
   document.body.classList.add('hud-open');
@@ -441,10 +442,12 @@ export async function openHud() {
   const signalEl = overlay.querySelector('#hud-signal');
   const controls = overlay.querySelector('#hud-controls');
   const hint = overlay.querySelector('#hud-hint');
+  const warning = overlay.querySelector('#hud-warning');
 
   overlay.querySelector('#hud-mirror').textContent = t('hud.mirror');
   overlay.querySelector('#hud-close').textContent = t('common.close');
   hint.textContent = t('hud.hint');
+  warning.textContent = t('hud.speed_warning');
 
   // Последнее известное положение и курс — для подсказок по дороге.
   let position = null;
@@ -591,10 +594,12 @@ export async function openHud() {
   function showControls() {
     controls.classList.remove('faded');
     hint.classList.remove('faded');
+    warning.classList.remove('faded');
     clearTimeout(hideControlsTimer);
     hideControlsTimer = setTimeout(() => {
       controls.classList.add('faded');
       hint.classList.add('faded');
+      warning.classList.add('faded');
     }, 4000);
   }
   showControls();

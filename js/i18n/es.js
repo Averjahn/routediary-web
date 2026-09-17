@@ -414,6 +414,7 @@ export default {
   'hud.open': 'Proyectar en el parabrisas',
   'hud.mirror': 'Espejo',
   'hud.hint': 'Coloca el teléfono con la pantalla hacia arriba en el salpicadero — la cifra se refleja en el parabrisas. Toca la pantalla para mostrar los botones.',
+  'hud.speed_warning': 'Compara la cifra con el velocímetro del coche. Si el velocímetro funciona, fíate de él: esta velocidad se calcula por satélites y puede diferir.',
   'hud.color_auto': 'Según el tema',
   'hud.color_auto_hint': 'El color de la cifra sigue al tema de la app: se toma el color vivo más cercano en tono. Elige un color a mano y se mantendrá con cualquier tema.',
   'settings.section_car': 'El coche desde el móvil',

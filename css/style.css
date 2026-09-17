@@ -763,6 +763,9 @@ body.hud-open { overflow: hidden; }
 }
 /* Кнопки гаснут сами — они тоже отражаются в стекле. */
 .hud-controls.faded, .hud-hint.faded { opacity: 0; pointer-events: none; }
+/* Предупреждение о сверке со спидометром: заметнее обычной подсказки, но
+   не ярче самой цифры — на стекле отражается всё, что светится. */
+.hud-warning { bottom: 76px; font-weight: 600; opacity: 0.85; }
 
 .hud-btn {
   background: color-mix(in srgb, var(--hud-color) 12%, transparent);

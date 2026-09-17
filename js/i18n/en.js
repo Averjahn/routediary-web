@@ -416,6 +416,7 @@ export default {
   'hud.open': 'Project on windshield',
   'hud.mirror': 'Mirror',
   'hud.hint': 'Lay the phone screen-up on the dashboard — the figure reflects in the windshield. Tap the screen to show the buttons.',
+  'hud.speed_warning': 'Check this figure against the car’s speedometer. If the speedometer works, trust it: this speed is computed from satellites and can differ.',
   'hud.color_auto': 'Match the theme',
   'hud.color_auto_hint': 'The digit colour follows the app theme — the closest bright colour by hue. Pick a colour by hand and it stays whatever the theme.',
   'settings.section_car': 'Car from your phone',

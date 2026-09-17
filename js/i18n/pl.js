@@ -414,6 +414,7 @@ export default {
   'hud.open': 'Wyświetl na szybie',
   'hud.mirror': 'Odbicie lustrzane',
   'hud.hint': 'Połóż telefon ekranem do góry na desce rozdzielczej — cyfra odbije się w szybie. Dotknij ekranu, aby pokazać przyciski.',
+  'hud.speed_warning': 'Porównaj tę liczbę z prędkościomierzem auta. Jeśli prędkościomierz działa, zaufaj jemu: ta prędkość jest liczona z satelitów i może się różnić.',
   'hud.color_auto': 'Jak motyw',
   'hud.color_auto_hint': 'Kolor cyfry podąża za motywem aplikacji — brany jest najbliższy odcieniem jasny kolor. Wybierz kolor ręcznie, a zostanie przy każdym motywie.',
   'settings.section_car': 'Auto z telefonu',

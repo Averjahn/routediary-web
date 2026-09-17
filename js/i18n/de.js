@@ -414,6 +414,7 @@ export default {
   'hud.open': 'Auf Windschutzscheibe projizieren',
   'hud.mirror': 'Spiegeln',
   'hud.hint': 'Lege das Handy mit dem Display nach oben aufs Armaturenbrett — die Anzeige spiegelt sich in der Windschutzscheibe. Tippe auf den Bildschirm, um die Schaltflächen einzublenden.',
+  'hud.speed_warning': 'Vergleichen Sie die Zahl mit dem Tacho des Autos. Funktioniert der Tacho, vertrauen Sie ihm: diese Geschwindigkeit stammt von Satelliten und kann abweichen.',
   'hud.color_auto': 'Wie das Thema',
   'hud.color_auto_hint': 'Die Ziffernfarbe folgt dem App-Thema — die nächstliegende helle Farbe im Farbton. Wählen Sie eine Farbe von Hand, bleibt sie bei jedem Thema.',
   'settings.section_car': 'Auto vom Handy',
