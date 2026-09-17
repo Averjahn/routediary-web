@@ -582,4 +582,10 @@ export default {
   'region.CN': '中国',
   'card.russian_only': '银行卡支付仅支持俄罗斯银行卡。其他国家的卡请使用加密货币支付。',
   'share.reward_friend': '好友打开您的链接后，也会立即获得 {days} 天 Pro。',
+  'partners.buy': '在哪里购买',
+  'partners.title': '在哪里购买',
+  'partners.ad': '广告。广告主：{advertiser}。通过这些链接我们会获得佣金。',
+  'partners.query': '该链接将在商店中搜索“{query}”。',
+  'partners.disclaimer': '我们不会为您的车挑选配件编号，也不核对兼容性——这由商店或维修店完成。购买前请按 VIN 核对配件。',
+  'partners.none': '该项目暂无链接',
 };

@@ -582,4 +582,10 @@ export default {
   'region.CN': 'Chiny',
   'card.russian_only': 'Płatność kartą obsługuje tylko karty rosyjskich banków. W przypadku innych kart użyj kryptowaluty.',
   'share.reward_friend': 'Twój znajomy też dostaje {days} dni Pro, gdy tylko otworzy Twój link.',
+  'partners.buy': 'Gdzie kupić',
+  'partners.title': 'Gdzie kupić',
+  'partners.ad': 'Reklama. Reklamodawca: {advertiser}. Za te linki otrzymujemy prowizję.',
+  'partners.query': 'Link otwiera wyszukiwanie w sklepie dla „{query}”.',
+  'partners.disclaimer': 'Nie dobieramy numeru części do Twojego auta ani nie sprawdzamy kompatybilności — robi to sklep lub warsztat. Sprawdź część po numerze VIN przed zakupem.',
+  'partners.none': 'Na razie brak linków do tej pozycji',
 };

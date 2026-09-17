@@ -12,6 +12,7 @@ import { documentStatus, DOC_TYPES } from '../documents.js';
 import { installPart, removePart, partWear, activeParts, removedParts, CATEGORY as PART_CATEGORY } from '../parts.js';
 import { acceptablePhoto, drawScaled } from '../photos.js';
 import { hasGuide } from '../guides.js';
+import { partnersReady, isPurchasable, offersFor } from '../partners.js';
 import { openGuide } from './guide.js';
 import { openObd } from './obdScreen.js';
 import { OBD_ENABLED } from '../features.js';
@@ -446,6 +447,7 @@ function renderMaintenance(listEl, items, ctx, vehicle) {
         <div class="item-actions">
           <button class="btn sm" data-replace="${item.id}" data-i18n="car.replaced_now"></button>
           ${hasGuide(item.componentId) ? `<button class="btn sm" data-guide="${item.id}" data-i18n="guide.open"></button>` : ''}
+          ${showBuy(item) ? `<button class="btn sm" data-buy="${item.id}" data-i18n="partners.buy"></button>` : ''}
           <button class="btn sm" data-edit="${item.id}" data-i18n="common.edit"></button>
         </div>
       </div>`;
@@ -463,6 +465,10 @@ function renderMaintenance(listEl, items, ctx, vehicle) {
     item.serviced = true;
     await DB.put('maintenanceItems', item);
     refresh();
+  }));
+  listEl.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => {
+    const item = items.find(i => i.id === btn.dataset.buy);
+    openBuyDialog(item);
   }));
   listEl.querySelectorAll('[data-guide]').forEach(btn => btn.addEventListener('click', async () => {
     const item = items.find(i => i.id === btn.dataset.guide);
@@ -1119,4 +1125,42 @@ function openCustomVehicleForm(preset = null) {
     }
   });
   applyI18nTree(overlay);
+}
+
+/**
+ * Показывать ли у этого узла кнопку «Где купить».
+ *
+ * Три условия сразу: партнёрские ссылки вообще настроены (и у каждой есть
+ * токен маркировки), узел можно купить коробкой, а человек — в стране, где
+ * эти магазины работают. Не выполнено любое — кнопки нет.
+ */
+function showBuy(item) {
+  return partnersReady() && isPurchasable(item.componentId) && AppState.region === 'RU';
+}
+
+/**
+ * Окно «Где купить».
+ *
+ * Пометка «Реклама» и имя рекламодателя стоят НАД ссылками, а не мелким
+ * шрифтом внизу: это требование закона и одновременно честность — человек
+ * должен понимать, что мы получаем за переход деньги, до того, как нажмёт.
+ */
+async function openBuyDialog(item) {
+  const vehicle = await getPrimaryVehicle();
+  const offers = offersFor(item.componentId, vehicle);
+  if (!offers.length) { toast(t('partners.none')); return; }
+
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="partners.title"></h2><button class="modal-close">✕</button></div>
+    <div class="muted" style="font-size:12px;">${escapeHtml(t('partners.ad', { advertiser: offers.map(o => o.advertiser).join(', ') }))}</div>
+    <div class="card" style="margin:10px 0;">
+      ${offers.map(offer => `
+        <div class="settings-row">
+          <a href="${escapeHtml(offer.url)}" target="_blank" rel="nofollow noopener noreferrer">${escapeHtml(offer.title)}</a>
+          <span class="muted" style="font-size:11px;">erid: ${escapeHtml(offer.erid)}</span>
+        </div>`).join('')}
+    </div>
+    <div class="muted" style="font-size:12px;">${escapeHtml(t('partners.query', { query: offers[0].query }))}</div>
+    <div class="muted" style="font-size:12px;padding-top:8px;">${escapeHtml(t('partners.disclaimer'))}</div>`);
+  overlay.querySelector('.modal-close').addEventListener('click', closeModal);
 }

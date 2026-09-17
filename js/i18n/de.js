@@ -582,4 +582,10 @@ export default {
   'region.CN': 'China',
   'card.russian_only': 'Die Kartenzahlung akzeptiert nur russische Bankkarten. Für andere Karten nutzen Sie die Krypto-Zahlung.',
   'share.reward_friend': 'Ihr Freund erhält ebenfalls {days} Tage Pro, sobald er Ihren Link öffnet.',
+  'partners.buy': 'Wo kaufen',
+  'partners.title': 'Wo kaufen',
+  'partners.ad': 'Werbung. Werbetreibender: {advertiser}. Für diese Links erhalten wir eine Provision.',
+  'partners.query': 'Der Link öffnet die Shop-Suche nach „{query}“.',
+  'partners.disclaimer': 'Wir wählen keine Teilenummer für Ihr Auto aus und prüfen keine Kompatibilität — das tun Shop oder Werkstatt. Prüfen Sie das Teil vor dem Kauf anhand der FIN.',
+  'partners.none': 'Für dieses Teil gibt es noch keine Links',
 };

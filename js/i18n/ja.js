@@ -759,4 +759,10 @@ export default {
   'region.CN': '中国',
   'card.russian_only': 'カード決済はロシアの銀行カードのみ対応しています。それ以外のカードは暗号資産をご利用ください。',
   'share.reward_friend': '友だちもリンクを開くとすぐに {days} 日間の Pro を獲得します。',
+  'partners.buy': '購入先',
+  'partners.title': '購入先',
+  'partners.ad': '広告。広告主: {advertiser}。これらのリンクから報酬を受け取ります。',
+  'partners.query': 'リンクは店舗で「{query}」を検索します。',
+  'partners.disclaimer': '当アプリはお車に合う品番を選定せず、適合確認も行いません（販売店や整備工場の役割です）。購入前にVINで部品をご確認ください。',
+  'partners.none': 'この項目のリンクはまだありません',
 };

@@ -584,4 +584,10 @@ export default {
   'region.CN': 'China',
   'card.russian_only': 'Card payment accepts Russian bank cards only. For cards issued elsewhere, use the crypto option.',
   'share.reward_friend': 'Your friend also gets {days} days of Pro right away, the moment they open your link.',
+  'partners.buy': 'Where to buy',
+  'partners.title': 'Where to buy',
+  'partners.ad': 'Advertisement. Advertiser: {advertiser}. We receive a commission for these links.',
+  'partners.query': 'The link opens a shop search for “{query}”.',
+  'partners.disclaimer': 'We do not pick a part number for your car and do not check compatibility — the shop or workshop does. Check the part against your VIN before buying.',
+  'partners.none': 'No links for this item yet',
 };
