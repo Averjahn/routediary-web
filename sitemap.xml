@@ -51,6 +51,21 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://autocoyc.com/kalkulyator/stoimost-vladeniya.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://autocoyc.com/kalkulyator/rashod-topliva.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://autocoyc.com/kalkulyator/sleduyushchee-to.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://autocoyc.com/to/lada-granta.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

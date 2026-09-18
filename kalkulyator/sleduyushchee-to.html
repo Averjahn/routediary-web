@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Калькулятор: когда следующее ТО по пробегу</title>
+<meta name="description" content="Сколько осталось до замены масла или другого расходника и когда это будет по календарю, исходя из вашего среднего пробега за месяц.">
+<link rel="canonical" href="https://autocoyc.com/kalkulyator/sleduyushchee-to.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Калькулятор: когда следующее ТО по пробегу">
+<meta property="og:description" content="Сколько осталось до замены масла или другого расходника и когда это будет по календарю, исходя из вашего среднего пробега за месяц.">
+<meta property="og:url" content="https://autocoyc.com/kalkulyator/sleduyushchee-to.html">
+<meta property="og:image" content="https://autocoyc.com/og/kalkulyator-sleduyushchee-to.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icons/icon-192.png">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #fff; color: #111; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 12px; }
+  h2 { font-size: 20px; margin: 32px 0 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #e5e5e5; }
+  th { font-weight: 600; color: #555; font-size: 13px; text-transform: uppercase; letter-spacing: .02em; }
+  .note { background: #f6f6f7; border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #444; }
+  .approx { color: #888; font-size: 12px; }
+  .cta { display: inline-block; margin: 18px 0 8px; padding: 12px 20px; background: #0a84ff;
+         color: #fff; text-decoration: none; border-radius: 10px; font-weight: 600; }
+  .links a { display: inline-block; margin: 0 10px 8px 0; }
+  footer { margin-top: 40px; font-size: 13px; color: #777; }
+  a { color: #0a84ff; }
+  .scroll { overflow-x: auto; }
+  .calc { background: #f6f6f7; border-radius: 12px; padding: 16px; margin: 16px 0; }
+  .calc label { display: block; margin: 10px 0 2px; font-size: 14px; color: #555; }
+  .calc input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 16px;
+                border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #111; }
+  .out { margin-top: 16px; padding: 14px; background: #fff; border-radius: 10px; font-size: 15px; }
+  .out b { font-size: 22px; display: block; margin-bottom: 4px; }
+  .out .line { color: #555; }
+  @media (prefers-color-scheme: dark) {
+    .calc { background: #1c1c1e; } .calc label { color: #aaa; }
+    .calc input { background: #111; border-color: #333; color: #eee; }
+    .out { background: #000; } .out .line { color: #aaa; }
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #111; color: #eee; }
+    th, td { border-color: #2a2a2a; } th { color: #aaa; }
+    .note { background: #1c1c1e; color: #bbb; }
+  }
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Калькулятор: когда следующее ТО по пробегу","description":"Сколько осталось до замены масла или другого расходника и когда это будет по календарю, исходя из вашего среднего пробега за месяц.","url":"https://autocoyc.com/kalkulyator/sleduyushchee-to.html","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"RUB"},"inLanguage":"ru"}</script>
+</head>
+<body>
+<div class="wrap">
+
+  <p><a href="/">Автопульс</a> → калькуляторы</p>
+  <h1>Когда следующее ТО</h1>
+  
+  <p>Осталось ли ещё ресурса и когда придёт срок — по пробегу и по календарю.</p>
+  <div class="calc">
+      
+      <label for="now">Текущий пробег, км</label>
+      <input id="now" type="number" inputmode="decimal" step="any" value="85000">
+      
+      <label for="last">Пробег последней замены, км</label>
+      <input id="last" type="number" inputmode="decimal" step="any" value="78000">
+      
+      <label for="interval">Интервал замены, км <span style="color:#999">— возьмите со страницы своей модели</span></label>
+      <input id="interval" type="number" inputmode="decimal" step="any" value="15000">
+      
+      <label for="perMonth">Средний пробег за месяц, км</label>
+      <input id="perMonth" type="number" inputmode="decimal" step="any" value="1200">
+      <div class="out" id="out"></div>
+  </div>
+
+  <p class="note">Интервал зависит от узла и от машины: масло — одно, ремень ГРМ — совсем
+  другое. Интервалы для конкретной модели есть в <a href="/to/">разделе регламентов</a>,
+  и это ориентир по классу автомобиля, а не выписка из сервисной книжки.</p>
+
+  <h2>Чтобы не считать это каждый раз</h2>
+  <p>«Автопульс» держит все узлы сразу: вносите пробег — приложение показывает остаток по
+  каждому расходнику и само двигает сроки после замены.</p>
+  <a class="cta" href="/?utm_source=seo&utm_medium=organic&utm_campaign=calc&utm_content=sleduyushchee-to">Открыть «Автопульс» — бесплатно</a>
+  <p class="links"><a href="/kalkulyator/stoimost-vladeniya.html">Сколько стоит содержать машину</a><a href="/kalkulyator/rashod-topliva.html">Расход топлива и стоимость поездки</a>
+    <a href="/to/">Регламенты ТО по моделям</a></p>
+  <footer>
+    <p>Данные о моторах и расходе — из справочника приложения. Интервалы считает движок
+    регламента «Автопульса» по классу автомобиля.</p>
+    <p><a href="/">Приложение</a> · <a href="/to/">Все регламенты</a> · <a href="/privacy.html">Приватность</a></p>
+  </footer>
+</div>
+<script>
+  // Счётчик посещаемости. Без вебвизора и карты кликов: нам нужно знать,
+  // сколько людей пришло из поиска, а не следить за ними.
+  (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+  k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+  (window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+  ym(112095433,"init",{clickmap:false,trackLinks:false,accurateTrackBounce:true,webvisor:false});
+</script>
+<script>
+  const num = id => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : 0; };
+  function calc() {
+    const done = num('now') - num('last');
+    const left = num('interval') - done;
+    const perMonth = num('perMonth');
+    let when = '';
+    if (left > 0 && perMonth > 0) {
+      const months = left / perMonth;
+      const date = new Date();
+      date.setMonth(date.getMonth() + Math.round(months));
+      when = '<div class="line">примерно ' + date.toLocaleDateString('ru-RU',
+        { month: 'long', year: 'numeric' }) + '</div>';
+    }
+    document.getElementById('out').innerHTML = left > 0
+      ? '<b>осталось ' + Math.round(left).toLocaleString('ru-RU') + ' км</b>' + when +
+        '<div class="line">пройдено ' + Math.round(done).toLocaleString('ru-RU') + ' км из ' +
+        Math.round(num('interval')).toLocaleString('ru-RU') + '</div>'
+      : '<b style="color:#d33">просрочено на ' + Math.round(-left).toLocaleString('ru-RU') + ' км</b>' +
+        '<div class="line">менять пора</div>';
+  }
+  ['now','last','interval','perMonth'].forEach(id =>
+    document.getElementById(id).addEventListener('input', calc));
+  calc();
+  // Подстановка из ссылки: со страницы модели сюда приходят с готовым расходом.
+  const q = new URLSearchParams(location.search);
+  let filled = false;
+  for (const [key, value] of q) {
+    const el = document.getElementById(key);
+    if (el && isFinite(parseFloat(value))) { el.value = value; filled = true; }
+  }
+  if (filled) calc();</script>
+</body>
+</html>
