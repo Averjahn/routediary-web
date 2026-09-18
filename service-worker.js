@@ -1,4 +1,4 @@
-const CACHE_NAME = 'avtopuls-v87';
+const CACHE_NAME = 'avtopuls-v88';
 const APP_SHELL = [
   './',
   './index.html',
@@ -99,6 +99,11 @@ const APP_SHELL = [
   './icons/apple-touch-icon.png',
   './favicon.ico',
   './icons/icon-192.png',
+  // Значки видов техники: мотоцикл, катер, самолёт. Мелкие, но нужны
+  // офлайн — иначе в гараже без сети будут пустые квадраты.
+  './icons/kinds/icon-moto-96.png',
+  './icons/kinds/icon-boat-96.png',
+  './icons/kinds/icon-aircraft-96.png',
   './icons/icon-512.png',
 ];
 

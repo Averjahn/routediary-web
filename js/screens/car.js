@@ -107,7 +107,7 @@ export async function refresh() {
   body.innerHTML = `
     ${garageSwitcher(vehicles, vehicle)}
     <div class="card garage-card">
-      <div class="garage-name">${escapeHtml(vehicle.displayName || t('car.default_name'))}</div>
+      <div class="garage-name">${kindBadge(vehicle)}${escapeHtml(vehicle.displayName || t('car.default_name'))}</div>
       ${healthBlock(health)}
       <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${vehicle.trackingUnit === 'hours' ? t('unit.hours') : t('unit.km')}</span></div>
       <div class="muted" data-i18n="${vehicle?.trackingUnit === 'hours' ? 'car.hours_caption' : 'car.odometer_caption'}"></div>
@@ -240,6 +240,21 @@ export async function refresh() {
  * а кнопка «добавить» есть всегда: именно через неё человек узнаёт,
  * что гараж вообще бывает не один.
  */
+/**
+ * Значок вида техники рядом с названием.
+ *
+ * У мотоцикла, катера и самолёта свой силуэт и свой цвет: перекрашенная
+ * машина на месте самолёта выглядела бы ошибкой, а не оформлением.
+ * У легковой значка нет — она и так по умолчанию.
+ */
+function kindBadge(vehicle) {
+  const kind = vehicle?.kind;
+  if (!kind || kind === VEHICLE_KIND.CAR) return '';
+  if (!['moto', 'boat', 'aircraft'].includes(kind)) return '';
+  return `<img src="icons/kinds/icon-${kind}-96.png" alt="${escapeHtml(t('vehicle.kind.' + kind))}"
+    width="28" height="28" style="vertical-align:-6px;margin-right:8px;border-radius:7px;">`;
+}
+
 function garageSwitcher(vehicles, current) {
   const chips = vehicles.map(v => `
     <button class="garage-chip${v.id === current.id ? ' active' : ''}" data-switch="${v.id}">

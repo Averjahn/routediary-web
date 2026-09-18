@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#F97316"/>
+  <g transform="translate(0,4)">
+    <!-- Колёса: белый обод, внутри цвет фона. -->
+    <circle cx="256" cy="710" r="126" fill="white"/>
+    <circle cx="256" cy="710" r="70" fill="#F97316"/>
+    <circle cx="768" cy="710" r="126" fill="white"/>
+    <circle cx="768" cy="710" r="70" fill="#F97316"/>
+
+    <!-- Треугольная рама: задняя ось → рулевая колонка → передняя ось. -->
+    <path d="M256,710 L540,710 L610,530 M540,710 L768,710"
+          fill="none" stroke="white" stroke-width="48"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Передняя вилка. -->
+    <path d="M642,470 L768,710" fill="none" stroke="white" stroke-width="48" stroke-linecap="round"/>
+    <!-- Бак и седло одной массой — по ней и идёт пульс. -->
+    <path d="M330,600 L470,600 Q540,600 588,536 L620,492 Q634,470 610,458 L470,458
+             Q430,458 412,492 L338,560 Q312,584 330,600 Z" fill="white"/>
+    <!-- Руль и фара. -->
+    <path d="M636,452 L700,392" fill="none" stroke="white" stroke-width="42" stroke-linecap="round"/>
+    <circle cx="742" cy="368" r="48" fill="white"/>
+
+    <!-- Пульс идёт по баку, а не по колёсам: иначе силуэт смазывается. -->
+    <path d="M356,556 L424,556 L466,506 L500,596 L536,540 L590,540"
+          fill="none" stroke="#F97316" stroke-width="34"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
