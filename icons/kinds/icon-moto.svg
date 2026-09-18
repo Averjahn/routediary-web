@@ -1,28 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <rect width="1024" height="1024" fill="#F97316"/>
-  <g transform="translate(0,4)">
-    <!-- Колёса: белый обод, внутри цвет фона. -->
-    <circle cx="256" cy="710" r="126" fill="white"/>
-    <circle cx="256" cy="710" r="70" fill="#F97316"/>
-    <circle cx="768" cy="710" r="126" fill="white"/>
-    <circle cx="768" cy="710" r="70" fill="#F97316"/>
+  <g>
+    <!-- Вилка под колесом: колесо рисуется поверх и закрывает её конец. -->
+    <path d="M672,536 L742,708" fill="none" stroke="white" stroke-width="56" stroke-linecap="round"/>
 
-    <!-- Треугольная рама: задняя ось → рулевая колонка → передняя ось. -->
-    <path d="M256,710 L540,710 L610,530 M540,710 L768,710"
-          fill="none" stroke="white" stroke-width="48"
-          stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- Передняя вилка. -->
-    <path d="M642,470 L768,710" fill="none" stroke="white" stroke-width="48" stroke-linecap="round"/>
-    <!-- Бак и седло одной массой — по ней и идёт пульс. -->
-    <path d="M330,600 L470,600 Q540,600 588,536 L620,492 Q634,470 610,458 L470,458
-             Q430,458 412,492 L338,560 Q312,584 330,600 Z" fill="white"/>
-    <!-- Руль и фара. -->
-    <path d="M636,452 L700,392" fill="none" stroke="white" stroke-width="42" stroke-linecap="round"/>
-    <circle cx="742" cy="368" r="48" fill="white"/>
+    <circle cx="288" cy="708" r="142" fill="white"/>
+    <circle cx="288" cy="708" r="80" fill="#F97316"/>
+    <circle cx="744" cy="708" r="142" fill="white"/>
+    <circle cx="744" cy="708" r="80" fill="#F97316"/>
 
-    <!-- Пульс идёт по баку, а не по колёсам: иначе силуэт смазывается. -->
-    <path d="M356,556 L424,556 L466,506 L500,596 L536,540 L590,540"
-          fill="none" stroke="#F97316" stroke-width="34"
+    <!-- Брус бака соединяет колёса сам — отдельная перекладина рамы только
+         мешала, читалась лишней линией между колёсами. -->
+    <rect x="320" y="548" width="400" height="116" rx="46" fill="white"/>
+    <rect x="336" y="486" width="190" height="86" rx="34" fill="white"/>
+    <path d="M628,556 L700,470 Q724,442 756,462 L788,482 L724,584 Z" fill="white"/>
+    <path d="M700,452 L806,404" fill="none" stroke="white" stroke-width="46" stroke-linecap="round"/>
+
+    <!-- Пульс по центру бруса, не задевая краёв. -->
+    <path d="M384,606 L448,606 L488,566 L522,646 L556,600 L628,600"
+          fill="none" stroke="#F97316" stroke-width="32"
           stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
