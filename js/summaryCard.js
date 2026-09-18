@@ -79,7 +79,11 @@ export function drawSummaryCard(summary, { brand, title, subtitle, labels, forma
   if (summary.movingHours !== null) stats.push([format.hours(summary.movingHours), labels.hours]);
   if (summary.fuelLiters !== null) stats.push([format.liters(summary.fuelLiters), labels.fuel]);
   if (summary.spent !== null && hero.label !== labels.spent) stats.push([format.money(summary.spent), labels.spent]);
-  if (summary.costPerKm !== null) stats.push([format.money(summary.costPerKm), labels.perKm]);
+  // Рубль за километр показываем с десятой долей: округление до целого
+  // превращает 8,4 в 8 и съедает как раз ту точность, ради которой считают.
+  if (summary.costPerKm !== null) {
+    stats.push([(format.perKm || format.money)(summary.costPerKm), labels.perKm]);
+  }
   if (summary.maxSpeedKmh !== null) stats.push([format.speed(summary.maxSpeedKmh), labels.maxSpeed]);
 
   let y = 700;

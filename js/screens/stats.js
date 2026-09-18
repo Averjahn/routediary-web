@@ -335,6 +335,8 @@ async function openSummary(kind) {
     format: {
       km: value => Fmt.distanceKm(value * 1000, AppState.units),
       money: value => Fmt.money(value, AppState.currency),
+      perKm: value => `${value.toLocaleString(getLang() === 'ru' ? 'ru-RU' : 'en-US',
+        { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ${Fmt.currencySymbol(AppState.currency)}`,
       liters: value => Fmt.liters(value),
       hours: value => Fmt.duration(value * 3600),
       speed: value => Fmt.speed(value, AppState.units),
