@@ -6,6 +6,8 @@ import { applyI18nTree, icon, MODE_ICON, EXPENSE_ICON } from '../ui.js';
 import { calcCalories, calcFuel } from '../geo.js';
 import { THEMES } from '../theme.js';
 import { recurringStops } from '../stops.js';
+import { buildSummary, periodBounds } from '../summary.js';
+import { openModal, closeModal, toast } from '../ui.js';
 
 let containerRef = null;
 let period = 'week';
@@ -94,6 +96,19 @@ export async function refresh() {
       </div>` : ''}
     </div>
 
+    <div class="card">
+      <div class="settings-row">
+        <span>
+          <span data-i18n="summary.title"></span>
+          <span class="muted" style="display:block;font-size:12px;" data-i18n="summary.hint"></span>
+        </span>
+      </div>
+      <div class="row" style="gap:8px;">
+        <button class="btn block" id="sum-month" data-i18n="summary.month"></button>
+        <button class="btn block" id="sum-year" data-i18n="summary.year"></button>
+      </div>
+    </div>
+
     ${hasData ? `
     <div class="section-title" data-i18n="chart.foot_km"></div>
     <div class="card"><canvas class="chart" id="chart-walk" height="120"></canvas></div>
@@ -108,6 +123,9 @@ export async function refresh() {
     ` : `<div class="empty-state" data-i18n="stats.no_data"></div>`}
   `;
   applyI18nTree(body);
+
+  body.querySelector('#sum-month').addEventListener('click', () => openSummary('month'));
+  body.querySelector('#sum-year').addEventListener('click', () => openSummary('year'));
 
   if (!hasData) return;
 
@@ -284,3 +302,56 @@ function drawCumulative(canvas, byDay) {
   ctx.fillText(`${Math.round(cum)} ${t('unit.km')}`, width - 4, 12);
 }
 
+/**
+ * Итоги месяца или года одной картинкой.
+ *
+ * Картинка рисуется на устройстве и никуда не отправляется, пока человек
+ * сам не нажмёт «Поделиться». На ней только числа: ни карты, ни адресов —
+ * она уходит в чужие руки, и по ней не должно быть видно, где человек живёт.
+ */
+async function openSummary(kind) {
+  const { from, to } = periodBounds(kind);
+  const vehicle = await getPrimaryVehicle();
+  const [trips, refuels, expenses] = await Promise.all([
+    DB.getAll('trips'),
+    vehicle ? DB.getAllByIndex('refuels', 'vehicleId', vehicle.id) : [],
+    vehicle ? DB.getAllByIndex('expenses', 'vehicleId', vehicle.id) : [],
+  ]);
+
+  const summary = buildSummary({ trips, refuels, expenses, from, to });
+  if (summary.isEmpty) { toast(t('summary.empty')); return; }
+
+  const { drawSummaryCard, canvasToBlob, shareCard } = await import('../summaryCard.js');
+  const canvas = drawSummaryCard(summary, {
+    brand: t('app.name').toUpperCase(),
+    title: t(kind === 'year' ? 'summary.year' : 'summary.month'),
+    subtitle: new Date(from).toLocaleDateString(getLang() === 'en' ? 'en-GB' : 'ru-RU',
+      { month: 'long', year: 'numeric' }),
+    labels: {
+      carKm: t('summary.label_km'), trips: t('summary.label_trips'), days: t('summary.label_days'),
+      hours: t('summary.label_hours'), fuel: t('summary.label_fuel'), spent: t('summary.label_spent'),
+      perKm: t('summary.label_per_km'), maxSpeed: t('summary.label_max_speed'),
+    },
+    format: {
+      km: value => Fmt.distanceKm(value * 1000, AppState.units),
+      money: value => Fmt.money(value, AppState.currency),
+      liters: value => Fmt.liters(value),
+      hours: value => Fmt.duration(value * 3600),
+      speed: value => Fmt.speed(value, AppState.units),
+    },
+  });
+
+  const blob = await canvasToBlob(canvas);
+  const preview = URL.createObjectURL(blob);
+  const overlay = openModal(`
+    <div class="modal-header"><h2 data-i18n="summary.title"></h2><button class="modal-close">✕</button></div>
+    <img src="${preview}" alt="" style="width:100%;border-radius:12px;">
+    <button class="btn primary block" id="sum-share" style="margin-top:12px;" data-i18n="summary.share"></button>
+    <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="summary.privacy"></div>`,
+    { onClose: () => URL.revokeObjectURL(preview) });
+  overlay.querySelector('.modal-close').addEventListener('click', closeModal);
+  overlay.querySelector('#sum-share').addEventListener('click', async () => {
+    const result = await shareCard(blob, `avtopuls-${kind}.png`, t('summary.share_text'));
+    if (result === 'downloaded') toast(t('summary.saved'));
+  });
+}
