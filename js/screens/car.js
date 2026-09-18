@@ -110,7 +110,7 @@ export async function refresh() {
       <div class="garage-name">${escapeHtml(vehicle.displayName || t('car.default_name'))}</div>
       ${healthBlock(health)}
       <div class="big-number">${odometer.toFixed(0)} <span style="font-size:16px;font-weight:600;color:var(--text-secondary);">${vehicle.trackingUnit === 'hours' ? t('unit.hours') : t('unit.km')}</span></div>
-      <div class="muted" data-i18n="car.odometer_caption"></div>
+      <div class="muted" data-i18n="${vehicle?.trackingUnit === 'hours' ? 'car.hours_caption' : 'car.odometer_caption'}"></div>
       <div class="row" style="justify-content:center;gap:8px;margin-top:10px;">
         <button class="btn sm" id="car-adjust" data-i18n="car.adjust_odometer"></button>
         <button class="btn sm" id="car-change" data-i18n="car.change_vehicle"></button>
@@ -416,10 +416,16 @@ const STATUS_COLOR = {
 
 /** Короткая строка «сколько осталось» — по тому измерению, что кончится раньше. */
 function remainingLabel(item, st) {
+  // Что именно кончится первым — то и показываем. У катера это моточасы:
+  // подписать их километрами значит соврать в разы.
   if (st.status === STATUS.OVERDUE) {
+    if (st.limitedBy === 'hours') return t('car.overdue_hours', { hours: Math.round(-(st.hoursLeft || 0)) });
     return st.limitedBy === 'time' && st.daysLeft != null
       ? t('car.overdue_days', { days: Math.round(-st.daysLeft) })
       : t('car.overdue', { km: Math.round(-(st.kmLeft || 0)) });
+  }
+  if (st.limitedBy === 'hours') {
+    return t('car.remaining_hours', { hours: Math.round(Math.max(0, st.hoursLeft || 0)) });
   }
   return st.limitedBy === 'time'
     ? t('car.remaining_days', { days: Math.max(0, st.daysLeft) })

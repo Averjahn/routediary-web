@@ -795,4 +795,7 @@ export default {
   'vehicle.kind.boat': 'ボート・ヨット',
   'vehicle.kind.aircraft': '航空機・ヘリコプター',
   'vehicle.kind_aviation': '航空機・ヘリコプターについては飛行時間と費用の記録のみを行い、整備時期の計算は行いません。航空機はメーカーの承認された整備プログラムに従って整備され、作業は搭載用航空日誌に記録されます。アプリがそれを代替することはできません。',
+  'car.remaining_hours': '残り {hours} 時間',
+  'car.overdue_hours': '{hours} 時間超過',
+  'car.hours_caption': '現在のエンジンアワー',
 };

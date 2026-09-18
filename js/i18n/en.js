@@ -620,4 +620,7 @@ export default {
   'vehicle.kind.boat': 'Boat or yacht',
   'vehicle.kind.aircraft': 'Aircraft or helicopter',
   'vehicle.kind_aviation': 'For aircraft and helicopters the app keeps a log of hours and costs but does NOT calculate service intervals. An aircraft is maintained under its manufacturer’s approved programme, and the work is recorded in the official logbook — an app must not replace that.',
+  'car.remaining_hours': '{hours} h left',
+  'car.overdue_hours': '{hours} h overdue',
+  'car.hours_caption': 'current engine hours',
 };

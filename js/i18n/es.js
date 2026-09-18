@@ -618,4 +618,7 @@ export default {
   'vehicle.kind.boat': 'Barco o yate',
   'vehicle.kind.aircraft': 'Avión o helicóptero',
   'vehicle.kind_aviation': 'Para aviones y helicópteros la app lleva un registro de horas y gastos, pero NO calcula intervalos de mantenimiento. Una aeronave se mantiene según el programa aprobado del fabricante y los trabajos se anotan en el libro de a bordo: una app no puede sustituirlo.',
+  'car.remaining_hours': 'quedan {hours} h',
+  'car.overdue_hours': '{hours} h de retraso',
+  'car.hours_caption': 'horas de motor actuales',
 };

@@ -618,4 +618,7 @@ export default {
   'vehicle.kind.boat': 'Bateau ou yacht',
   'vehicle.kind.aircraft': 'Avion ou hélicoptère',
   'vehicle.kind_aviation': 'Pour les avions et hélicoptères, l’application tient un journal des heures et des dépenses mais ne calcule PAS les intervalles d’entretien. Un aéronef est entretenu selon le programme approuvé du constructeur et les travaux sont consignés dans le carnet de bord — une application ne peut pas s’y substituer.',
+  'car.remaining_hours': 'reste {hours} h',
+  'car.overdue_hours': '{hours} h de retard',
+  'car.hours_caption': 'heures moteur actuelles',
 };

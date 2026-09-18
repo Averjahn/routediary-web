@@ -618,4 +618,7 @@ export default {
   'vehicle.kind.boat': '快艇或游艇',
   'vehicle.kind.aircraft': '飞机或直升机',
   'vehicle.kind_aviation': '对于飞机和直升机，应用只记录飞行小时与费用，不计算保养周期。航空器按制造商批准的维护方案进行维护，作业记入航行记录本——应用不能取代它。',
+  'car.remaining_hours': '还剩 {hours} 小时',
+  'car.overdue_hours': '已超 {hours} 小时',
+  'car.hours_caption': '当前发动机小时',
 };

@@ -618,4 +618,7 @@ export default {
   'vehicle.kind.boat': 'Boot oder Yacht',
   'vehicle.kind.aircraft': 'Flugzeug oder Hubschrauber',
   'vehicle.kind_aviation': 'Für Flugzeuge und Hubschrauber führt die App ein Stunden- und Kostenprotokoll, berechnet aber KEINE Wartungsintervalle. Ein Luftfahrzeug wird nach dem genehmigten Programm des Herstellers gewartet, die Arbeiten werden im Bordbuch dokumentiert — das darf eine App nicht ersetzen.',
+  'car.remaining_hours': 'noch {hours} h',
+  'car.overdue_hours': '{hours} h überfällig',
+  'car.hours_caption': 'aktuelle Betriebsstunden',
 };

@@ -618,4 +618,7 @@ export default {
   'vehicle.kind.boat': 'Łódź lub jacht',
   'vehicle.kind.aircraft': 'Samolot lub śmigłowiec',
   'vehicle.kind_aviation': 'Dla samolotów i śmigłowców aplikacja prowadzi dziennik godzin i kosztów, ale NIE wylicza terminów obsługi. Statek powietrzny obsługuje się według zatwierdzonego programu producenta, a prace zapisuje się w dzienniku pokładowym — aplikacja tego nie zastąpi.',
+  'car.remaining_hours': 'zostało {hours} h',
+  'car.overdue_hours': 'przekroczono o {hours} h',
+  'car.hours_caption': 'aktualne motogodziny',
 };
