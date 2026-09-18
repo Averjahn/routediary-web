@@ -8,6 +8,7 @@ import {
 } from '../state.js';
 import { openPaywall } from '../paywall.js';
 import { componentStatus, fleetHealth, STATUS, VEHICLE_KIND } from '../maintenance.js';
+import { usageUnit, hasSchedule } from '../maintenanceKinds.js';
 import { documentStatus, DOC_TYPES } from '../documents.js';
 import { installPart, removePart, partWear, activeParts, removedParts, CATEGORY as PART_CATEGORY } from '../parts.js';
 import { acceptablePhoto, drawScaled } from '../photos.js';
@@ -73,7 +74,13 @@ export async function refresh() {
   ]);
   // Контекст расчёта: пробег, «сегодня» и реальный среднесуточный пробег,
   // из которого получается прогноз дат обслуживания.
-  const maintCtx = { odometerKm: odometer, now: Date.now(), avgKmPerDay };
+  const maintCtx = {
+    odometerKm: odometer,
+    // Для техники на моточасах тот же счётчик означает часы, а не километры.
+    hours: vehicle?.trackingUnit === 'hours' ? odometer : 0,
+    now: Date.now(),
+    avgKmPerDay,
+  };
 
   const measured = computeMeasuredConsumption(refuels);
   const consumptionToUse = measured.value != null ? measured.value : vehicle.consumptionL100;
@@ -130,6 +137,7 @@ export async function refresh() {
     <div class="muted" style="margin:8px 16px 0;font-size:12px;" data-i18n="quick.footer"></div>
 
     <div class="section-title" data-i18n="car.section_maintenance"></div>
+    ${hasSchedule(vehicle?.kind) ? `
     <div class="card" id="maint-list"></div>
     <label class="row between" style="padding:10px 14px;gap:10px;">
       <span>
@@ -139,6 +147,12 @@ export async function refresh() {
       <input type="checkbox" id="maint-severe"${severe ? ' checked' : ''}>
     </label>
     <div style="text-align:center;margin:0 0 4px;"><button class="btn sm" id="maint-add">+ <span data-i18n="maint.name"></span></button></div>
+    ` : `
+    <div class="card">
+      <div class="muted" style="font-size:13px;" data-i18n="vehicle.kind_aviation"></div>
+    </div>
+    <div style="text-align:center;margin:8px 0 4px;"><button class="btn sm" id="maint-add">+ <span data-i18n="maint.name"></span></button></div>
+    `}
 
     ${OBD_ENABLED ? `
     <div class="section-title" data-i18n="obd.section"></div>
@@ -191,7 +205,8 @@ export async function refresh() {
   body.querySelector('#car-adjust').addEventListener('click', () => openOdometerAdjust(vehicle));
   body.querySelector('#car-change').addEventListener('click', openVehiclePicker);
   body.querySelector('#maint-add').addEventListener('click', () => openMaintenanceEdit(null, odometer, vehicle));
-  body.querySelector('#maint-severe').addEventListener('change', async (e) => {
+  // У авиации раздела регламента нет — этих элементов на экране не будет.
+  body.querySelector('#maint-severe')?.addEventListener('change', async (e) => {
     // Меняем режим эксплуатации — пересчитываем интервалы, но не историю замен.
     await setSevereConditions(e.target.checked);
     await recalcIntervals(vehicle, e.target.checked);
@@ -203,7 +218,8 @@ export async function refresh() {
 
 
   renderQuickGrid(body.querySelector('#quick-grid'), templates, vehicle, odometer);
-  renderMaintenance(body.querySelector('#maint-list'), maintenance, maintCtx, vehicle);
+  const maintList = body.querySelector('#maint-list');
+  if (maintList) renderMaintenance(maintList, maintenance, maintCtx, vehicle);
   // Пробег передаём внутрь: он попадёт в текст для сервиса, а механику
   // «120 000 км» говорит о вероятных причинах больше, чем сам код.
   body.querySelector('#obd-open')?.addEventListener('click',
@@ -1025,7 +1041,10 @@ async function saveVehicleFromTrim(make, model, trim, { add = false } = {}) {
 
 const FUEL_OPTIONS = ['petrol', 'diesel', 'hybrid', 'electric', 'gas'];
 const TX_OPTIONS = ['mt', 'at', 'cvt', 'amt', 'dsg'];
-const KIND_OPTIONS = [VEHICLE_KIND.CAR, VEHICLE_KIND.MOTO, VEHICLE_KIND.TRUCK, VEHICLE_KIND.EQUIPMENT];
+const KIND_OPTIONS = [
+  VEHICLE_KIND.CAR, VEHICLE_KIND.MOTO, VEHICLE_KIND.BOAT, VEHICLE_KIND.AIRCRAFT,
+  VEHICLE_KIND.TRUCK, VEHICLE_KIND.EQUIPMENT,
+];
 
 /**
  * Ручной ввод автомобиля.
@@ -1081,7 +1100,11 @@ function openCustomVehicleForm(preset = null) {
         const name = overlay.querySelector('#cv-name').value.trim() || presetName || t('car.default_name');
         const tx = overlay.querySelector('#cv-tx').value;
         const kind = overlay.querySelector('#cv-kind')?.value || VEHICLE_KIND.CAR;
-        const trackingUnit = overlay.querySelector('#cv-track')?.value || 'km';
+        // У катера и воздушного судна километров не бывает: ресурс и налёт
+        // считаются моточасами, и выбор единицы тут не нужен.
+        const trackingUnit = usageUnit(kind) === 'hours'
+          ? 'hours'
+          : (overlay.querySelector('#cv-track')?.value || 'km');
         if (!addMode) {
           const existing = await getVehicles();
           for (const v of existing) await removeVehicle(v.id);

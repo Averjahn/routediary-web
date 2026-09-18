@@ -235,15 +235,19 @@ export async function ensureServicePlan(vehicle, odometerKm = 0) {
   }
 
   const severe = await getSevereConditions();
-  const { items } = buildServicePlan(vehicle, { odometerKm, severe });
+  // usage — наработка в той единице, в которой её считает эта техника:
+  // километры у машины и мотоцикла, моточасы у катера.
+  const { items } = buildServicePlan(vehicle, { odometerKm, usage: odometerKm, severe });
   const rows = items.map(i => ({
     id: uuid(),
     vehicleId: vehicle.id,
     componentId: i.componentId,
     title: i.titleKey,
     intervalKm: i.intervalKm,
+    intervalHours: i.intervalHours ?? null,
     intervalMonths: i.intervalMonths,
     lastServiceOdometerKm: i.lastServiceOdometerKm,
+    lastServiceHours: i.lastServiceHours ?? 0,
     lastServiceDate: i.lastServiceDate,
     needsConfirm: i.needsConfirm,
     confidence: i.confidence,
@@ -267,7 +271,12 @@ export async function recalcIntervals(vehicle, severe) {
   const updated = existing.map(row => {
     const fresh = byComponent.get(row.componentId);
     if (!fresh) return row;                       // пункт добавлен вручную — не трогаем
-    return { ...row, intervalKm: fresh.intervalKm, intervalMonths: fresh.intervalMonths };
+    return {
+      ...row,
+      intervalKm: fresh.intervalKm,
+      intervalHours: fresh.intervalHours ?? row.intervalHours ?? null,
+      intervalMonths: fresh.intervalMonths,
+    };
   });
   await DB.putMany('maintenanceItems', updated);
   return updated;

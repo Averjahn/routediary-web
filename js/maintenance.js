@@ -18,6 +18,8 @@
 // --- Классификация -------------------------------------------------------
 
 /** Классы, по которым различаются интервалы. */
+import { buildKindPlan } from './maintenanceKinds.js';
+
 export const VEHICLE_CLASS = {
   SOVIET_CARB: 'soviet_carb',     // карбюратор: ВАЗ 2101–2107, Москвич, ЗАЗ, УАЗ
   RU_INJECTED: 'ru_injected',     // отеч. инжектор: 2108–2115, Priora, Kalina, Granta, Niva
@@ -458,11 +460,17 @@ export function confidenceFor(component, profile) {
 // Поэтому регламент строится только для 'car' (и для старых записей без
 // поля kind — обратная совместимость), а остальные виды получают пустой
 // план и работают через ручные пункты обслуживания, которые были всегда.
-export const VEHICLE_KIND = { CAR: 'car', MOTO: 'moto', TRUCK: 'truck', EQUIPMENT: 'equipment' };
+export const VEHICLE_KIND = { CAR: 'car', MOTO: 'moto', BOAT: 'boat', AIRCRAFT: 'aircraft', TRUCK: 'truck', EQUIPMENT: 'equipment' };
 
 export function buildServicePlan(vehicle, opts = {}) {
+  // Не автомобиль — считает движок своего вида техники: у мотоцикла свои
+  // узлы (цепь), у катера ресурс меряется моточасами, а у самолёта
+  // регламента здесь нет и не будет (см. maintenanceKinds.js).
   if (vehicle.kind && vehicle.kind !== VEHICLE_KIND.CAR) {
-    return { profile: null, items: [] };
+    return buildKindPlan(vehicle, {
+      ...opts,
+      usage: opts.usage != null ? opts.usage : opts.odometerKm,
+    });
   }
   const profile = vehicleProfile(vehicle);
   const severe = !!opts.severe;
@@ -543,6 +551,16 @@ export function componentStatus(item, ctx = {}) {
     kmFraction = kmLeft / item.intervalKm;
   }
 
+  // Моточасы — для техники, у которой километров не бывает: лодочный мотор
+  // работает на месте, на волне и на холостых, и ресурс там меряют временем
+  // работы двигателя.
+  let hoursLeft = null, hoursFraction = null;
+  if (item.intervalHours > 0) {
+    const usedHours = (ctx.hours || 0) - (item.lastServiceHours || 0);
+    hoursLeft = item.intervalHours - usedHours;
+    hoursFraction = hoursLeft / item.intervalHours;
+  }
+
   let daysLeft = null, timeFraction = null;
   const servicedAt = toMillis(item.lastServiceDate);
   if (item.intervalMonths > 0 && servicedAt != null) {
@@ -555,10 +573,11 @@ export function componentStatus(item, ctx = {}) {
   // Ресурс узла — то из двух измерений, которого осталось меньше.
   // Number.isFinite отсекает и NaN: испорченное поле должно означать
   // «про этот срок ничего не известно», а не отравлять всю оценку.
-  const fractions = [kmFraction, timeFraction].filter(f => Number.isFinite(f));
+  const fractions = [kmFraction, hoursFraction, timeFraction].filter(f => Number.isFinite(f));
   const fraction = fractions.length ? Math.min(...fractions) : 1;
   const limitedBy = fractions.length === 0 ? null
-    : (kmFraction != null && kmFraction === fraction ? 'km' : 'time');
+    : (kmFraction != null && kmFraction === fraction ? 'km'
+      : hoursFraction != null && hoursFraction === fraction ? 'hours' : 'time');
 
   // Прогноз даты: по пробегу — если знаем среднесуточный пробег;
   // по времени — напрямую. Берём более раннюю из двух.
@@ -568,6 +587,10 @@ export function componentStatus(item, ctx = {}) {
     const byKm = now + (kmLeft / avgKmPerDay) * DAY_MS;
     dueDate = dueDate == null ? byKm : Math.min(dueDate, byKm);
   }
+  if (hoursLeft != null && ctx.avgHoursPerDay > 0) {
+    const byHours = now + (hoursLeft / ctx.avgHoursPerDay) * DAY_MS;
+    dueDate = dueDate == null ? byHours : Math.min(dueDate, byHours);
+  }
 
   let status = STATUS.OK;
   if (fraction <= 0) status = STATUS.OVERDUE;
@@ -575,7 +598,7 @@ export function componentStatus(item, ctx = {}) {
   else if (fraction <= 0.25) status = STATUS.SOON;
 
   return {
-    kmLeft, daysLeft, fraction: Math.max(0, Math.min(1, fraction)),
+    kmLeft, hoursLeft, daysLeft, fraction: Math.max(0, Math.min(1, fraction)),
     limitedBy, dueDate, status,
   };
 }
