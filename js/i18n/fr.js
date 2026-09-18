@@ -588,4 +588,5 @@ export default {
   'partners.query': 'Le lien ouvre la recherche de la boutique pour « {query} ».',
   'partners.disclaimer': 'Nous ne choisissons pas la référence pour votre voiture et ne vérifions pas la compatibilité : c’est le rôle de la boutique ou du garage. Vérifiez la pièce via le VIN avant d’acheter.',
   'partners.none': 'Pas encore de liens pour cet élément',
+  'settings.to_catalog': 'Entretien par modèle',
 };

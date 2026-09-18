@@ -588,4 +588,5 @@ export default {
   'partners.query': 'Link otwiera wyszukiwanie w sklepie dla „{query}”.',
   'partners.disclaimer': 'Nie dobieramy numeru części do Twojego auta ani nie sprawdzamy kompatybilności — robi to sklep lub warsztat. Sprawdź część po numerze VIN przed zakupem.',
   'partners.none': 'Na razie brak linków do tej pozycji',
+  'settings.to_catalog': 'Harmonogramy przeglądów według modelu',
 };

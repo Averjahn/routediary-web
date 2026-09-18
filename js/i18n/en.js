@@ -590,4 +590,5 @@ export default {
   'partners.query': 'The link opens a shop search for “{query}”.',
   'partners.disclaimer': 'We do not pick a part number for your car and do not check compatibility — the shop or workshop does. Check the part against your VIN before buying.',
   'partners.none': 'No links for this item yet',
+  'settings.to_catalog': 'Service schedules by model',
 };

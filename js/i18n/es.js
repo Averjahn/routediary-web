@@ -588,4 +588,5 @@ export default {
   'partners.query': 'El enlace abre la búsqueda de la tienda por «{query}».',
   'partners.disclaimer': 'No elegimos la referencia para tu coche ni comprobamos la compatibilidad: eso lo hace la tienda o el taller. Verifica la pieza por el VIN antes de comprar.',
   'partners.none': 'Aún no hay enlaces para esta pieza',
+  'settings.to_catalog': 'Planes de mantenimiento por modelo',
 };

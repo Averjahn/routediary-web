@@ -588,4 +588,5 @@ export default {
   'partners.query': '该链接将在商店中搜索“{query}”。',
   'partners.disclaimer': '我们不会为您的车挑选配件编号，也不核对兼容性——这由商店或维修店完成。购买前请按 VIN 核对配件。',
   'partners.none': '该项目暂无链接',
+  'settings.to_catalog': '按车型查看保养周期',
 };

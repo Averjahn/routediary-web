@@ -765,4 +765,5 @@ export default {
   'partners.query': 'リンクは店舗で「{query}」を検索します。',
   'partners.disclaimer': '当アプリはお車に合う品番を選定せず、適合確認も行いません（販売店や整備工場の役割です）。購入前にVINで部品をご確認ください。',
   'partners.none': 'この項目のリンクはまだありません',
+  'settings.to_catalog': '車種別の整備スケジュール',
 };

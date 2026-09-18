@@ -267,6 +267,10 @@ export async function refresh() {
     <div class="card">
       <div class="settings-row"><span data-i18n="settings.version"></span><span class="muted">1.0.0</span></div>
       <div class="settings-row"><span data-i18n="settings.vehicles_count"></span><span class="muted">${vehicles.length}</span></div>
+      <a class="settings-row" href="/to/" target="_blank" rel="noopener" id="set-to-catalog"
+         style="text-decoration:none;color:inherit;">
+        <span data-i18n="settings.to_catalog"></span><span class="muted">→</span>
+      </a>
       <div class="muted" style="font-size:12px;padding-top:8px;" data-i18n="settings.privacy_note"></div>
     </div>
   `;

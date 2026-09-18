@@ -588,4 +588,5 @@ export default {
   'partners.query': 'Der Link öffnet die Shop-Suche nach „{query}“.',
   'partners.disclaimer': 'Wir wählen keine Teilenummer für Ihr Auto aus und prüfen keine Kompatibilität — das tun Shop oder Werkstatt. Prüfen Sie das Teil vor dem Kauf anhand der FIN.',
   'partners.none': 'Für dieses Teil gibt es noch keine Links',
+  'settings.to_catalog': 'Wartungspläne nach Modell',
 };
