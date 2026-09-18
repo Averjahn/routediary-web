@@ -89,6 +89,46 @@ const PART_QUERIES = Object.freeze({
   // были бы враньём. caliper_service, wheel_alignment, carbon_cleaning, dpf.
 });
 
+/**
+ * Автотовары, которые подбирают ИМЕННО под машину.
+ *
+ * Отличие от запчастей: это не регламент, а то, что человек ищет сам —
+ * и всегда с названием своей машины («коврики на Гранту»). Поэтому запрос
+ * строится из названия модели, а не из узла обслуживания.
+ *
+ * Здесь нет «масла» и «фильтров»: они уже есть выше, привязанные к сроку
+ * замены. Дублировать их ещё и здесь значило бы показывать одну и ту же
+ * рекламу дважды на одной странице.
+ */
+export const ACCESSORIES = Object.freeze([
+  { id: 'mats', query: 'коврики в салон', title: 'Коврики в салон' },
+  { id: 'seat_covers', query: 'чехлы на сиденья', title: 'Чехлы на сиденья' },
+  { id: 'wipers', query: 'щётки стеклоочистителя', title: 'Щётки дворников' },
+  { id: 'roof_rack', query: 'багажник на крышу', title: 'Багажник на крышу' },
+  { id: 'trunk_mat', query: 'коврик в багажник', title: 'Коврик в багажник' },
+  { id: 'mud_flaps', query: 'брызговики', title: 'Брызговики' },
+]);
+
+/** Запрос на автотовар под конкретную машину: «коврики в салон Lada Granta». */
+export function accessoryQuery(accessoryId, vehicle) {
+  const item = ACCESSORIES.find(a => a.id === String(accessoryId));
+  if (!item) return null;
+  const car = String(vehicle?.displayName || '').trim();
+  return [item.query, car].filter(Boolean).join(' ');
+}
+
+/**
+ * Предложения по автотовару. Правило то же, что и у запчастей: без токена
+ * erid не показывается ничего.
+ */
+export function accessoryOffers(accessoryId, vehicle, {
+  config = PARTNER_CONFIG, region = 'RU', shops = PARTNER_SHOPS,
+} = {}) {
+  const query = accessoryQuery(accessoryId, vehicle);
+  if (!query) return [];
+  return buildOffers(query, { config, region, shops });
+}
+
 /** Узлы, которые нельзя купить коробкой. */
 export function isPurchasable(componentId) {
   return Object.hasOwn(PART_QUERIES, String(componentId));
@@ -129,6 +169,17 @@ export function offersFor(componentId, vehicle, {
   const query = partQuery(componentId, vehicle);
   if (!query) return [];
 
+  return buildOffers(query, { config, region, shops });
+}
+
+/**
+ * Сборка ссылок по готовому запросу — одна на запчасти и автотовары.
+ *
+ * Здесь же единственное место, где решается, показывать ли ссылку вообще:
+ * нужны и партнёрский шаблон, и токен маркировки. Правило одно на всех,
+ * чтобы его нельзя было обойти, добавив новый вид товара.
+ */
+function buildOffers(query, { config, region, shops }) {
   const out = [];
   for (const shop of shops) {
     if (!shop.markets.includes(region)) continue;
